@@ -1,0 +1,55 @@
+services:
+  php-apache:
+    build:
+      context: .
+      dockerfile: containerfiles/Dockerfile.php
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    container_name: php-apache
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+      # PHP settings for old codebase on PHP 8.0 (hide E_DEPRECATED in browser).
+      # Live-mounted so no rebuild is needed; Dockerfile also COPYs it for fresh builds.
+      - ./containerfiles/php-aredel.ini:/usr/local/etc/php/conf.d/aredel.ini:ro
+    restart: unless-stopped
+
+  # Link checker: reads the sitemap and GETs every URL against php-apache.
+  # One-shot service (no restart): `docker compose run --rm pytest_web`
+  # Allure raw results go to the shared allure-results volume.
+  pytest_web:
+    build:
+      context: .
+      dockerfile: pytest_web/Dockerfile
+    container_name: pytest-web
+    depends_on:
+      - php-apache
+    environment:
+      BASE_URL: http://php-apache
+      SITEMAP_FILE: /data/sitemap.xml
+      FAIL_ON_NON_200: "true"
+    volumes:
+      - ./src:/data:ro
+      - ./pytest_web:/app
+      - allure-results:/allure-results
+    command: pytest -q --alluredir=/allure-results --clean-alluredir
+
+  # Allure report viewer: watches allure-results, builds the HTML report
+  # and serves it at http://127.0.0.1:5050/allure-docker-service-ui/
+  allure-web:
+    image: frankescobar/allure-docker-service:latest
+    container_name: allure-web
+    user: "0:0"  # image's app user can't write history into the volume otherwise
+    ports:
+      - "5050:5050"
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 5
+      KEEP_HISTORY: 1
+    volumes:
+      - allure-results:/app/allure-results
+    restart: unless-stopped
+
+volumes:
+  allure-results:

@@ -1,10 +1,11 @@
 services:
   php-apache:
-    image: php_engine:8.0
+    image: aredel:${PHP_VER:-8.2}
     build:
       context: .
       dockerfile: containerfiles/Dockerfile.php
       args:
+        PHP_VER: ${PHP_VER:-8.2}
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
     container_name: php-apache
@@ -12,7 +13,7 @@ services:
       - "8080:80"
     volumes:
       - ./src:/var/www/html
-      # PHP settings for old codebase on PHP 8.0 (hide E_DEPRECATED in browser).
+      # PHP settings for old codebase (hide E_DEPRECATED in browser).
       # Live-mounted so no rebuild is needed; Dockerfile also COPYs it for fresh builds.
       - ./containerfiles/php-aredel.ini:/usr/local/etc/php/conf.d/aredel.ini:ro
     restart: unless-stopped

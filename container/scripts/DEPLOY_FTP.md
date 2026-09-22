@@ -1,7 +1,8 @@
 # FTP deploy manual (`deploy-ftp.sh`)
 
 Uploads the site (`src/`) to virtual hosting over FTP/FTPS. All commands run
-from this directory (`container/` — the one with `docker-compose.yml`).
+from this directory (`scripts/` — scripts live here; they operate on the
+project root one level up, so `src/`, `docker-compose.yml` etc. resolve).
 
 `container_php83/` is not involved.
 

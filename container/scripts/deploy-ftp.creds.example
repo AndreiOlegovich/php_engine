@@ -1,0 +1,9 @@
+# Copy to ~/.config/aredel/ftp-creds.env (OUTSIDE the repo), chmod 600, fill in.
+# Never commit the real file — only this template lives in the repo.
+FTP_HOST="ftp.example.com"
+FTP_USER="hosting_user"
+FTP_PASSWORD="change-me"
+FTP_PORT="21"
+FTP_REMOTE_DIR="/public_html"
+FTP_USE_TLS="false"
+FTP_TIMEOUT="30"

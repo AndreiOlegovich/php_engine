@@ -9,7 +9,7 @@ All commands run from this directory (`container/` — the one with
 |---|---|
 | Service | `php-apache` |
 | Container name | `php-apache` |
-| Image | built from `containerfiles/Dockerfile.php` (`php:8.0-apache` + mod_rewrite + `php-aredel.ini`) |
+| Image | `php_engine:8.0` — built from `containerfiles/Dockerfile.php` (`php:8.0-apache` + mod_rewrite + `php-aredel.ini`) |
 | Host port | `8080` → container port `80` |
 | Code | `./src` bind-mounted to `/var/www/html` (live: host edits = instant, no rebuild) |
 | PHP config | `./containerfiles/php-aredel.ini` mounted to `/usr/local/etc/php/conf.d/aredel.ini` (live) |

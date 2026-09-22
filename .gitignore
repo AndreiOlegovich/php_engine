@@ -1,0 +1,64 @@
+# Generated reports (link-checker output)
+reports/
+allure-results/
+**/allure-results-host/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Logs (incl. PHP error logs and login-attempt logs)
+*.log
+
+# SQLite / DB binaries
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Editor / backup duplicates ("name copy.php", "name copy(1).css", ...)
+# NOTE: leading space is intentional — a bare *copy* would also match
+# legit files like optical_spectroscopy.php or windows/robocopy/.
+* copy*
+*.bak
+*.orig
+*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# PHP session data files (runtime junk inside demo tmp/ dirs)
+sess_*
+
+# Generated sitemaps (checked-in sitemap.xml stays tracked)
+sitemap_new.xml
+
+# Secrets / local env
+.env
+.env.*
+*.key
+*.pem
+id_rsa*
+.htpasswd
+*-creds.env
+ftp-creds.env
+
+# Images (deliberate decision: images stay out of the repo, ~30k files / ~3.1 GB
+# across both src trees. Pages referencing them still render, images just 404.
+# Lesson *code* about images is .php and stays tracked.)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.svg
+*.ico
+*.bmp
+*.avif
+*.tiff
+*.tif

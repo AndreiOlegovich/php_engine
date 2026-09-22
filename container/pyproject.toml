@@ -1,0 +1,76 @@
+[project]
+name = "aredel-container"
+version = "0.1.0"
+description = "Docker setup + pytest link checker for the aredel.com PHP site"
+readme = "README.md"
+requires-python = ">=3.10"
+# Runtime deps of pytest_web/ (mirrors pytest_web/requirements.txt).
+dependencies = [
+  "pytest>=8",
+  "requests>=2.31",
+  "allure-pytest>=2.13",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.18",
+  "pylint>=3.3",
+  "ruff>=0.14",
+]
+
+# Not an installable package: uv sync only creates .venv with the deps above.
+[tool.uv]
+package = false
+
+# --- ruff (lint + format) ---
+# Scope: pytest_web/ is the maintained code. src/*.py are legacy Python 2
+# helpers (fix_*_py27.py) and stay out of every linter (see exclude below
+# and the pre-commit `files:` filter).
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+exclude = [
+  ".venv/",
+  "src/",
+  "reports/",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+
+# --- mypy (types; lenient baseline, tighten later) ---
+[tool.mypy]
+python_version = "3.10"
+show_error_codes = true
+ignore_missing_imports = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+exclude = [
+  "^src/",
+  "^\\.venv/",
+  "^reports/",
+]
+
+# --- pylint (messages control; run as: uv run pylint pytest_web) ---
+[tool.pylint."MESSAGES CONTROL"]
+# redefined-outer-name: pytest fixtures are *meant* to be reused as arg names.
+disable = [
+  "missing-docstring",
+  "redefined-outer-name",
+  "too-few-public-methods",
+  "too-many-arguments",
+  "too-many-locals",
+  "too-many-branches",
+  "duplicate-code",
+]
+
+[tool.pylint."REPORTS"]
+output-format = "text"
+score = "n"
+
+[tool.pylint."MISCELLANEOUS"]
+notes = ["FIXME", "TODO", "XXX", "HACK"]

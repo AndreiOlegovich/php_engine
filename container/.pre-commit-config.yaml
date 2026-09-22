@@ -1,0 +1,57 @@
+# Pre-commit for the aredel container Python (pytest_web/).
+#
+# Repo root is the PARENT dir (/home/andrei/github), so this config is used as:
+#   cd /home/andrei/github
+#   pre-commit run --config aredel/container/.pre-commit-config.yaml --all-files
+# (plain `pre-commit run` at the root will NOT pick it up automatically).
+#
+# Scope is deliberately narrow: only aredel/container/pytest_web/*.py plus
+# this repo's own configs. Legacy src/*.py are Python 2 helpers, out of scope.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff
+        name: ruff check (pytest_web)
+        files: ^aredel/container/pytest_web/.*\.py$
+        args: [--config, aredel/container/pyproject.toml]
+      - id: ruff-format
+        name: ruff format (pytest_web)
+        files: ^aredel/container/pytest_web/.*\.py$
+        args: [--config, aredel/container/pyproject.toml]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.3.1
+    hooks:
+      - id: mypy
+        name: mypy (pytest_web)
+        files: ^aredel/container/pytest_web/.*\.py$
+        args: [--config-file, aredel/container/pyproject.toml]
+        additional_dependencies:
+          - pytest>=8
+          - requests>=2.31
+          - allure-pytest>=2.13
+
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v4.0.8
+    hooks:
+      - id: pylint
+        name: pylint (pytest_web)
+        files: ^aredel/container/pytest_web/.*\.py$
+        args: [--rcfile=aredel/container/pyproject.toml]
+        additional_dependencies:
+          - pytest>=8
+          - requests>=2.31
+          - allure-pytest>=2.13
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: ^aredel/container/(pytest_web/.*\.py|pyproject\.toml|\.pre-commit-config\.yaml)$
+      - id: end-of-file-fixer
+        files: ^aredel/container/(pytest_web/.*\.py|pyproject\.toml|\.pre-commit-config\.yaml)$
+      - id: check-yaml
+        files: ^aredel/container/\.pre-commit-config\.yaml$
+      - id: check-toml
+        files: ^aredel/container/pyproject\.toml$

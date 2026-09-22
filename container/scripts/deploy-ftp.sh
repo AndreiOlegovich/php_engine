@@ -35,7 +35,7 @@
 #   --delete          delete remote files not present locally (default: off, safe)
 #   --dry-run         print plan (host, dirs, file count) without connecting
 #   --lint            run lint-php.sh on the same selection first, abort on errors
-#   --php VER         PHP version for --lint (default 8.0, e.g. 8.2)
+#   --php VER         PHP version for --lint (default 8.2, e.g. 8.0)
 #   -h, --help        this help
 #
 # Secret file format (shell env file, chmod 600, e.g. ~/.config/aredel/ftp-creds.env):
@@ -50,8 +50,11 @@
 # See deploy-ftp.creds.example for a copy-paste template.
 set -euo pipefail
 
+_START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
 
 DEFAULT_CREDS="${HOME}/.config/aredel/ftp-creds.env"
 CREDS="$DEFAULT_CREDS"
@@ -61,7 +64,7 @@ TLS_OVERRIDE=""
 DELETE=0
 DRY_RUN=0
 LINT=0
-PHP_VER="8.0"
+PHP_VER="8.2"
 PHP_SET=0
 FILES_LIST=()
 COMMITTED=0
@@ -69,7 +72,7 @@ STAGED=0
 
 trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
 
-usage() { sed -n '2,/^set -euo/p' "$0" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'; }
+usage() { local self="$0"; case "$self" in /*) ;; *) self="$_START_DIR/$self";; esac; sed -n '2,/^set -euo/p' "$self" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -87,7 +90,7 @@ while [ $# -gt 0 ]; do
     --delete) DELETE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     --lint) LINT=1; shift ;;
-    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.0, 8.2)." >&2; exit 2; }
+    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.2, 8.0)." >&2; exit 2; }
       PHP_VER="$2"; PHP_SET=1; shift 2 ;;
     --php=*) PHP_VER="${1#--php=}"; PHP_SET=1; shift ;;
     --files)
@@ -122,16 +125,17 @@ done
   echo "ERROR: creds file '$CREDS' not found." >&2
   echo "Create it (chmod 600) from the template:" >&2
   echo "  mkdir -p \"$(dirname "$CREDS")\"" >&2
-  echo "  cp deploy-ftp.creds.example \"$CREDS\"" >&2
+  echo "  cp scripts/deploy-ftp.creds.example \"$CREDS\"" >&2
   echo "  chmod 600 \"$CREDS\" && \$EDITOR \"$CREDS\"" >&2
   echo "Or pass another location: $0 --creds /path/to/creds.env" >&2
   exit 1
 }
 
-# Refuse to use a creds file from inside the repo (it would risk a commit).
+# Refuse a creds file from inside the repo (it would risk a commit).
+APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 case "$(cd "$(dirname "$CREDS")" 2>/dev/null && pwd -P)" in
-  "$SCRIPT_DIR"*|"${SCRIPT_DIR}/"*)
-    echo "ERROR: creds file must live OUTSIDE the repo, not under $SCRIPT_DIR" >&2
+  "$APP_ROOT"*|"${APP_ROOT}/"*)
+    echo "ERROR: creds file must live OUTSIDE the repo, not under $APP_ROOT" >&2
     echo "Move it e.g. to $DEFAULT_CREDS and pass --creds if needed." >&2
     exit 1
     ;;
@@ -234,7 +238,7 @@ export ADEL_ONLY_EXPLICIT="$ONLY_EXP" ADEL_ONLY_GIT="$ONLY_GIT"
 
 # --- pre-upload lint (same selection; runs even with --dry-run) ---
 if [ "$LINT" -eq 1 ]; then
-  [ -x ./lint-php.sh ] || { echo "ERROR: lint-php.sh not found next to $0." >&2; exit 1; }
+  [ -x scripts/lint-php.sh ] || { echo "ERROR: scripts/lint-php.sh not found (run from container/ or scripts/)." >&2; exit 1; }
   LINT_ARGS=(--src "$SRC_DIR" --php "$PHP_VER")
   if [ "${#FILES_LIST[@]}" -gt 0 ]; then
     LINT_ARGS+=(--files "${FILES_LIST[@]}")
@@ -242,7 +246,7 @@ if [ "$LINT" -eq 1 ]; then
   [ "$COMMITTED" -eq 1 ] && LINT_ARGS+=(--committed)
   [ "$STAGED" -eq 1 ] && LINT_ARGS+=(--staged)
   echo "==> pre-upload lint ..."
-  ./lint-php.sh "${LINT_ARGS[@]}" || { echo "ERROR: lint failed, aborting upload." >&2; exit 1; }
+  ./scripts/lint-php.sh "${LINT_ARGS[@]}" || { echo "ERROR: lint failed, aborting upload." >&2; exit 1; }
 elif [ "$PHP_SET" -eq 1 ]; then
   echo "WARNING: --php has no effect without --lint." >&2
 fi

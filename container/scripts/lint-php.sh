@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Lint PHP files with the project's PHP 8.0 interpreter (php-apache container).
+# Lint PHP files with the project's PHP 8.2 interpreter (php-apache container).
 #
 # Usage:
 #   ./lint-php.sh [--src DIR] [--php VER] [--all] [--staged] [--committed]
 #                 [--files F ...] [paths...]
 #
-#   --php VER         PHP version to lint with (default: 8.0).
-#                     8.0 runs inside the php-apache container (project setup);
-#                     other versions (e.g. 8.2) run via one-off php:VER-cli
+#   --php VER         PHP version to lint with (default: 8.2).
+#                     8.2 runs inside the php-apache container (project setup);
+#                     other versions (e.g. 8.0) run via one-off php:VER-cli
 #                     images (pulled from Docker Hub on first use).
 #
 # Selection (default: all *.php under --src; flags/paths combine as a union):
@@ -28,25 +28,28 @@
 # Needs the php-apache container (started automatically if stopped).
 set -euo pipefail
 
+_START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
 
 SRC_DIR="src"
-PHP_VER="8.0"
+PHP_VER="8.2"
 ALL=0; STAGED=0; COMMITTED=0
 FILES_LIST=()
 POSITIONAL=()
 
 trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
 
-usage() { sed -n '2,/^set -euo/p' "$0" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'; }
+usage() { local self="$0"; case "$self" in /*) ;; *) self="$_START_DIR/$self";; esac; sed -n '2,/^set -euo/p' "$self" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'; }
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --src) [ $# -ge 2 ] || { echo "ERROR: --src needs a value." >&2; exit 2; }
       SRC_DIR="$2"; shift 2 ;;
     --src=*) SRC_DIR="${1#--src=}"; shift ;;
-    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.0, 8.2)." >&2; exit 2; }
+    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.2, 8.0)." >&2; exit 2; }
       PHP_VER="$2"; shift 2 ;;
     --php=*) PHP_VER="${1#--php=}"; shift ;;
     --all) ALL=1; shift ;;
@@ -79,7 +82,7 @@ done
 
 [ -d "$SRC_DIR" ] || { echo "ERROR: source dir '$SRC_DIR' not found." >&2; exit 1; }
 [ -f docker-compose.yml ] || { echo "ERROR: docker-compose.yml not found. Run from container/." >&2; exit 1; }
-[[ "$PHP_VER" =~ ^[0-9]+\.[0-9]+$ ]] || { echo "ERROR: bad --php value '$PHP_VER' (want e.g. 8.0, 8.2)." >&2; exit 2; }
+[[ "$PHP_VER" =~ ^[0-9]+\.[0-9]+$ ]] || { echo "ERROR: bad --php value '$PHP_VER' (want e.g. 8.2, 8.0)." >&2; exit 2; }
 
 SRC_ABS="$(cd "$SRC_DIR" && pwd -P)"
 REL_LIST="$(mktemp)"
@@ -165,7 +168,7 @@ echo "linting $TOTAL PHP file(s) with php $PHP_VER ..."
 # host must not). Prefix differs per backend: /var/www/html vs /code.
 FAIL=0
 set +e
-if [ "$PHP_VER" = "8.0" ]; then
+if [ "$PHP_VER" = "8.2" ]; then
   # Project interpreter: code is bind-mounted, paths match 1:1.
   if ! docker compose ps --status running 2>/dev/null | grep -q php-apache; then
     echo "starting php-apache ..."

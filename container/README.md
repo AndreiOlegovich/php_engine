@@ -42,6 +42,82 @@ Builds stay fast on purpose: `.dockerignore` excludes `src/` (2.8 GB).
 To build for another host user: `HOST_UID=$(id -u) HOST_GID=$(id -g)
 docker compose up -d --build`.
 
+## PHP lint
+
+`lint-php.sh` runs `php -l` (project's PHP 8.0, via the `php-apache`
+container — started automatically if stopped) over all or selected files:
+
+```bash
+./lint-php.sh --staged                  # staged changes only
+./lint-php.sh qa/index.php ru/qa/       # explicit files/dirs
+./lint-php.sh --files "a.php,b.php"
+./lint-php.sh --all                     # all 5k+ *.php under src/
+./lint-php.sh --php 8.2 qa/index.php    # lint with PHP 8.2 (default: 8.0)
+```
+
+Exit `0` = clean, `1` = syntax errors listed as `FAIL: <path>`.
+Deploy hook: `deploy-ftp.sh --lint [--php VER] ...` lints the same selection
+first and aborts the upload on failure (works with `--dry-run` for a
+lint-only run). `--php` defaults to `8.0` (project container); other versions
+run via one-off `php:VER-cli` images, pulled once from Docker Hub.
+
+Known failures (pre-existing, pages 500 locally too): `ao/api/php_auth/index.php`,
+`ao/services/php_auth/digest.php`, `ru/api/php_auth/index.php` (stray text at
+line ~73). Fix separately; until then a full `--all` lint stays red.
+
+## JS lint
+
+`lint-js.sh` runs `node --check` (host node, no dependencies) with the same
+selection flags as the PHP linter (`--staged`, `--committed`, `--files`,
+positional paths, `--all` = default):
+
+```bash
+./lint-js.sh --staged
+./lint-js.sh ao/chessboard/game.js
+./lint-js.sh --all     # ~116 *.js under src/
+```
+
+Files with ESM syntax (`import`/`export`, e.g. `ao/chessboard/*.js`) are
+checked via a temp `.mjs` copy, since `node --check` parses `.js` as
+CommonJS. Exit `0` clean / `1` with `FAIL:` lines.
+
+Known failures (pre-existing): 2 truncated archive copies
+(`ao/chessboard/arj/MinimalChess.js`, `ao/chessboard copy/MinimalChess.js`)
+and 3 `disqus_en.js` files containing a literal `</script>` (they only work
+inlined in HTML, not as standalone JS).
+
+## Python lint (uv + ruff + pylint + mypy + pre-commit)
+
+`pytest_web/` is the maintained Python (`src/*.py` are legacy Python 2
+helpers, out of scope for every linter). Managed with `uv`
+(`~/.local/bin/uv`; install: `curl -LsSf https://astral.sh/uv/install.sh | sh`):
+
+```bash
+uv sync                        # create .venv (deps from pyproject.toml)
+uv run --frozen ruff check pytest_web
+uv run --frozen ruff format --check pytest_web
+uv run --frozen mypy pytest_web
+uv run --frozen pylint pytest_web
+```
+
+Config lives in `pyproject.toml` (ruff select `E,F,W,I,N,UP,B,C4,SIM`,
+line-length 100; lenient mypy baseline; pylint with pytest-fixture
+`redefined-outer-name` disabled). Baseline is green.
+
+Pre-commit (installed via `uv tool install pre-commit`; repo root is the
+parent dir, so run from there):
+
+```bash
+cd ~/github
+pre-commit run --config aredel/container/.pre-commit-config.yaml --files \
+  aredel/container/pytest_web/test_sitemap.py
+```
+
+Hooks: ruff check, ruff format, mypy, pylint (all scoped to `pytest_web/`)
+plus whitespace/yaml/toml hygiene on the Python configs. Note: brand-new
+untracked files are invisible to bare `--all-files`; pass `--files` (as
+above) until the first commit.
+
 ## Link checker + Allure
 
 `pytest_web` GETs every URL from a sitemap against the web container:

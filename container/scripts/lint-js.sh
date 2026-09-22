@@ -27,8 +27,11 @@
 # Needs: node on PATH.
 set -euo pipefail
 
+_START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
+cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
 
 SRC_DIR="src"
 ALL=0; STAGED=0; COMMITTED=0
@@ -37,7 +40,7 @@ POSITIONAL=()
 
 trim() { local s="$1"; s="${s#"${s%%[![:space:]]*}"}"; s="${s%"${s##*[![:space:]]}"}"; printf '%s' "$s"; }
 
-usage() { sed -n '2,/^set -euo/p' "$0" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'; }
+usage() { local self="$0"; case "$self" in /*) ;; *) self="$_START_DIR/$self";; esac; sed -n '2,/^set -euo/p' "$self" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'; }
 
 while [ $# -gt 0 ]; do
   case "$1" in

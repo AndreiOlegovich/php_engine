@@ -13,7 +13,7 @@ project root one level up, so `src/`, `docker-compose.yml` etc. resolve).
 | Script | `deploy-ftp.sh` (bash + embedded Python `ftplib`, no extra packages) |
 | Source | `./src` (override: `--src DIR`) |
 | Target | `FTP_REMOTE_DIR` from the creds file (override: `--remote-dir DIR`) |
-| Transfer | binary, passive mode; files with identical size are skipped |
+| Transfer | binary, passive mode; files with identical size are skipped (override: `--force`) |
 | Symlinks | resolved — `src/.php`, `src/.css` arrive as real dirs (hosting has no symlinks) |
 | Images | uploaded (hosting needs them, unlike git where they are ignored) |
 | Skipped junk | `*.log`, `*.db`/`*.sqlite*`, `sess_*`, editor backups, `reports/`, caches |
@@ -55,17 +55,20 @@ keep it outside so it can never be committed. Any path can be used via
 ./deploy-ftp.sh --help                              # full help
 ./deploy-ftp.sh --dry-run                           # plan only, no connection
 ./deploy-ftp.sh                                     # upload with default creds
+./deploy-ftp.sh -v                                  # per-file progress + status
 ./deploy-ftp.sh --creds /path/to/creds.env          # custom creds location
 ./deploy-ftp.sh --remote-dir /public_html/test      # staging dir on hosting
 ./deploy-ftp.sh --tls | --no-tls                    # force FTPS on/off
 ./deploy-ftp.sh --delete                            # also delete remote-only files (off by default)
+./deploy-ftp.sh --force --files qa/index.php       # re-upload even if same size on server
 ```
 
 ### Partial uploads (selection)
 
-Default is the whole tree. `--files`, `--committed`, `--staged` combine as a
-union; `--dry-run` previews the selection. `--delete` is refused with any
-selection (it would wipe everything not selected).
+Default is the whole tree. `--files`, `--committed`, `--staged`,
+`--last-commit` combine as a union; `--dry-run` previews the selection.
+`--delete` is refused with any selection (it would wipe everything not
+selected).
 
 ```bash
 ./deploy-ftp.sh --files qa/index.php ru/qa/article.php --dry-run
@@ -75,15 +78,17 @@ selection (it would wipe everything not selected).
 ./deploy-ftp.sh --staged --dry-run         # staged changes only (git diff --cached)
 ./deploy-ftp.sh --staged                   # upload staged changes
 ./deploy-ftp.sh --committed --dry-run      # git-tracked files only (git ls-files)
+./deploy-ftp.sh --last-commit --dry-run    # files changed in the last commit (git diff-tree HEAD)
+./deploy-ftp.sh --last-commit              # upload files from the last commit
 ```
 
 Notes:
 
 - Explicit `--files` entries bypass the junk excludes; `--committed` /
-  `--staged` still skip junk (`*.log`, `*.db`, `sess_*`, …).
+  `--staged` / `--last-commit` still skip junk (`*.log`, `*.db`, `sess_*`, …).
 - `--committed` lists the git index, so newly `git add`-ed (staged) files
   count as committed too. Fully untracked files are never selected by
-  `--committed`/`--staged`.
+  `--committed`/`--staged`/`--last-commit`.
 - Missing files are skipped with a `WARNING`, not a failure.
 
 Typical first deploy:
@@ -108,7 +113,16 @@ See `README.md` ("PHP lint") for the standalone linter. Note the 3 known
 pre-existing failures in `*/php_auth/*` digest lessons — selections covering
 them will (correctly) block the upload until fixed.
 
-Repeat runs are incremental (same-size files skipped).
+Repeat runs are incremental (same-size files skipped as `unchanged`).
+Same-size but changed content (or any doubt) → rerun with `--force` to
+re-upload everything; with `-v` forced uploads show `status: uploaded (forced)`.
+
+Output: default prints `Uploading N path(s)` with each requested `dir:` /
+`file:` (or `Uploading full tree ...`), a live `progress: i/total`
+counter (~100 updates, so long uploads never look stuck), then a summary
+(`uploaded / skipped / failed`). With `-v` / `--verbose` every file is
+listed (`uploading: <path>` + `status: uploaded|skipped|FAILED`), and
+`--dry-run -v` lists all `would upload` entries instead of the first 10.
 
 ## 3. Troubleshooting
 

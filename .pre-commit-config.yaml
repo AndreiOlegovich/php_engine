@@ -1,0 +1,112 @@
+# Pre-commit gates for the aredel repo (repo root: this file's directory).
+#
+# Install once per clone:
+#   pre-commit install
+# (pre-commit itself: `uv tool install pre-commit`.)
+# After that every `git commit` runs the hooks below on the staged files and
+# the commit is blocked unless all of them pass. Manual full run:
+#   pre-commit run --all-files
+#
+# Gates:
+#   .py  -> ruff check, ruff format, mypy, pylint (everything except the two
+#           legacy Python 2 helpers in container/src/, which no Py3 linter
+#           can parse).
+#   .php -> php -l (syntax) + phpcs PSR-12 on staged files under container/src.
+#           phpstan/psalm stay manual via container/scripts/lint-static.sh.
+#           Staged legacy files must be style-clean: fix with
+#           `container/scripts/lint-static.sh --tool phpcs --fix --files ...`
+#           (review with git diff afterwards).
+#   .sh  -> shellcheck via container/scripts/lint-sh.sh, maintained scripts
+#           only (container/scripts/*.sh).
+# Hygiene (trailing whitespace, EOF newline, yaml/toml syntax, merge
+# conflicts) applies to the maintained text files; formatters may modify
+# files on the first run — `git add` the result and commit again.
+repos:
+  # --- Python: ruff (lint + format) ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.8
+    hooks:
+      - id: ruff
+        name: ruff check (.py)
+        files: \.py$
+        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
+        args: [--config, container/pyproject.toml]
+      - id: ruff-format
+        name: ruff format (.py)
+        files: \.py$
+        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
+        args: [--config, container/pyproject.toml]
+
+  # --- Python: mypy (types; lenient baseline in container/pyproject.toml) ---
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v2.3.1
+    hooks:
+      - id: mypy
+        name: mypy (.py)
+        files: \.py$
+        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
+        args: [--config-file, container/pyproject.toml]
+        additional_dependencies:
+          - pytest>=8
+          - requests>=2.31
+          - allure-pytest>=2.13
+
+  # --- Python: pylint (messages control in container/pyproject.toml) ---
+  - repo: https://github.com/pylint-dev/pylint
+    rev: v4.0.8
+    hooks:
+      - id: pylint
+        name: pylint (.py)
+        files: \.py$
+        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
+        args: [--rcfile=container/pyproject.toml]
+        additional_dependencies:
+          - pytest>=8
+          - requests>=2.31
+          - allure-pytest>=2.13
+
+  # --- PHP: syntax (php -l) on staged files, both src trees ---
+  - repo: local
+    hooks:
+      - id: php-lint-src
+        name: php -l (container/src, staged)
+        entry: container/scripts/lint-php.sh --staged
+        language: system
+        files: ^container/src/.*\.php$
+        pass_filenames: false
+
+  # --- PHP: style (phpcs PSR-12 + project ruleset) on staged files ---
+  - repo: local
+    hooks:
+      - id: phpcs-src
+        name: phpcs (container/src, staged)
+        entry: container/scripts/lint-static.sh --tool phpcs --staged
+        language: system
+        files: ^container/src/.*\.php$
+        pass_filenames: false
+
+  # --- Shell: shellcheck (maintained scripts; wrapper owns the scope) ---
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck (maintained .sh)
+        entry: container/scripts/lint-sh.sh --staged
+        language: system
+        files: \.sh$
+        pass_filenames: false
+
+  # --- Hygiene on maintained text files ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        name: no trailing whitespace
+        files: \.(py|sh|php|yaml|yml|toml|md)$
+        exclude: ^container/src/
+      - id: end-of-file-fixer
+        name: EOF newline
+        files: \.(py|sh|php|yaml|yml|toml|md)$
+        exclude: ^container/src/
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict

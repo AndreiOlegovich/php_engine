@@ -63,6 +63,7 @@ disable = [
   "redefined-outer-name",
   "too-few-public-methods",
   "too-many-arguments",
+  "too-many-positional-arguments",
   "too-many-locals",
   "too-many-branches",
   "duplicate-code",

@@ -79,13 +79,13 @@ to_rel() {
   # print src-relative path for a token, or empty + warning on stderr
   local t="${1#./}"
   case "$t" in
-    "$SRC_DIR"/*) t="${t#$SRC_DIR/}" ;;
+    "$SRC_DIR"/*) t="${t#"$SRC_DIR"/}" ;;
     container/src/*) t="${t#container/src/}" ;;
   esac
   case "$t" in
     /*)
       case "$t" in
-        "$SRC_ABS"/*) t="${t#$SRC_ABS/}" ;;
+        "$SRC_ABS"/*) t="${t#"$SRC_ABS"/}" ;;
         *) echo "WARNING: skipping '$1' (outside $SRC_DIR)." >&2; return 1 ;;
       esac
       ;;
@@ -101,7 +101,7 @@ if [ "${#FILES_LIST[@]}" -gt 0 ] || [ "${#POSITIONAL[@]}" -gt 0 ]; then
     rel="$(to_rel "$tok")" || continue
     if [ -d "$SRC_ABS/$rel" ] && [ ! -L "$SRC_ABS/$rel" ]; then
       find "$SRC_ABS/$rel" -type f \( -name '*.php' -o -name '*.js' -o -name '*.html' \) \
-        | while IFS= read -r f; do printf '%s\n' "${f#$SRC_ABS/}"; done >> "$REL_LIST"
+        | while IFS= read -r f; do printf '%s\n' "${f#"$SRC_ABS"/}"; done >> "$REL_LIST"
     else
       case "$rel" in *.php|*.js|*.html) printf '%s\n' "$rel" >> "$REL_LIST" ;;
         *) echo "WARNING: skipping '$tok' (not a .php/.js/.html file)." >&2 ;;
@@ -113,7 +113,7 @@ fi
 if [ "$STAGED" -eq 1 ] || [ "$COMMITTED" -eq 1 ]; then
   TOP="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
   [ -n "$TOP" ] || { echo "ERROR: not inside a git repo (--staged/--committed need git)." >&2; exit 1; }
-  PREFIX="${SRC_ABS#$TOP/}"
+  PREFIX="${SRC_ABS#"$TOP"/}"
   [ "$PREFIX" != "$SRC_ABS" ] || { echo "ERROR: $SRC_DIR is outside the git repo." >&2; exit 1; }
   if [ "$STAGED" -eq 1 ]; then
     git -C "$SCRIPT_DIR" diff --cached --name-only -z -- "$SRC_DIR" 2>/dev/null \
@@ -143,7 +143,7 @@ report() {
       # shellcheck disable=SC2053
       case "$line" in *"://$h/"*) continue 2 ;; esac
     done
-    line="${line#$SRC_ABS/}"  # show src-relative paths
+    line="${line#"$SRC_ABS"/}"  # show src-relative paths
     printf '%s [%s]\n' "$line" "$label"
     HITS=$((HITS + 1))
   done
@@ -160,7 +160,7 @@ if [ -s "$REL_LIST" ]; then
   # the HITS counter) — feed it via process substitution instead.
   report doubled-scheme < <(grep -P -In -e "$P_DOUBLE" -- "${ABS[@]}" 2>/dev/null || true)
   report dotless-host < <(grep -P -In -e "$P_HOST" -- "${ABS[@]}" 2>/dev/null || true)
-else
+elif [ "$ALL" -eq 1 ] || { [ "${#FILES_LIST[@]}" -eq 0 ] && [ "${#POSITIONAL[@]}" -eq 0 ] && [ "$STAGED" -eq 0 ] && [ "$COMMITTED" -eq 0 ]; }; then
   echo "scanning whole $SRC_DIR/ (*.php, *.js, *.html) ..."
   report doubled-scheme < <(grep -rP -In -e "$P_DOUBLE" \
       --include='*.php' --include='*.js' --include='*.html' \
@@ -172,6 +172,11 @@ else
       --exclude-dir=.git --exclude-dir=reports --exclude-dir=__pycache__ \
       --exclude-dir=.pytest_cache --exclude-dir=.venv --exclude-dir=venv \
       --exclude-dir=node_modules "$SRC_ABS" 2>/dev/null || true)
+else
+  # Explicit selection (e.g. --staged) that matched nothing: do NOT fall
+  # through to a whole-tree scan.
+  echo "nothing to scan."
+  exit 0
 fi
 
 echo "----"

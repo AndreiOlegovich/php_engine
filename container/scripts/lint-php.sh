@@ -99,13 +99,14 @@ if [ "${#FILES_LIST[@]}" -gt 0 ] || [ "${#POSITIONAL[@]}" -gt 0 ]; then
     [ -n "$tok" ] || continue
     t="${tok#./}"
     case "$t" in
-      "$SRC_DIR"/*) t="${t#$SRC_DIR/}" ;;
+      "$SRC_DIR"/*) t="${t#"$SRC_DIR"/}" ;;
       container/src/*) t="${t#container/src/}" ;;
+      container_php83/src/*) t="${t#container_php83/src/}" ;;
     esac
     case "$t" in
       /*)
         case "$t" in
-          "$SRC_ABS"/*) t="${t#$SRC_ABS/}" ;;
+          "$SRC_ABS"/*) t="${t#"$SRC_ABS"/}" ;;
           *) echo "WARNING: skipping '$tok' (outside $SRC_DIR)." >&2; continue ;;
         esac
         ;;
@@ -113,7 +114,7 @@ if [ "${#FILES_LIST[@]}" -gt 0 ] || [ "${#POSITIONAL[@]}" -gt 0 ]; then
     ap="$SRC_ABS/$t"
     if [ -d "$ap" ] && [ ! -L "$ap" ]; then
       find "$ap" -type f -name "*.php" | while IFS= read -r f; do
-        printf '%s\n' "${f#$SRC_ABS/}"
+        printf '%s\n' "${f#"$SRC_ABS"/}"
       done >> "$REL_LIST"
     elif [ -f "$ap" ]; then
       printf '%s\n' "$t" >> "$REL_LIST"
@@ -127,14 +128,14 @@ fi
 if [ "$STAGED" -eq 1 ] || [ "$COMMITTED" -eq 1 ]; then
   TOP="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
   [ -n "$TOP" ] || { echo "ERROR: not inside a git repo (--staged/--committed need git)." >&2; exit 1; }
-  PREFIX="${SRC_ABS#$TOP/}"
+  PREFIX="${SRC_ABS#"$TOP"/}"
   [ "$PREFIX" != "$SRC_ABS" ] || { echo "ERROR: $SRC_DIR is outside the git repo." >&2; exit 1; }
   if [ "$STAGED" -eq 1 ]; then
-    git -C "$SCRIPT_DIR" diff --cached --name-only -z -- "$SRC_DIR" 2>/dev/null \
+    git -C "$SCRIPT_DIR/.." diff --cached --name-only -z --diff-filter=ACMR -- "$SRC_DIR" 2>/dev/null \
       | tr '\0' '\n' | sed "s#^$PREFIX/##" | grep '\.php$' >> "$REL_LIST" || true
   fi
   if [ "$COMMITTED" -eq 1 ]; then
-    git -C "$SCRIPT_DIR" ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
+    git -C "$SCRIPT_DIR/.." ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
       | tr '\0' '\n' | sed "s#^$PREFIX/##" | grep '\.php$' >> "$REL_LIST" || true
   fi
 fi
@@ -148,11 +149,11 @@ if [ "$ALL" -eq 1 ] || { [ "${#FILES_LIST[@]}" -eq 0 ] && [ "${#POSITIONAL[@]}" 
     unset 'PRUNE_ARGS[${#PRUNE_ARGS[@]}-1]'  # drop trailing -o
     find "$SRC_ABS" -mindepth 1 \( "${PRUNE_ARGS[@]}" \) -prune -o \
       -type f -name '*.php' ! -name '* copy*.php' ! -name 'sess_*.php' -print \
-      | while IFS= read -r f; do printf '%s\n' "${f#$SRC_ABS/}"; done >> "$REL_LIST"
+      | while IFS= read -r f; do printf '%s\n' "${f#"$SRC_ABS"/}"; done >> "$REL_LIST"
   else
     find "$SRC_ABS" -mindepth 1 \
       -type f -name '*.php' ! -name '* copy*.php' ! -name 'sess_*.php' -print \
-      | while IFS= read -r f; do printf '%s\n' "${f#$SRC_ABS/}"; done >> "$REL_LIST"
+      | while IFS= read -r f; do printf '%s\n' "${f#"$SRC_ABS"/}"; done >> "$REL_LIST"
   fi
 fi
 

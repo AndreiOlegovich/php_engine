@@ -6,12 +6,9 @@
 #   ./fix-permissions.sh            # fix + verify
 #   ./fix-permissions.sh --check    # diagnose only, change nothing
 #
-# Works from anywhere: paths resolve from the project root.
+# Must be run from the directory containing docker-compose.yml
+# (or pass SRC_DIR as first non-flag argument, default: src).
 set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
-cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
 
 CHECK_ONLY=0
 SRC_DIR="src"

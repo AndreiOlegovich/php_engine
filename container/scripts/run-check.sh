@@ -37,11 +37,8 @@
 #   ./run-check.sh --web --sitemap sitemap_new.xml --report-only
 set -euo pipefail
 
-_START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
 
 MODE="local"
 URL="https://aredel.com"
@@ -54,8 +51,7 @@ DRY_RUN=0
 PYTEST_ARGS=()
 
 usage() {
-  local self="$0"; case "$self" in /*) ;; *) self="$_START_DIR/$self";; esac
-  sed -n '2,/^set -euo/p' "$self" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'
+  sed -n '2,/^set -euo/p' "$0" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'
 }
 
 normalize_dir() {

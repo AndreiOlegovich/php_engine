@@ -45,14 +45,14 @@ Apache error log (`docker compose logs`) may show `Permission denied` or
    ```
 
 3. On the host most of `src/` is mode `700` / `drwx------`, owned by
-   `myuser:myuser`:
+   `andrei:andrei`:
 
    ```bash
    ls -l src/index.php
-   # -rwx------ 1 myuser myuser ... src/index.php
+   # -rwx------ 1 andrei andrei ... src/index.php
 
    stat -c '%a %U:%G %n' src/index.php
-   # 700 myuser:myuser src/index.php
+   # 700 andrei:andrei src/index.php
 
    find src -type f ! -perm -o+r | wc -l   # ~28000 files
    find src -type d ! -perm -o+rx | wc -l  # ~1500 dirs
@@ -76,7 +76,7 @@ Standard for Apache + PHP with a bind mount:
 | File      | 644  | `rw-r--r--` — everyone can read      | `find src -type f -exec chmod 644 {} +` |
 
 Do **not** `chown` host files to `www-data` — you would lose ownership as
-`myuser` and break local editing/git. `chmod o+rX` is enough.
+`andrei` and break local editing/git. `chmod o+rX` is enough.
 
 Do **not** use `777` — it works but is insecure and unnecessary.
 
@@ -90,8 +90,8 @@ From the `container/` directory (the one containing `docker-compose.yml`):
 ```bash
 # 1. Confirm the problem
 stat -c '%a %U:%G %n' src/index.php
-# bad:  700 myuser:myuser src/index.php
-# good: 644 myuser:myuser src/index.php
+# bad:  700 andrei:andrei src/index.php
+# good: 644 andrei:andrei src/index.php
 
 docker exec php-apache ls -l /var/www/html/index.php
 curl -s http://127.0.0.1:8080/ | head

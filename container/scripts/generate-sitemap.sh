@@ -34,6 +34,10 @@
 # changefreq is always 'monthly', like the original.
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+cd ..  # scripts live in scripts/; project root (src/) is the runtime cwd
+
 SRC_DIR="${1:-src}"
 OUT="${2:-$SRC_DIR/sitemap_new.xml}"
 BASE_URL="${BASE_URL:-https://www.aredel.com}"
@@ -58,7 +62,7 @@ echo '            https://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">'
 
 count=0
 while IFS= read -r file; do
-  rel="${file#$SRC_DIR/}"
+  rel="${file#"$SRC_DIR"/}"
   base="$(basename "$rel")"
 
   if [[ "$rel" == "index.php" ]]; then

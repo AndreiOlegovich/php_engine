@@ -9,7 +9,7 @@ All commands run from this directory (`container/` — the one with
 |---|---|
 | Service | `php-apache` |
 | Container name | `php-apache` |
-| Image | `php_engine:8.0` — built from `containerfiles/Dockerfile.php` (`php:8.0-apache` + mod_rewrite + `php-aredel.ini`) |
+| Image | `aredel:8.2` (default) or `aredel:8.0` — built from `containerfiles/Dockerfile.php` (`php:${PHP_VER}-apache` + mod_rewrite + `php-aredel.ini`); switch with `PHP_VER=8.0 docker compose up -d --build` |
 | Host port | `8080` → container port `80` |
 | Code | `./src` bind-mounted to `/var/www/html` (live: host edits = instant, no rebuild) |
 | PHP config | `./containerfiles/php-aredel.ini` mounted to `/usr/local/etc/php/conf.d/aredel.ini` (live) |
@@ -76,7 +76,7 @@ What the output means:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Permission denied` / `Failed opening required '...index.php'` | host file not readable by container user | fixed permanently via UID remap (see below); fallback `./fix-permissions.sh` |
+| `Permission denied` / `Failed opening required '...index.php'` | host file not readable by container user | fixed permanently via UID remap (see below); fallback `scripts/fix-permissions.sh` |
 | `Failed opening required '/var/www/html/.php/...'` on subpages | missing `src/.php` symlink | `ln -s ao/.php src/.php` (script does it) |
 | `/.css/ao.css → 404`, unstyled page | missing `src/.css` symlink | `ln -s ao/.css src/.css` (script does it) |
 | `Deprecated: ...` on top of pages | old framework on new PHP | `containerfiles/php-aredel.ini`, then `docker compose up -d` |
@@ -97,7 +97,7 @@ docker compose config                     # render effective compose file
 
 ```text
 docker-compose.yml              service, ports, mounts (incl. php-aredel.ini)
-containerfiles/Dockerfile.php   image recipe (PHP 8.0, mod_rewrite, UID remap, php-aredel.ini)
+containerfiles/Dockerfile.php   image recipe (PHP 8.2/8.0 via PHP_VER, mod_rewrite, UID remap, php-aredel.ini)
 containerfiles/php-aredel.ini   error_reporting without E_DEPRECATED
 .dockerignore                   keeps src/ out of the build context (speed)
 fix-permissions.sh              fallback permission fix + health check (--check = diagnose only)

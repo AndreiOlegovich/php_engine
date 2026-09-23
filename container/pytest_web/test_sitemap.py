@@ -17,12 +17,13 @@ Env:
                    exactly the prefix or starts with prefix + "/".
                    Empty (default) -> check all URLs.
 """
+
 import csv
 import io
 import json
 import os
 from collections import Counter
-from urllib.parse import urlparse, urlunparse, urljoin, quote
+from urllib.parse import quote, urljoin, urlparse, urlunparse
 from xml.etree import ElementTree
 
 import allure
@@ -75,8 +76,7 @@ def to_local(url):
     """Swap sitemap host for the checked host, keep path/query, encode path."""
     p = urlparse(url)
     local_path = quote(p.path or "/", safe="/%:@")
-    return urlunparse(urlparse(BASE_URL)._replace(path=local_path,
-                                                  query=p.query or ""))
+    return urlunparse(urlparse(BASE_URL)._replace(path=local_path, query=p.query or ""))
 
 
 def bucket(status):
@@ -106,17 +106,16 @@ def fetch(session, url, max_hops=5):
         if r.status_code in (301, 302, 303, 307, 308) and loc and hops < max_hops:
             p = urlparse(urljoin(url, loc))
             b = urlparse(BASE_URL)
-            url = urlunparse((b.scheme, b.netloc,
-                              quote(p.path or "/", safe="/%:@"),
-                              "", p.query or "", ""))
+            url = urlunparse(
+                (b.scheme, b.netloc, quote(p.path or "/", safe="/%:@"), "", p.query or "", "")
+            )
             hops += 1
             continue
         return r.status_code, r.url, hops
 
 
 def final_status(local, status, final):
-    if (urlparse(final).path == "/404.php"
-            and urlparse(local).path != "/404.php"):
+    if urlparse(final).path == "/404.php" and urlparse(local).path != "/404.php":
         # .htaccess ErrorDocument 404 -> external 404.php, which we rewrote
         # back to the local host: landing on /404.php means the URL is missing.
         return 404
@@ -149,8 +148,11 @@ def test_url_returns_200_ok(checked, loc):
     local = to_local(loc)
     with allure.step(f"GET {local}"):
         status, final, hops = checked[loc]
-        allure.attach(f"{local} -> {final} [{status}] ({hops} redirects)",
-                      name="response", attachment_type=allure.attachment_type.TEXT)
+        allure.attach(
+            f"{local} -> {final} [{status}] ({hops} redirects)",
+            name="response",
+            attachment_type=allure.attachment_type.TEXT,
+        )
         if FAIL_ON_NON_200:
             assert status == 200, f"{loc} -> {final} [{status}]"
 
@@ -159,28 +161,43 @@ def test_url_returns_200_ok(checked, loc):
 @allure.feature("Summary")
 def test_summary(checked):
     """Runs last (file order): overall counts + full CSV. Never fails."""
-    rows = [{"sitemap_url": loc, "checked_url": checked[loc][1],
-             "status": checked[loc][0], "redirects": checked[loc][2]}
-            for loc in LOCS]
+    rows = [
+        {
+            "sitemap_url": loc,
+            "checked_url": checked[loc][1],
+            "status": checked[loc][0],
+            "redirects": checked[loc][2],
+        }
+        for loc in LOCS
+    ]
     counts = Counter(bucket(r["status"]) for r in rows)
-    summary = {"base_url": BASE_URL, "sitemap": SITEMAP_FILE,
-               "path_prefix": PATH_PREFIX or "(all)",
-               "total": len(rows),
-               **{k: counts.get(k, 0) for k in ("200", "404", "other", "error")}}
-    table = ("| status | count |\n|---|---|\n" +
-             "\n".join(f"| {k} | {summary[k]} |" for k in ("200", "404", "other", "error")) +
-             f"\n\ntotal: {summary['total']}")
-    allure.attach(f"{SITEMAP_FILE} ({len(rows)} urls) -> {BASE_URL}",
-                  name="sitemap-source", attachment_type=allure.attachment_type.TEXT)
-    allure.attach(table, name="status-summary.txt",
-                  attachment_type=allure.attachment_type.TEXT)
-    allure.attach(json.dumps(summary, indent=2), name="status-summary",
-                  attachment_type=allure.attachment_type.JSON)
+    summary = {
+        "base_url": BASE_URL,
+        "sitemap": SITEMAP_FILE,
+        "path_prefix": PATH_PREFIX or "(all)",
+        "total": len(rows),
+        **{k: counts.get(k, 0) for k in ("200", "404", "other", "error")},
+    }
+    table = (
+        "| status | count |\n|---|---|\n"
+        + "\n".join(f"| {k} | {summary[k]} |" for k in ("200", "404", "other", "error"))
+        + f"\n\ntotal: {summary['total']}"
+    )
+    allure.attach(
+        f"{SITEMAP_FILE} ({len(rows)} urls) -> {BASE_URL}",
+        name="sitemap-source",
+        attachment_type=allure.attachment_type.TEXT,
+    )
+    allure.attach(table, name="status-summary.txt", attachment_type=allure.attachment_type.TEXT)
+    allure.attach(
+        json.dumps(summary, indent=2),
+        name="status-summary",
+        attachment_type=allure.attachment_type.JSON,
+    )
     buf = io.StringIO()
     fields = ["sitemap_url", "checked_url", "status", "redirects"]
     w = csv.DictWriter(buf, fieldnames=fields)
     w.writeheader()
     w.writerows(rows)
-    allure.attach(buf.getvalue(), name="all-urls",
-                  attachment_type=allure.attachment_type.CSV)
+    allure.attach(buf.getvalue(), name="all-urls", attachment_type=allure.attachment_type.CSV)
     print(f"\n{json.dumps(summary)}")

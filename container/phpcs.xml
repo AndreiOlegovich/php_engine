@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<ruleset name="aredel">
+    <description>Shared PHP_CodeSniffer ruleset: PSR-12 plus project excludes.</description>
+    <rule ref="PSR12"/>
+    <!-- Page classes: byte parity with Page.php is load bearing.
+         Skipped by every phpcs run using this ruleset;
+         lint-static.sh has a fix-page flag to opt back in. -->
+    <exclude-pattern>*/ru/qa/.php/BasePage.php</exclude-pattern>
+    <exclude-pattern>*/ru/qa/.php/ArticlePage.php</exclude-pattern>
+</ruleset>

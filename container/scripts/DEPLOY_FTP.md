@@ -49,6 +49,18 @@ A creds file under `container/` (or anywhere inside the repo) is refused —
 keep it outside so it can never be committed. Any path can be used via
 `--creds PATH`.
 
+Optional shared defaults: export `SITE_ENV` pointing at a `site.env`
+file (see `site.env.example`; copy it to `site.env` and fill in).
+Path resolves against `container/` (commands run from there).
+Sourced before the secret creds file, so CLI flags and the creds file
+always win; only non-secret values belong there (`FTP_PASSWORD` set in
+`SITE_ENV` prints a warning):
+
+```bash
+cp scripts/site.env.example scripts/site.env  # fill in, never commit site.env
+SITE_ENV=scripts/site.env ./scripts/deploy-ftp.sh --dry-run
+```
+
 ## 2. Usage
 
 ```bash

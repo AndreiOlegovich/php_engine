@@ -148,6 +148,18 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# Optional shared settings (site.env): values act as defaults only; CLI
+# flags and the secret creds file (sourced below) always win.
+# See site.env.example.
+if [ -n "${SITE_ENV:-}" ]; then
+  [ -f "$SITE_ENV" ] || { echo "ERROR: SITE_ENV file '$SITE_ENV' not found." >&2; exit 1; }
+  set -a
+  # shellcheck disable=SC1090
+  . "$SITE_ENV"
+  set +a
+  [ -z "${FTP_PASSWORD:-}" ] || echo "WARNING: FTP_PASSWORD is set in SITE_ENV ($SITE_ENV); keep passwords in the outside creds file." >&2
+fi
+
 [ -d "$SRC_DIR" ] || { echo "ERROR: source dir '$SRC_DIR' not found." >&2; exit 1; }
 [ -f "$CREDS" ] || {
   echo "ERROR: creds file '$CREDS' not found." >&2

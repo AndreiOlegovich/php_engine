@@ -34,7 +34,7 @@
 #   ./deploy-ftp.sh --last-commit --dry-run
 #
 # Options:
-#   --creds PATH      secret file to source (default: ~/.config/aredel/ftp-creds.env)
+#   --creds PATH      secret file to source (default: ~/.config/php_engine/ftp-creds.env)
 #   --src DIR         local dir to upload (default: src)
 #   --remote-dir DIR  override FTP_REMOTE_DIR from the creds file
 #   --tls / --no-tls  force explicit FTPS on/off (default: FTP_USE_TLS from creds file)
@@ -54,7 +54,7 @@
 #   --php VER         PHP version for --lint (default 8.2, e.g. 8.0)
 #   -h, --help        this help
 #
-# Secret file format (shell env file, chmod 600, e.g. ~/.config/aredel/ftp-creds.env):
+# Secret file format (shell env file, chmod 600, e.g. ~/.config/php_engine/ftp-creds.env):
 #   FTP_HOST="ftp.example.com"
 #   FTP_USER="hosting_user"
 #   FTP_PASSWORD="secret-here"
@@ -72,7 +72,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 cd ../..  # tools live in tools/deploy/; project root (compose file, src/) is the runtime cwd
 
-DEFAULT_CREDS="${HOME}/.config/aredel/ftp-creds.env"
+DEFAULT_CREDS="${HOME}/.config/php_engine/ftp-creds.env"
 CREDS="$DEFAULT_CREDS"
 SRC_DIR="src"
 REMOTE_DIR_OVERRIDE=""
@@ -365,7 +365,7 @@ include_tmp = os.environ.get("ADEL_INCLUDE_TMP") == "1"
 include_all = os.environ.get("ADEL_INCLUDE_ALL") == "1"
 include_arj_dirs = os.environ.get("ADEL_INCLUDE_ARJ_DIRS") == "1"
 
-# Junk that must never go to hosting (mirrors aredel/.gitignore logic).
+# Junk that must never go to hosting (mirrors the repo's .gitignore logic).
 # NOTE: images are intentionally NOT excluded — hosting needs them.
 # tmp/_tmp/.tmp dirs are excluded by default (session/demo junk); --include-tmp
 # re-includes them, --include-all bypasses every rule below.

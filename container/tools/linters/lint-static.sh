@@ -2,7 +2,7 @@
 # Static analysis / code style for PHP via one-off Docker images.
 #
 # No host installs, no composer, no vendor/: tools run as versioned PHARs
-# (cached in ~/.cache/aredel-tools) under the php:8.2-cli image.
+# (cached in ~/.cache/php_engine-tools) under the php:8.2-cli image.
 # Tools: phpstan (bugs), psalm (bugs), phpcs (style).
 #
 # Usage:
@@ -70,7 +70,7 @@ FILES_LIST=()
 POSITIONAL=()
 
 PHP_IMAGE="${ADEL_STATIC_PHP_IMAGE:-php:8.2-cli}"
-TOOL_CACHE="${ADEL_STATIC_TOOL_CACHE:-$HOME/.cache/aredel-tools}"
+TOOL_CACHE="${ADEL_STATIC_TOOL_CACHE:-$HOME/.cache/php_engine-tools}"
 PHPSTAN_URL="https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar"
 PSALM_URL="https://github.com/vimeo/psalm/releases/latest/download/psalm.phar"
 PHPCS_URL="https://github.com/PHPCSStandards/PHP_CodeSniffer/releases/latest/download/phpcs.phar"

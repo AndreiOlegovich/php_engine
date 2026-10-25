@@ -1,6 +1,6 @@
 services:
   php-apache:
-    image: aredel:${PHP_VER:-8.2}
+    image: php_engine:${PHP_VER:-8.2}
     build:
       context: .
       dockerfile: containerfiles/Dockerfile.php
@@ -15,7 +15,7 @@ services:
       - ./src:/var/www/html
       # PHP settings for old codebase (hide E_DEPRECATED in browser).
       # Live-mounted so no rebuild is needed; Dockerfile also COPYs it for fresh builds.
-      - ./containerfiles/php-aredel.ini:/usr/local/etc/php/conf.d/aredel.ini:ro
+      - ./containerfiles/php-engine.ini:/usr/local/etc/php/conf.d/php-engine.ini:ro
     restart: unless-stopped
 
   # Link checker: reads the sitemap and GETs every URL against php-apache.

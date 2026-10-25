@@ -12,7 +12,7 @@
 #                      docker backend: BASE_URL=http://php-apache
 #                      host backend:   BASE_URL=http://127.0.0.1:8080
 #   --web              check a live site.
-#                      --url default: https://aredel.com
+#                      --url default: https://example.com
 #   --url URL          only meaningful with --web.
 #   --dir PREFIX       only check sitemap URLs whose path equals PREFIX or
 #                      starts with PREFIX + "/". E.g. --dir ru/qa matches
@@ -33,7 +33,7 @@
 #   ./run-check.sh --local
 #   ./run-check.sh --local --dir ru/qa --host
 #   ./run-check.sh --web
-#   ./run-check.sh --web --url https://www.aredel.com --dir ru/qa
+#   ./run-check.sh --web --url https://www.example.com --dir docs
 #   ./run-check.sh --web --sitemap sitemap_new.xml --report-only
 set -euo pipefail
 
@@ -41,7 +41,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 MODE="local"
-URL="https://aredel.com"
+URL="https://example.com"
 URL_GIVEN=0
 DIR_RAW=""
 SITEMAP_ARG="sitemap.xml"

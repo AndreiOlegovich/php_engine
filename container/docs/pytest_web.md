@@ -61,7 +61,7 @@ SITEMAP_FILE=/data/sitemap_new.xml \
 
 ### How it works under the hood
 
-- Each sitemap host (e.g. `https://www.aredel.com/qa/`) is rewritten to
+- Each sitemap host (e.g. `https://www.example.com/docs/`) is rewritten to
   `BASE_URL`, keeping path/query — so production URLs are checked
   against the local container.
 - The checker sends `X-Forwarded-Proto: https` (emulates the production

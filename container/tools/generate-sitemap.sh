@@ -3,7 +3,7 @@
 # as src/sitemap.xml:
 #
 #   <url>
-#     <loc>https://www.aredel.com/qa/</loc>
+#     <loc>https://www.example.com/docs/</loc>
 #     <lastmod>2021-05-23T17:03:30+00:00</lastmod>
 #     <changefreq>monthly</changefreq>
 #     <priority>0.90</priority>
@@ -11,7 +11,7 @@
 #
 # Usage:
 #   ./generate-sitemap.sh [src_dir] [output.xml]
-#   BASE_URL=https://www.aredel.com ./generate-sitemap.sh
+#   BASE_URL=https://www.example.com ./generate-sitemap.sh
 #
 # Mapping (relative to src_dir):
 #   index.php             -> BASE_URL/                    priority 1.00
@@ -40,7 +40,7 @@ cd ..  # tools live in tools/; project root (src/) is the runtime cwd
 
 SRC_DIR="${1:-src}"
 OUT="${2:-$SRC_DIR/sitemap_new.xml}"
-BASE_URL="${BASE_URL:-https://www.aredel.com}"
+BASE_URL="${BASE_URL:-https://www.example.com}"
 BASE_URL="${BASE_URL%/}"  # no trailing slash
 
 [ -d "$SRC_DIR" ] || { echo "ERROR: source dir '$SRC_DIR' not found." >&2; exit 1; }

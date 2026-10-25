@@ -2,8 +2,8 @@
 # Find malformed URLs in the site tree (concatenated schemes/hosts etc.).
 #
 # Catches mistakes like:
-#   https://www.testsetup.ruhttps://aredel.com/...   (scheme glued twice)
-#   https://ru/qa/aredel.com/ru/i/                   (dotless host)
+#   https://www.example.orghttps://example.com/...   (scheme glued twice)
+#   https://docs/blog/example.com/docs/i/            (dotless host)
 #
 # Usage:
 #   ./find-malformed-urls.sh [--src DIR] [--all] [--staged] [--committed]

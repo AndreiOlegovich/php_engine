@@ -19,7 +19,7 @@ wrong types, dead code — plus style violations.
 | `phpcs` | style (`--standard`, default `PSR12`) | 4.0.4 |
 
 How it runs: tools ship as versioned PHARs, cached in
-`~/.cache/aredel-tools/` (outside the repo, never deployed), executed under
+`~/.cache/php_engine-tools/` (outside the repo, never deployed), executed under
 the `php:8.2-cli` image. First run downloads missing pieces automatically;
 later runs work offline. Psalm gets a minimal config generated per run —
 no `psalm.xml` is added to the repo.
@@ -129,8 +129,8 @@ raise `--level` only when level N is quiet.
 
 ## Updating / configuring
 
-- Update a tool: delete its `.phar` from `~/.cache/aredel-tools/`; the next
+- Update a tool: delete its `.phar` from `~/.cache/php_engine-tools/`; the next
   run re-downloads latest. Check versions any time:
-  `docker run --rm -v ~/.cache/aredel-tools:/tools:ro php:8.2-cli php /tools/phpstan.phar --version`
+  `docker run --rm -v ~/.cache/php_engine-tools:/tools:ro php:8.2-cli php /tools/phpstan.phar --version`
 - Different PHP runtime: `ADEL_STATIC_PHP_IMAGE=php:8.3-cli ./tools/linters/lint-static.sh ...`
 - Different PHAR cache dir: `ADEL_STATIC_TOOL_CACHE=/path ./tools/linters/lint-static.sh ...`

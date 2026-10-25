@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<ruleset name="aredel">
+<ruleset name="php_engine">
     <description>Shared PHP_CodeSniffer ruleset: PSR-12 plus project excludes.</description>
     <rule ref="PSR12"/>
     <!-- Page classes: byte parity with Page.php is load bearing.

@@ -23,14 +23,14 @@ the project root two levels up, so `src/`, `docker-compose.yml` etc. resolve).
 Credentials NEVER live in this repo. Default location (outside the repo):
 
 ```
-~/.config/aredel/ftp-creds.env
+~/.config/php_engine/ftp-creds.env
 ```
 
 ```bash
-mkdir -p ~/.config/aredel
-cp deploy-ftp.creds.example ~/.config/aredel/ftp-creds.env
-chmod 600 ~/.config/aredel/ftp-creds.env
-$EDITOR ~/.config/aredel/ftp-creds.env
+mkdir -p ~/.config/php_engine
+cp deploy-ftp.creds.example ~/.config/php_engine/ftp-creds.env
+chmod 600 ~/.config/php_engine/ftp-creds.env
+$EDITOR ~/.config/php_engine/ftp-creds.env
 ```
 
 Fill in:
@@ -141,7 +141,7 @@ listed (`uploading: <path>` + `status: uploaded|skipped|FAILED`), and
 | Symptom | Cause | Fix |
 |---|---|---|
 | `creds file ... not found` | file not created yet | step 1 above, or pass `--creds` |
-| `creds file must live OUTSIDE the repo` | path is inside `container/` | move to `~/.config/aredel/`, use `--creds` |
+| `creds file must live OUTSIDE the repo` | path is inside `container/` | move to `~/.config/php_engine/`, use `--creds` |
 | `FTP_HOST is empty ...` | field missing/typo in creds file | compare with `deploy-ftp.creds.example` |
 | `mode 644 (recommend: chmod 600)` | creds readable by others | `chmod 600 <creds file>` (warning only) |
 | login/auth failure | wrong user/password/host | verify in hosting panel; check `FTP_PORT`, try `--tls` / `--no-tls` per hoster docs |

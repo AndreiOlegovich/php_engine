@@ -13,11 +13,11 @@ namespace PhpEngine\Modules;
 #   YANDEX_METRICA_URN_ID   legacy counter
 #
 # Lookup order per ID: getenv() / $_ENV / $_SERVER, then the file pointed at
-# by $SITE_ENV (if set), then ~/.config/aredel/ftp-creds.env (optional
+# by $SITE_ENV (if set), then ~/.config/php_engine/ftp-creds.env (optional
 # overrides, see deploy-ftp.creds.example), then the code default below.
 class Metrica
 {
-    private const DEFAULT_AREDEL_ID = '00000000';
+    private const DEFAULT_PROD_ID = '00000000';
     private const DEFAULT_DEV_ID = '00000000';
     private const DEFAULT_AO_ID = '00000000';
     private const DEFAULT_URN_ID = '00000000';
@@ -65,7 +65,7 @@ class Metrica
         }
         $home = getenv('HOME');
         if (is_string($home) && $home !== '') {
-            $out[] = $home . '/.config/aredel/ftp-creds.env';
+            $out[] = $home . '/.config/php_engine/ftp-creds.env';
         }
         return $out;
     }
@@ -102,7 +102,7 @@ class Metrica
     {
         $id = (string) $id;
         if ($id === '' || !ctype_digit($id)) {
-            $id = self::DEFAULT_AREDEL_ID;
+            $id = self::DEFAULT_PROD_ID;
         }
         $safe = htmlspecialchars($id, ENT_QUOTES, 'UTF-8');
         $init = $initOptions ?? 'clickmap:true, trackLinks:true, accurateTrackBounce:true, webvisor:true';
@@ -118,9 +118,9 @@ class Metrica
             . '<!-- /Yandex.Metrika counter -->';
     }
 
-    public function aredel(): string
+    public function prod(): string
     {
-        return self::render(self::resolveId('YANDEX_METRICA_ID', self::DEFAULT_AREDEL_ID));
+        return self::render(self::resolveId('YANDEX_METRICA_ID', self::DEFAULT_PROD_ID));
     }
 
     public function dev(): string
@@ -143,14 +143,14 @@ class Metrica
     }
 
     /**
-     * All known counters, rendered. Keys: aredel, dev, ao, urn.
+     * All known counters, rendered. Keys: prod, dev, ao, urn.
      *
      * @return array<string,string>
      */
     public function all(): array
     {
         return [
-            'aredel' => $this->aredel(),
+            'prod' => $this->prod(),
             'dev' => $this->dev(),
             'ao' => $this->ao(),
             'urn' => $this->urn(),

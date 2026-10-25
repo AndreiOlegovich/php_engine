@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Download hosting logs over FTP/FTPS into site_logs/.
+# Download hosting logs over FTP/FTPS into a local folder outside the repo.
 #
 # Same credentials as deploy-ftp.sh (default: ~/.config/php_engine/ftp-creds.env).
 # Remote layout this was built for (shared hosting where the FTP user
@@ -7,8 +7,12 @@
 #   prod_logs/  -> <dest>/prod/   (production logs)
 #   dev_logs/   -> <dest>/dev/    (usually empty)
 #   ROOT_PREFIX files at FTP root -> <dest>/dev/ (dev logs, default prefix below)
-# Config via SITE_ENV (site.env): PROD_LOG_DIR, DEV_LOG_DIR, ROOT_PREFIX act as
-# defaults; --prod-dir / --dev-dir / --root-prefix flags override them.
+# Config via SITE_ENV (site.env): PROD_LOG_DIR, DEV_LOG_DIR, ROOT_PREFIX and
+# LOG_DOWNLOAD_DIR act as defaults; --prod-dir / --dev-dir / --root-prefix /
+# --dest flags override them.
+#
+# Logs hold visitor IPs, so they never land inside the repo: a --dest or
+# LOG_DOWNLOAD_DIR inside it is refused.
 #
 # Usage:
 #   ./download-logs.sh [--creds PATH] [--dest DIR] [--only prod|dev|root|all]
@@ -20,8 +24,9 @@
 #   --only WHAT   which remote sources to fetch (default: all).
 #                 prod = $PROD_LOG_DIR/, dev = $DEV_LOG_DIR/,
 #                 root = ${ROOT_PREFIX}*.log at FTP root -> dest/dev/.
-#   --dest DIR    local dir receiving prod/ and dev/ (default: site_logs/ next
-#                 to the repo, never inside it)
+#   --dest DIR    local dir receiving prod/ and dev/ (default:
+#                 $LOG_DOWNLOAD_DIR, else site_logs/ next to the repo);
+#                 a relative DIR is taken from the current directory
 #   --prod-dir NAME  remote prod log dir (default: $PROD_LOG_DIR or prod_logs)
 #   --dev-dir NAME   remote dev log dir (default: $DEV_LOG_DIR or dev_logs)
 #   --root-prefix PFX  filename prefix for root dev logs
@@ -105,7 +110,25 @@ ROOT_PREFIX="${ROOT_PREFIX_OVERRIDE:-${ROOT_PREFIX:-dev.example.com.}}"
 
 APP_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd -P)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd -P)"
-[ -z "$DEST" ] && DEST="$(dirname "$REPO_ROOT")/site_logs"  # next to the repo, never inside it
+# --dest wins over LOG_DOWNLOAD_DIR (site.env); site_logs/ next to the repo last.
+if [ -n "$DEST" ]; then
+  case "$DEST" in /*) ;; *) DEST="$_START_DIR/$DEST" ;; esac
+elif [ -n "${LOG_DOWNLOAD_DIR:-}" ]; then
+  case "$LOG_DOWNLOAD_DIR" in
+    /*) DEST="$LOG_DOWNLOAD_DIR" ;;
+    *) echo "ERROR: LOG_DOWNLOAD_DIR must be an absolute path (e.g. \$HOME/...), got '$LOG_DOWNLOAD_DIR'." >&2; exit 2 ;;
+  esac
+else
+  DEST="$(dirname "$REPO_ROOT")/site_logs"
+fi
+DEST="$(realpath -m "$DEST")"
+case "$DEST/" in
+  "$REPO_ROOT"/*)
+    echo "ERROR: log folder $DEST is inside the repo; logs hold visitor IPs." >&2
+    echo "Pick a folder outside it with --dest or LOG_DOWNLOAD_DIR in site.env," >&2
+    echo "e.g. \$HOME/.local/share/your_project/logs" >&2
+    exit 1 ;;
+esac
 mkdir -p "$DEST"
 
 [ -f "$CREDS" ] || { echo "ERROR: creds file '$CREDS' not found." >&2; exit 1; }

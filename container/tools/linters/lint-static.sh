@@ -53,7 +53,7 @@ _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
+cd ../..  # tools live in tools/linters/; project root (compose file, src/) is the runtime cwd
 
 SRC_DIR="src"
 SRC_SET=0
@@ -174,7 +174,7 @@ fi
 
 SRC_ABS="$(cd "$SRC_DIR" && pwd -P)"
 REL_LIST="$(mktemp)"
-RULESET_FILE="$SCRIPT_DIR/../phpcs.xml"
+RULESET_FILE="$SCRIPT_DIR/../../phpcs.xml"
 RULESET_TMP=""
 PSALM_CFG=""
 trap 'rm -f "$REL_LIST"; for _d in $PSALM_CFG $RULESET_TMP; do [ -n "$_d" ] && rm -rf "$_d"; done' EXIT
@@ -225,11 +225,11 @@ if [ "$STAGED" -eq 1 ] || [ "$COMMITTED" -eq 1 ]; then
   PREFIX="${SRC_ABS#"$TOP"/}"
   [ "$PREFIX" != "$SRC_ABS" ] || { echo "ERROR: $SRC_DIR is outside the git repo." >&2; exit 1; }
   if [ "$STAGED" -eq 1 ]; then
-    git -C "$SCRIPT_DIR/.." diff --cached --name-only -z --diff-filter=ACMR -- "$SRC_DIR" 2>/dev/null \
+    git -C "$SCRIPT_DIR/../.." diff --cached --name-only -z --diff-filter=ACMR -- "$SRC_DIR" 2>/dev/null \
       | tr '\0' '\n' | sed "s#^$PREFIX/##" | grep '\.php$' >> "$REL_LIST" || true
   fi
   if [ "$COMMITTED" -eq 1 ]; then
-    git -C "$SCRIPT_DIR/.." ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
+    git -C "$SCRIPT_DIR/../.." ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
       | tr '\0' '\n' | sed "s#^$PREFIX/##" | grep '\.php$' >> "$REL_LIST" || true
   fi
   while IFS= read -r _r; do
@@ -298,7 +298,7 @@ for _t in "${TOOLS_LIST[@]}"; do
 done
 
 # --- run ---
-APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+APP_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd -P)"
 echo "analyzing ${#PATHS[@]} path(s) under $SRC_DIR/ ..."
 OVERALL=0
 set +e

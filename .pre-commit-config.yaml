@@ -12,12 +12,12 @@
 #           legacy Python 2 helpers in container/src/, which no Py3 linter
 #           can parse).
 #   .php -> php -l (syntax) + phpcs PSR-12 on staged files under container/src.
-#           phpstan/psalm stay manual via container/scripts/lint-static.sh.
+#           phpstan/psalm stay manual via container/tools/linters/lint-static.sh.
 #           Staged legacy files must be style-clean: fix with
-#           `container/scripts/lint-static.sh --tool phpcs --fix --files ...`
+#           `container/tools/linters/lint-static.sh --tool phpcs --fix --files ...`
 #           (review with git diff afterwards).
-#   .sh  -> shellcheck via container/scripts/lint-sh.sh, maintained scripts
-#           only (container/scripts/*.sh).
+#   .sh  -> shellcheck via container/tools/linters/lint-sh.sh, maintained scripts
+#           only (container/tools/**/*.sh).
 # Hygiene (trailing whitespace, EOF newline, yaml/toml syntax, merge
 # conflicts) applies to the maintained text files; formatters may modify
 # files on the first run — `git add` the result and commit again.
@@ -70,7 +70,7 @@ repos:
     hooks:
       - id: php-lint-src
         name: php -l (container/src, staged)
-        entry: container/scripts/lint-php.sh --staged
+        entry: container/tools/linters/lint-php.sh --staged
         language: system
         files: ^container/src/.*\.php$
         pass_filenames: false
@@ -80,7 +80,7 @@ repos:
     hooks:
       - id: phpcs-src
         name: phpcs (container/src, staged)
-        entry: container/scripts/lint-static.sh --tool phpcs --staged
+        entry: container/tools/linters/lint-static.sh --tool phpcs --staged
         language: system
         files: ^container/src/.*\.php$
         pass_filenames: false
@@ -90,7 +90,7 @@ repos:
     hooks:
       - id: shellcheck
         name: shellcheck (maintained .sh)
-        entry: container/scripts/lint-sh.sh --staged
+        entry: container/tools/linters/lint-sh.sh --staged
         language: system
         files: \.sh$
         pass_filenames: false

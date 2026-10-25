@@ -15,7 +15,7 @@ long runs; `-v` adds per-file detail; each tool reports elapsed time
 ## 1. Preview (report-only, changes nothing)
 
 ```bash
-./scripts/lint-static.sh --tool phpcs --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpcs --files ru/qa/.php/
 ```
 
 - Add `--report reports/phpcs-qa` to also save the output as `.txt`.
@@ -26,7 +26,7 @@ long runs; `-v` adds per-file detail; each tool reports elapsed time
 ## 2. Fix (in place)
 
 ```bash
-./scripts/lint-static.sh --tool phpcs --fix --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpcs --fix --files ru/qa/.php/
 ```
 
 - Runs `phpcbf` instead of `phpcs`. Fixes the `[x]` violations **in place**:
@@ -54,7 +54,7 @@ git diff <file>
 ## 4. Verify the fix didn't break rendering
 
 ```bash
-./scripts/lint-php.sh --files <same paths>   # syntax gate, non-zero exit on error
+./tools/linters/lint-php.sh --files <same paths>   # syntax gate, non-zero exit on error
 ```
 
 Then open the page at `http://localhost:8080/<path>` — the `php-apache`
@@ -64,8 +64,8 @@ container serves `src/` live, no rebuild needed. Check
 ## 5. Deploy
 
 ```bash
-./scripts/deploy-ftp.sh --files <paths> --lint --dry-run   # check plan first
-./scripts/deploy-ftp.sh --files <paths> --lint             # real upload
+./tools/deploy/deploy-ftp.sh --files <paths> --lint --dry-run   # check plan first
+./tools/deploy/deploy-ftp.sh --files <paths> --lint             # real upload
 ```
 
 ## Guardrails

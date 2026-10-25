@@ -59,7 +59,7 @@ docker compose exec php-apache php -v   # check which is running
 The version is a build arg (`containerfiles/Dockerfile.php`: `ARG PHP_VER`),
 so both images can live side by side — switching only recreates the
 `php-apache` container, code in `./src` is untouched. The linter follows the
-same flag: `scripts/lint-php.sh` defaults to 8.2, `scripts/lint-php.sh --php 8.0 …`
+same flag: `tools/linters/lint-php.sh` defaults to 8.2, `tools/linters/lint-php.sh --php 8.0 …`
 checks against 8.0.
 
 ## PHP lint
@@ -68,15 +68,15 @@ checks against 8.0.
 container — started automatically if stopped) over all or selected files:
 
 ```bash
-scripts/lint-php.sh --staged                  # staged changes only
-scripts/lint-php.sh qa/index.php ru/qa/       # explicit files/dirs
-scripts/lint-php.sh --files "a.php,b.php"
-scripts/lint-php.sh --all                     # all 5k+ *.php under src/
-scripts/lint-php.sh --php 8.0 qa/index.php    # lint with PHP 8.0 (default: 8.2)
+tools/linters/lint-php.sh --staged                  # staged changes only
+tools/linters/lint-php.sh qa/index.php ru/qa/       # explicit files/dirs
+tools/linters/lint-php.sh --files "a.php,b.php"
+tools/linters/lint-php.sh --all                     # all 5k+ *.php under src/
+tools/linters/lint-php.sh --php 8.0 qa/index.php    # lint with PHP 8.0 (default: 8.2)
 ```
 
 Exit `0` = clean, `1` = syntax errors listed as `FAIL: <path>`.
-Deploy hook: `scripts/deploy-ftp.sh --lint [--php VER] ...` lints the same selection
+Deploy hook: `tools/deploy/deploy-ftp.sh --lint [--php VER] ...` lints the same selection
 first and aborts the upload on failure (works with `--dry-run` for a
 lint-only run). `--php` defaults to `8.2` (project container); other versions
 run via one-off `php:VER-cli` images, pulled once from Docker Hub.
@@ -92,9 +92,9 @@ selection flags as the PHP linter (`--staged`, `--committed`, `--files`,
 positional paths, `--all` = default):
 
 ```bash
-scripts/lint-js.sh --staged
-scripts/lint-js.sh ao/chessboard/game.js
-scripts/lint-js.sh --all     # ~116 *.js under src/
+tools/linters/lint-js.sh --staged
+tools/linters/lint-js.sh ao/chessboard/game.js
+tools/linters/lint-js.sh --all     # ~116 *.js under src/
 ```
 
 Files with ESM syntax (`import`/`export`, e.g. `ao/chessboard/*.js`) are
@@ -113,8 +113,8 @@ inlined in HTML, not as standalone JS).
 the linters (`--staged`, `--committed`, `--files`, paths, `--all`):
 
 ```bash
-scripts/find-malformed-urls.sh --staged
-scripts/find-malformed-urls.sh --all     # ~100 hits tree-wide, mostly
+tools/linters/find-malformed-urls.sh --staged
+tools/linters/find-malformed-urls.sh --all     # ~100 hits tree-wide, mostly
                                    # testsetup.ru+aredel.com concatenations
                                    # and https://ru/… breadcrumb URLs
 ```
@@ -204,7 +204,7 @@ followed pinned to the local host, and landing on `/404.php` counts as 404.
 No-server fallback (same data, plain HTML table with filters):
 
 ```bash
-scripts/build-static-report.sh        # after a pytest_web run
+tools/build-static-report.sh        # after a pytest_web run
 # -> reports/sitemap-check-report.html (double-click to open)
 # -> reports/all-urls.csv (spreadsheet)
 ```
@@ -212,8 +212,8 @@ scripts/build-static-report.sh        # after a pytest_web run
 ## Sitemap generator
 
 ```bash
-scripts/generate-sitemap.sh [src_dir] [output.xml]   # default: src/sitemap_new.xml
-BASE_URL=https://www.aredel.com scripts/generate-sitemap.sh
+tools/generate-sitemap.sh [src_dir] [output.xml]   # default: src/sitemap_new.xml
+BASE_URL=https://www.aredel.com tools/generate-sitemap.sh
 ```
 
 Scans `*.php`, skips framework/includes/backups (dot-/`_`-dirs pruned,
@@ -228,5 +228,5 @@ Scans `*.php`, skips framework/includes/backups (dot-/`_`-dirs pruned,
   troubleshooting table, permanent permission fix).
 - `FIX_PERMISSIONS.md` — the `700`-permission problem: symptoms, manual fix,
   framework symlinks (`src/.php`, `src/.css`), stale-container conflict.
-- `scripts/fix-permissions.sh` — permission diagnose/fix + health check
+- `tools/fix/fix-permissions.sh` — permission diagnose/fix + health check
   (`--check` = diagnose only).

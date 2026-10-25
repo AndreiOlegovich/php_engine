@@ -36,7 +36,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-cd ..  # scripts live in scripts/; project root (src/) is the runtime cwd
+cd ..  # tools live in tools/; project root (src/) is the runtime cwd
 
 SRC_DIR="${1:-src}"
 OUT="${2:-$SRC_DIR/sitemap_new.xml}"

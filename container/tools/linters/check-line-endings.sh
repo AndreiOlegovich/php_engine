@@ -57,7 +57,7 @@ _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
+cd ../..  # tools live in tools/linters/; project root (compose file, src/) is the runtime cwd
 
 SRC_DIR="src"
 TARGET="lf"
@@ -214,11 +214,11 @@ if [ "$STAGED" -eq 1 ] || [ "$COMMITTED" -eq 1 ]; then
   PREFIX="${SRC_ABS#"$TOP"/}"
   [ "$PREFIX" != "$SRC_ABS" ] || { echo "ERROR: $SRC_DIR is outside the git repo." >&2; exit 1; }
   if [ "$STAGED" -eq 1 ]; then
-    git -C "$SCRIPT_DIR/.." diff --cached --name-only -z --diff-filter=ACMR -- "$SRC_DIR" 2>/dev/null \
+    git -C "$SCRIPT_DIR/../.." diff --cached --name-only -z --diff-filter=ACMR -- "$SRC_DIR" 2>/dev/null \
       | tr '\0' '\n' | sed "s#^$PREFIX/##" >> "$REL_LIST" || true
   fi
   if [ "$COMMITTED" -eq 1 ]; then
-    git -C "$SCRIPT_DIR/.." ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
+    git -C "$SCRIPT_DIR/../.." ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
       | tr '\0' '\n' | sed "s#^$PREFIX/##" >> "$REL_LIST" || true
   fi
 fi

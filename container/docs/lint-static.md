@@ -3,7 +3,7 @@
 Static analysis and code style for PHP, run from `container/`:
 
 ```bash
-./scripts/lint-static.sh --files ru/qa/.php/BasePage.php
+./tools/linters/lint-static.sh --files ru/qa/.php/BasePage.php
 ```
 
 Companion to `lint-php.sh` (which only checks syntax via `php -l`):
@@ -34,27 +34,27 @@ in per run with `--fix-page` (uses a stripped temp copy of the ruleset).
 
 ```bash
 # Single tool (default), one file
-./scripts/lint-static.sh --files ru/qa/.php/BasePage.php
+./tools/linters/lint-static.sh --files ru/qa/.php/BasePage.php
 ```
 
 Progress dots print by default on long runs; `-v` adds per-file detail,
 and each tool reports elapsed time (`(phpcs took 12s)`).
 
 # Several tools at once (comma or repeatable)
-./scripts/lint-static.sh --tool phpstan,psalm,phpcs --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpstan,psalm,phpcs --files ru/qa/.php/
 
 # Only your staged changes / tracked files
-./scripts/lint-static.sh --tool psalm --staged
-./scripts/lint-static.sh --committed
+./tools/linters/lint-static.sh --tool psalm --staged
+./tools/linters/lint-static.sh --committed
 
 # Whole tree (default when no selection is given)
-./scripts/lint-static.sh --all
+./tools/linters/lint-static.sh --all
 
 # PHPStan strictness 0-9 (default 1). Start low on legacy code.
-./scripts/lint-static.sh --tool phpstan --level 2 --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpstan --level 2 --files ru/qa/.php/
 
 # Other style standard
-./scripts/lint-static.sh --tool phpcs --standard PSR2 --files ...
+./tools/linters/lint-static.sh --tool phpcs --standard PSR2 --files ...
 ```
 
 Selection flags (`--files`, positional paths, `--staged`, `--committed`,
@@ -64,7 +64,7 @@ code; only `--fix` writes files (and it needs an explicit scope, see below).
 ## Reports
 
 ```bash
-./scripts/lint-static.sh --tool phpstan --files ru/qa/.php/ --report reports/phpstan-qa
+./tools/linters/lint-static.sh --tool phpstan --files ru/qa/.php/ --report reports/phpstan-qa
 ```
 
 - Saves the full terminal output to a `.txt` report (`.txt` is appended
@@ -84,7 +84,7 @@ code; only `--fix` writes files (and it needs an explicit scope, see below).
 `phpcs` only reports. To actually fix, run the same selection with `--fix`:
 
 ```bash
-./scripts/lint-static.sh --tool phpcs --fix --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpcs --fix --files ru/qa/.php/
 ```
 
 - Runs `phpcbf` (fetched automatically, same cache) instead of `phpcs`.
@@ -95,13 +95,13 @@ code; only `--fix` writes files (and it needs an explicit scope, see below).
 - `--fix` refuses to run without `--tool phpcs`.
 - `--fix` needs an explicit scope: paths/`--files`, `--staged`,
   `--committed`, non-default `--src`, or `--all`. A bare
-  `./scripts/lint-static.sh --tool phpcs --fix` (whole-tree default) is
+  `./tools/linters/lint-static.sh --tool phpcs --fix` (whole-tree default) is
   refused — pass `--all` to fix everything:
-  `./scripts/lint-static.sh --tool phpcs --fix --all`.
+  `./tools/linters/lint-static.sh --tool phpcs --fix --all`.
 - `BasePage.php`/`ArticlePage.php` are **excluded from every `--fix` run**
   (their `Page.php` byte-parity is load-bearing) — the skip is echoed each
   time. Opt in explicitly per run:
-  `./scripts/lint-static.sh --tool phpcs --fix --fix-page --files ...`
+  `./tools/linters/lint-static.sh --tool phpcs --fix --fix-page --files ...`
 - Always review afterwards with `git diff` before deploying.
 
 Do **not** run `--fix` on `BasePage.php`/`ArticlePage.php`: their method
@@ -132,5 +132,5 @@ raise `--level` only when level N is quiet.
 - Update a tool: delete its `.phar` from `~/.cache/aredel-tools/`; the next
   run re-downloads latest. Check versions any time:
   `docker run --rm -v ~/.cache/aredel-tools:/tools:ro php:8.2-cli php /tools/phpstan.phar --version`
-- Different PHP runtime: `ADEL_STATIC_PHP_IMAGE=php:8.3-cli ./scripts/lint-static.sh ...`
-- Different PHAR cache dir: `ADEL_STATIC_TOOL_CACHE=/path ./scripts/lint-static.sh ...`
+- Different PHP runtime: `ADEL_STATIC_PHP_IMAGE=php:8.3-cli ./tools/linters/lint-static.sh ...`
+- Different PHAR cache dir: `ADEL_STATIC_TOOL_CACHE=/path ./tools/linters/lint-static.sh ...`

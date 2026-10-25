@@ -76,7 +76,7 @@ What the output means:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Permission denied` / `Failed opening required '...index.php'` | host file not readable by container user | fixed permanently via UID remap (see below); fallback `scripts/fix-permissions.sh` |
+| `Permission denied` / `Failed opening required '...index.php'` | host file not readable by container user | fixed permanently via UID remap (see below); fallback `tools/fix/fix-permissions.sh` |
 | `Failed opening required '/var/www/html/.php/...'` on subpages | missing `src/.php` symlink | `ln -s ao/.php src/.php` (script does it) |
 | `/.css/ao.css → 404`, unstyled page | missing `src/.css` symlink | `ln -s ao/.css src/.css` (script does it) |
 | `Deprecated: ...` on top of pages | old framework on new PHP | `containerfiles/php-aredel.ini`, then `docker compose up -d` |

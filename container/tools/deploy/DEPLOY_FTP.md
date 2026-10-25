@@ -1,8 +1,8 @@
 # FTP deploy manual (`deploy-ftp.sh`)
 
 Uploads the site (`src/`) to virtual hosting over FTP/FTPS. All commands run
-from this directory (`scripts/` — scripts live here; they operate on the
-project root one level up, so `src/`, `docker-compose.yml` etc. resolve).
+from this directory (`tools/deploy/` — the script lives here; it operates on
+the project root two levels up, so `src/`, `docker-compose.yml` etc. resolve).
 
 `container_php83/` is not involved.
 
@@ -57,8 +57,8 @@ always win; only non-secret values belong there (`FTP_PASSWORD` set in
 `SITE_ENV` prints a warning):
 
 ```bash
-cp scripts/site.env.example scripts/site.env  # fill in, never commit site.env
-SITE_ENV=scripts/site.env ./scripts/deploy-ftp.sh --dry-run
+cp tools/deploy/site.env.example tools/deploy/site.env  # fill in, never commit site.env
+SITE_ENV=tools/deploy/site.env ./tools/deploy/deploy-ftp.sh --dry-run
 ```
 
 ## 2. Usage

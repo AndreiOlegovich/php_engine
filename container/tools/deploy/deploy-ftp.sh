@@ -70,7 +70,7 @@ _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
+cd ../..  # tools live in tools/deploy/; project root (compose file, src/) is the runtime cwd
 
 DEFAULT_CREDS="${HOME}/.config/aredel/ftp-creds.env"
 CREDS="$DEFAULT_CREDS"
@@ -165,14 +165,14 @@ fi
   echo "ERROR: creds file '$CREDS' not found." >&2
   echo "Create it (chmod 600) from the template:" >&2
   echo "  mkdir -p \"$(dirname "$CREDS")\"" >&2
-  echo "  cp scripts/deploy-ftp.creds.example \"$CREDS\"" >&2
+  echo "  cp tools/deploy/deploy-ftp.creds.example \"$CREDS\"" >&2
   echo "  chmod 600 \"$CREDS\" && \$EDITOR \"$CREDS\"" >&2
   echo "Or pass another location: $0 --creds /path/to/creds.env" >&2
   exit 1
 }
 
 # Refuse a creds file from inside the repo (it would risk a commit).
-APP_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+APP_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd -P)"
 case "$(cd "$(dirname "$CREDS")" 2>/dev/null && pwd -P)" in
   "$APP_ROOT"*|"${APP_ROOT}/"*)
     echo "ERROR: creds file must live OUTSIDE the repo, not under $APP_ROOT" >&2
@@ -259,23 +259,23 @@ if [ "${#FILES_LIST[@]}" -gt 0 ] || [ "$COMMITTED" -eq 1 ] || [ "$STAGED" -eq 1 
 
   # 2) git-based selections (repo paths stripped to src-relative)
   if [ "$COMMITTED" -eq 1 ] || [ "$STAGED" -eq 1 ] || [ "$LAST_COMMIT" -eq 1 ]; then
-    TOP="$(git -C "$SCRIPT_DIR/.." rev-parse --show-toplevel 2>/dev/null || true)"
+    TOP="$(git -C "$SCRIPT_DIR/../.." rev-parse --show-toplevel 2>/dev/null || true)"
     [ -n "$TOP" ] || { echo "ERROR: not inside a git repo (--committed/--staged/--last-commit need git)." >&2; exit 1; }
     PREFIX="${SRC_ABS#"$TOP"/}"
     [ "$PREFIX" != "$SRC_ABS" ] || { echo "ERROR: $SRC_DIR is outside the git repo." >&2; exit 1; }
     if [ "$COMMITTED" -eq 1 ]; then
-      git -C "$SCRIPT_DIR/.." ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
+      git -C "$SCRIPT_DIR/../.." ls-files --full-name -z -- "$SRC_DIR" 2>/dev/null \
         | tr '\0' '\n' | sed "s#^$PREFIX/##" >> "$ONLY_GIT" || true
     fi
     if [ "$STAGED" -eq 1 ]; then
       # NOTE: git diff has no --full-name; --name-only is already toplevel-relative.
-      git -C "$SCRIPT_DIR/.." diff --cached --name-only -z --diff-filter=ACMR -- "$SRC_DIR" 2>/dev/null \
+      git -C "$SCRIPT_DIR/../.." diff --cached --name-only -z --diff-filter=ACMR -- "$SRC_DIR" 2>/dev/null \
         | tr '\0' '\n' | sed "s#^$PREFIX/##" >> "$ONLY_GIT" || true
     fi
     if [ "$LAST_COMMIT" -eq 1 ]; then
       # Files changed in HEAD (last commit), added/copied/modified/renamed.
       # -m keeps merge commits working (diff against each parent, union).
-      git -C "$SCRIPT_DIR/.." diff-tree --no-commit-id --name-only -z -r -m --diff-filter=ACMR HEAD -- "$SRC_DIR" 2>/dev/null \
+      git -C "$SCRIPT_DIR/../.." diff-tree --no-commit-id --name-only -z -r -m --diff-filter=ACMR HEAD -- "$SRC_DIR" 2>/dev/null \
         | tr '\0' '\n' | sed "s#^$PREFIX/##" >> "$ONLY_GIT" || true
     fi
   fi
@@ -314,7 +314,7 @@ fi
 
 # --- pre-upload lint (same selection; runs even with --dry-run) ---
 if [ "$LINT" -eq 1 ]; then
-  [ -x scripts/lint-php.sh ] || { echo "ERROR: scripts/lint-php.sh not found (run from container/ or scripts/)." >&2; exit 1; }
+  [ -x tools/linters/lint-php.sh ] || { echo "ERROR: tools/linters/lint-php.sh not found." >&2; exit 1; }
   LINT_ARGS=(--src "$SRC_DIR" --php "$PHP_VER")
   if [ "${#FILES_LIST[@]}" -gt 0 ]; then
     LINT_ARGS+=(--files "${FILES_LIST[@]}")
@@ -328,7 +328,7 @@ if [ "$LINT" -eq 1 ]; then
     done < "$ONLY_GIT"
   fi
   echo "==> pre-upload lint ..."
-  ./scripts/lint-php.sh "${LINT_ARGS[@]}" || { echo "ERROR: lint failed, aborting upload." >&2; exit 1; }
+  ./tools/linters/lint-php.sh "${LINT_ARGS[@]}" || { echo "ERROR: lint failed, aborting upload." >&2; exit 1; }
 elif [ "$PHP_SET" -eq 1 ]; then
   echo "WARNING: --php has no effect without --lint." >&2
 fi

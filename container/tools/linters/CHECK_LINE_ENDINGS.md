@@ -1,8 +1,8 @@
 # Line-endings check manual (`check-line-endings.sh`)
 
 Checks CRLF vs LF line endings under the site tree, and optionally
-normalises them. All commands run from this directory (`scripts/` — or from
-`container/` with a `scripts/` prefix; paths resolve the same).
+normalises them. All commands run from this directory (`tools/linters/` — or from
+`container/` with a `tools/linters/` prefix; paths resolve the same).
 
 Pure host-side check: no Docker, no installs. Read-only unless `--fix`
 (or bare `--correct`) is given.
@@ -132,4 +132,4 @@ check-line-endings.sh   the script (bash + tr/wc, perl for CRLF direction)
   `MIXED` cleanup).
 - Reported paths are `src/`-relative.
 - Like the other scripts, it `cd`s to the project root on start, so you can
-  invoke it from anywhere: `container/scripts/check-line-endings.sh --search`.
+  invoke it from anywhere: `container/tools/linters/check-line-endings.sh --search`.

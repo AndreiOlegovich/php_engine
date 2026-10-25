@@ -20,7 +20,8 @@
 #   --only WHAT   which remote sources to fetch (default: all).
 #                 prod = $PROD_LOG_DIR/, dev = $DEV_LOG_DIR/,
 #                 root = ${ROOT_PREFIX}*.log at FTP root -> dest/dev/.
-#   --dest DIR    local dir receiving prod/ and dev/ (default: <repo>/site_logs)
+#   --dest DIR    local dir receiving prod/ and dev/ (default: site_logs/ next
+#                 to the repo, never inside it)
 #   --prod-dir NAME  remote prod log dir (default: $PROD_LOG_DIR or prod_logs)
 #   --dev-dir NAME   remote dev log dir (default: $DEV_LOG_DIR or dev_logs)
 #   --root-prefix PFX  filename prefix for root dev logs
@@ -104,7 +105,7 @@ ROOT_PREFIX="${ROOT_PREFIX_OVERRIDE:-${ROOT_PREFIX:-dev.example.com.}}"
 
 APP_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd -P)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd -P)"
-[ -z "$DEST" ] && DEST="$REPO_ROOT/site_logs"
+[ -z "$DEST" ] && DEST="$(dirname "$REPO_ROOT")/site_logs"  # next to the repo, never inside it
 mkdir -p "$DEST"
 
 [ -f "$CREDS" ] || { echo "ERROR: creds file '$CREDS' not found." >&2; exit 1; }

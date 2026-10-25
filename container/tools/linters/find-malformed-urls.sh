@@ -24,7 +24,7 @@ _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-cd ..  # scripts live in scripts/; project root (compose file, src/) is the runtime cwd
+cd ../..  # tools live in tools/linters/; project root (compose file, src/) is the runtime cwd
 
 SRC_DIR="src"
 ALL=0; STAGED=0; COMMITTED=0

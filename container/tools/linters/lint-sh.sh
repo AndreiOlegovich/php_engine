@@ -8,7 +8,7 @@
 #   ./lint-sh.sh [--all] [--staged] [--files F ...] [paths...]
 #
 # Selection (default: --all; flags/paths combine as a union):
-#   --all           every maintained script (container/scripts/*.sh and
+#   --all           every maintained script (container/tools/**/*.sh and
 #                   top-level container_php83/*.sh).
 #   --staged        staged *.sh files (explicit user action: legacy files
 #                   staged here are checked too, not skipped).
@@ -118,7 +118,7 @@ fi
 
 # --- 3) default/all: maintained scripts only (legacy src/ bulk excluded) ---
 if [ "$ALL" -eq 1 ] || { [ "${#FILES_LIST[@]}" -eq 0 ] && [ "${#POSITIONAL[@]}" -eq 0 ] && [ "$STAGED" -eq 0 ]; }; then
-  for f in "$TOP/container/scripts/"*.sh "$TOP/container_php83/"*.sh; do
+  for f in "$TOP/container/tools/"*.sh "$TOP/container/tools/"*/*.sh "$TOP/container/tools/"*/*/*.sh "$TOP/container_php83/"*.sh; do
     [ -f "$f" ] || continue
     printf '%s\n' "${f#"$TOP"/}" >> "$REL_LIST"
   done

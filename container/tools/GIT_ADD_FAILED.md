@@ -3,7 +3,7 @@
 Stages files reported as failed by the last commit check (pre-commit / lint).
 Nothing is committed — only staged. Review with `git status` / `git diff --cached`.
 
-Script: `container/scripts/git-add-failed.sh`. Run from `container/`.
+Script: `container/tools/git-add-failed.sh`. Run from `container/`.
 
 ## Why
 
@@ -16,16 +16,16 @@ maps paths to repo-relative form, and stages them in one NUL-safe `git add`.
 ## Usage
 
 ```bash
-chmod +x scripts/git-add-failed.sh   # once
+chmod +x tools/git-add-failed.sh   # once
 
-./scripts/git-add-failed.sh --dry-run          # default log, print only
-./scripts/git-add-failed.sh                    # stage tracked files from default log
-./scripts/git-add-failed.sh /tmp/check.log     # explicit log file
-./scripts/git-add-failed.sh latest_commit_log2.txt --dry-run
-pre-commit run --all-files 2>&1 | tee /tmp/check.log; ./scripts/git-add-failed.sh /tmp/check.log
-pre-commit run --all-files 2>&1 | ./scripts/git-add-failed.sh -   # stdin via -
-./scripts/git-add-failed.sh --all              # also stage untracked files
-./scripts/git-add-failed.sh -h                 # help (header comment)
+./tools/git-add-failed.sh --dry-run          # default log, print only
+./tools/git-add-failed.sh                    # stage tracked files from default log
+./tools/git-add-failed.sh /tmp/check.log     # explicit log file
+./tools/git-add-failed.sh latest_commit_log2.txt --dry-run
+pre-commit run --all-files 2>&1 | tee /tmp/check.log; ./tools/git-add-failed.sh /tmp/check.log
+pre-commit run --all-files 2>&1 | ./tools/git-add-failed.sh -   # stdin via -
+./tools/git-add-failed.sh --all              # also stage untracked files
+./tools/git-add-failed.sh -h                 # help (header comment)
 ```
 
 ## Default log resolution
@@ -98,9 +98,9 @@ Extraction: `awk '$1 == "FILE:" || $1 == "FAIL:" { print $2 }'`
 
 ```bash
 git commit -m "..." 2>&1 | tee /tmp/check.log   # blocked by phpcs
-./scripts/git-add-failed.sh /tmp/check.log --dry-run
-./scripts/git-add-failed.sh /tmp/check.log
-./scripts/lint-static.sh --tool phpcs --fix --staged   # fix what you staged
+./tools/git-add-failed.sh /tmp/check.log --dry-run
+./tools/git-add-failed.sh /tmp/check.log
+./tools/linters/lint-static.sh --tool phpcs --fix --staged   # fix what you staged
 git diff --cached
 git commit -m "..."   # retry
 ```

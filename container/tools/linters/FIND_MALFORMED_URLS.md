@@ -1,8 +1,9 @@
 # Malformed-URL scan manual (`find-malformed-urls.sh`)
 
 Finds broken URLs in the site tree: glued-together addresses left over from
-years of copy-paste editing. All commands run from this directory (`scripts/`
-— or from `container/` with a `scripts/` prefix; paths resolve the same).
+years of copy-paste editing. All commands run from this directory
+(`tools/linters/` — or from `container/` with a `tools/linters/` prefix;
+paths resolve the same).
 
 ## What it checks
 
@@ -96,4 +97,4 @@ find-malformed-urls.sh   the script (bash + grep -P, no dependencies)
   `aredel.com`, …) never match.
 - Needs `grep -P` (PCRE); errors out clearly where unavailable.
 - Like the other scripts, it `cd`s to the project root on start, so you can
-  invoke it from anywhere: `container/scripts/find-malformed-urls.sh --staged`.
+  invoke it from anywhere: `container/tools/linters/find-malformed-urls.sh --staged`.

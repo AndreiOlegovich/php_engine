@@ -6,7 +6,7 @@ namespace PhpEngine\Modules;
 #
 # Renders counters from environment. Code defaults below are placeholders
 # (no real IDs ship here) — set real ones via environment (see
-# container/scripts/site.env.example, YANDEX_METRICA_*):
+# container/tools/deploy/site.env.example, YANDEX_METRICA_*):
 #   YANDEX_METRICA_ID       production counter
 #   YANDEX_METRICA_DEV_ID   dev counter
 #   YANDEX_METRICA_AO_ID    legacy counter

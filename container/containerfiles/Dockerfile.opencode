@@ -1,0 +1,18 @@
+# OpenCode for --auto runs on an agent worktree. The official image, plus
+# PHP for php -l and page renders, bash, Python, Perl and the GNU tools for
+# the scripts in container/tools, and a user with your UID, so the files the
+# agent writes stay yours.
+FROM ghcr.io/anomalyco/opencode:2.1.4
+RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
+    php83 php83-ctype php83-dom php83-iconv php83-mbstring php83-session \
+    php83-simplexml php83-tokenizer php83-xml \
+ && ln -s /usr/bin/php83 /usr/local/bin/php
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+RUN addgroup -g ${HOST_GID} agent \
+ && adduser -D -u ${HOST_UID} -G agent agent \
+ && mkdir -p /work && chown agent:agent /work
+USER agent
+# Created by the user, so a new named volume mounted here is writable.
+RUN mkdir -p /home/agent/.local/share/opencode
+WORKDIR /work

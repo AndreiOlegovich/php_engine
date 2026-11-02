@@ -1,0 +1,13 @@
+# Free OpenCode model ids, best first, without the opencode/ prefix.
+# check_opencode_models.py replaces a pinned free id that left the catalog
+# with the first live id here. Order: a free model whose paid twin is in the
+# same catalog comes first (same model stays available for money), then the
+# rest. Left out: jev-1.13-free (answers yes/no and choice questions, does
+# not write code), nemotron-3.5-super-vl-free (vision-language variant),
+# beam-free and flint-40b-free (unknown model family).
+# Checked against https://opencode.ai/inference/v1/models on 2026-10-22.
+deepseek-v4.1-flash-free
+glm-5.3-flash-free
+minimax-m3.1-flash-free
+mimo-v2.6-flash-free
+nemotron-3.5-lightning-free

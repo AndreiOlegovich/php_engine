@@ -229,3 +229,29 @@ Scans `*.php`, skips framework/includes/backups (dot-/`_`-dirs pruned,
   framework symlinks (`src/.php`, `src/.css`), stale-container conflict.
 - `tools/fix/fix-permissions.sh` — permission diagnose/fix + health check
   (`--check` = diagnose only).
+
+## Tool index
+
+Everything runs from `container/`. Scripts are host-side unless noted.
+
+| Area | Command | Needs |
+|---|---|---|
+| PHP syntax | `tools/linters/lint-php.sh --files src/x.php` | Docker |
+| PHP style / static analysis | `tools/linters/lint-static.sh --tool phpcs --files src/x.php` | Docker |
+| Shell | `tools/linters/lint-sh.sh --all` | Docker |
+| Line endings | `tools/linters/check-line-endings.sh --search` | bash |
+| PHP blank lines / header | `tools/linters/check-php-blank-lines.sh --search`, `tools/linters/check-php-header.sh --search` | bash |
+| PHP long lines / braces | `tools/fix/wrap-long-lines.sh --search`, `tools/fix/fix-closing-brace.sh` | php |
+| Duplicate images | `tools/fix/dedupe-images.py --dir src/images` | python, php |
+| Version markers | `tools/linters/check-version.sh` (staged) | git |
+| Diff artifacts | `tools/check-diff-artifacts.sh --staged` | git |
+| Reflow damage | `tools/linters/check-reflow.sh` | python |
+| Snake-case calls | `tools/linters/find-snake-calls.py --src src` | python |
+| HTML structure | `tools/linters/html/validate-local-html.sh /` | curl, npx |
+| Sitemap / redirects | `tools/check-sitemap.sh`, `tools/htaccess_redirects.py list` | python |
+| Labels | `tools/zpl/render_zpl.py --page src/labels/zpl_01.php` | network |
+| Translation | `tools/translate/ru_en_translate.py extract PATH --workdir DIR` | optional Argos/Ollama |
+| Logs | `tools/analyze_logs/analyze_errors.py --log-dir DIR`, `check_bots.py`, `list_404.py`, `find_broken_hrefs.py` | python |
+| Deploy | `tools/deploy/deploy-engine.sh --dry-run`, `tools/deploy/deploy-batches.sh` | creds file |
+| Tests | `tools/run-tests-venv.sh -- tests -q` | uv, Python 3.12 |
+| Agent tooling | `tools/ai/opencode.sh`, `tools/ai/opencode-docker.sh` | opencode, Docker |

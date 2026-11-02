@@ -106,9 +106,7 @@ def fetch(session, url, max_hops=5):
         if r.status_code in (301, 302, 303, 307, 308) and loc and hops < max_hops:
             p = urlparse(urljoin(url, loc))
             b = urlparse(BASE_URL)
-            url = urlunparse(
-                (b.scheme, b.netloc, quote(p.path or "/", safe="/%:@"), "", p.query or "", "")
-            )
+            url = urlunparse((b.scheme, b.netloc, quote(p.path or "/", safe="/%:@"), "", p.query or "", ""))
             hops += 1
             continue
         return r.status_code, r.url, hops
@@ -178,11 +176,7 @@ def test_summary(checked):
         "total": len(rows),
         **{k: counts.get(k, 0) for k in ("200", "404", "other", "error")},
     }
-    table = (
-        "| status | count |\n|---|---|\n"
-        + "\n".join(f"| {k} | {summary[k]} |" for k in ("200", "404", "other", "error"))
-        + f"\n\ntotal: {summary['total']}"
-    )
+    table = "| status | count |\n|---|---|\n" + "\n".join(f"| {k} | {summary[k]} |" for k in ("200", "404", "other", "error")) + f"\n\ntotal: {summary['total']}"
     allure.attach(
         f"{SITEMAP_FILE} ({len(rows)} urls) -> {BASE_URL}",
         name="sitemap-source",

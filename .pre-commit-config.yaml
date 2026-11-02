@@ -1,39 +1,20 @@
-default_language_version:
-  python: python3.12
-
 # Pre-commit gates for the php_engine repo (repo root: this file's directory).
 #
 # Install once per clone:
 #   pre-commit install
 # (pre-commit itself: `uv tool install pre-commit`.)
-# After that every `git commit` runs the hooks below on the staged files and
-# the commit is blocked unless all of them pass. Manual full run:
-#   pre-commit run --all-files
+# All Python hook environments run on the same interpreter as the project.
+default_language_version:
+  python: python3.12
 #
 # Gates:
-#   .py  -> ruff check, ruff format, mypy, pylint (everything except the two
-#           legacy Python 2 helpers in container/src/, which no Py3 linter
-#           can parse).
+#   .py  -> ruff check, ruff format, mypy, pylint.
 #   .php -> php -l (syntax) + phpcs PSR-12 on staged files under container/src.
-#           phpstan/psalm stay manual via container/tools/linters/lint-static.sh.
-#           Staged legacy files must be style-clean: fix with
-#           `container/tools/linters/lint-static.sh --tool phpcs --fix --files ...`
-#           (review with git diff afterwards).
-#   .sh  -> shellcheck via container/tools/linters/lint-sh.sh, maintained scripts
-#           only (container/tools/**/*.sh).
-# Hygiene (trailing whitespace, EOF newline, yaml/toml syntax, merge
-# conflicts) applies to the maintained text files; formatters may modify
-# files on the first run — `git add` the result and commit again.
+#   .sh  -> shellcheck via container/tools/linters/lint-sh.sh.
+#   diff -> check-diff-artifacts.sh --staged on every commit.
+# Manual full run:
+#   pre-commit run --all-files
 repos:
-  - repo: local
-    hooks:
-      - id: check-python-consistency
-        name: python 3.12 consistency
-        entry: python3.12 container/tools/linters/check_python_consistency.py --require-precommit
-        language: system
-        always_run: true
-        pass_filenames: false
-
   # --- Python: ruff (lint + format) ---
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.8
@@ -41,12 +22,10 @@ repos:
       - id: ruff
         name: ruff check (.py)
         files: \.py$
-        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
         args: [--config, container/pyproject.toml]
       - id: ruff-format
         name: ruff format (.py)
         files: \.py$
-        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
         args: [--config, container/pyproject.toml]
 
   # --- Python: mypy (types; lenient baseline in container/pyproject.toml) ---
@@ -56,12 +35,11 @@ repos:
       - id: mypy
         name: mypy (.py)
         files: \.py$
-        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
         args: [--config-file, container/pyproject.toml]
         additional_dependencies:
           - pytest>=8
           - requests>=2.31
-          - allure-pytest>=2.13
+          - pyyaml>=6
 
   # --- Python: pylint (messages control in container/pyproject.toml) ---
   - repo: https://github.com/pylint-dev/pylint
@@ -70,15 +48,14 @@ repos:
       - id: pylint
         name: pylint (.py)
         files: \.py$
-        exclude: ^container/src/fix_(hrefs_ru_qa|ru_qa)_py27\.py$
         args: [--rcfile=container/pyproject.toml]
         additional_dependencies:
           - pytest>=8
           - requests>=2.31
-          - allure-pytest>=2.13
           - pyyaml>=6
+          - allure-pytest>=2.13
 
-  # --- PHP: syntax (php -l) on staged files, both src trees ---
+  # --- PHP: syntax (php -l) on staged files under container/src ---
   - repo: local
     hooks:
       - id: php-lint-src
@@ -108,6 +85,45 @@ repos:
         files: \.sh$
         pass_filenames: false
 
+  # --- Version markers must be bumped with every change ---
+  - repo: local
+    hooks:
+      - id: check-version
+        name: check-version (staged markers)
+        entry: container/tools/linters/check-version.sh
+        language: system
+        pass_filenames: false
+
+  # --- Python toolchain must agree on 3.12 ---
+  - repo: local
+    hooks:
+      - id: check-python-consistency
+        name: python 3.12 consistency
+        entry: python3.12 container/tools/linters/check_python_consistency.py --require-precommit
+        language: system
+        always_run: true
+        pass_filenames: false
+
+  # --- Diff artifacts (EOL flips, encoding damage, full-file rewrites) ---
+  - repo: local
+    hooks:
+      - id: check-diff-artifacts
+        name: check-diff-artifacts (staged)
+        entry: container/tools/check-diff-artifacts.sh --staged
+        language: system
+        always_run: true
+        pass_filenames: false
+
+  # --- HTML/PHP reflower damage gate (whole-tree text scan) ---
+  - repo: local
+    hooks:
+      - id: check-reflow
+        name: check-reflow (container/src reflower damage)
+        entry: container/tools/linters/check-reflow.sh
+        language: system
+        always_run: true
+        pass_filenames: false
+
   # --- Hygiene on maintained text files ---
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -123,3 +139,25 @@ repos:
       - id: check-yaml
       - id: check-toml
       - id: check-merge-conflict
+
+  # --- lint-php.sh self-test (gate script changes) ---
+  - repo: local
+    hooks:
+      - id: lint-php-sh-selftest
+        name: lint-php.sh self test
+        entry: pytest container/tests/linters/test_lint_php_sh.py -q
+        language: python
+        files: ^container/tools/linters/lint-php\.sh$
+        pass_filenames: false
+        additional_dependencies: ["pytest>=8"]
+
+  # --- phpcs gate self-test (gate script, ruleset or wiring changes) ---
+  - repo: local
+    hooks:
+      - id: lint-static-sh-selftest
+        name: phpcs gate self test
+        entry: pytest container/tests/linters/test_lint_static_sh.py -q
+        language: python
+        files: ^(container/tools/linters/lint-static\.sh|container/phpcs\.xml|\.pre-commit-config\.yaml)$
+        pass_filenames: false
+        additional_dependencies: ["pytest>=8", "pyyaml>=6"]

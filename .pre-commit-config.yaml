@@ -64,6 +64,7 @@ repos:
           - pytest>=8
           - requests>=2.31
           - allure-pytest>=2.13
+          - pyyaml>=6
 
   # --- PHP: syntax (php -l) on staged files, both src trees ---
   - repo: local

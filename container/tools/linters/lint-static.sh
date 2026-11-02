@@ -69,8 +69,8 @@ ALL=0; STAGED=0; COMMITTED=0
 FILES_LIST=()
 POSITIONAL=()
 
-PHP_IMAGE="${ADEL_STATIC_PHP_IMAGE:-php:8.2-cli}"
-TOOL_CACHE="${ADEL_STATIC_TOOL_CACHE:-$HOME/.cache/php_engine-tools}"
+PHP_IMAGE="${PHP_ENGINE_STATIC_PHP_IMAGE:-php:8.2-cli}"
+TOOL_CACHE="${PHP_ENGINE_STATIC_TOOL_CACHE:-$HOME/.cache/php_engine-tools}"
 PHPSTAN_URL="https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar"
 PSALM_URL="https://github.com/vimeo/psalm/releases/latest/download/psalm.phar"
 PHPCS_URL="https://github.com/PHPCSStandards/PHP_CodeSniffer/releases/latest/download/phpcs.phar"

@@ -287,7 +287,7 @@ if [ "${#FILES_LIST[@]}" -gt 0 ] || [ "$COMMITTED" -eq 1 ] || [ "$STAGED" -eq 1 
   echo "selection:   $SEL_COUNT file(s) (--files/--committed/--staged/--last-commit union)"
 fi
 
-export ADEL_ONLY_EXPLICIT="$ONLY_EXP" ADEL_ONLY_GIT="$ONLY_GIT"
+export PHP_ENGINE_ONLY_EXPLICIT="$ONLY_EXP" PHP_ENGINE_ONLY_GIT="$ONLY_GIT"
 
 # Default progress: announce what is about to be uploaded.
 if [ "${#FILES_LIST[@]}" -gt 0 ]; then
@@ -333,37 +333,37 @@ elif [ "$PHP_SET" -eq 1 ]; then
   echo "WARNING: --php has no effect without --lint." >&2
 fi
 
-export ADEL_FTP_HOST="$FTP_HOST" ADEL_FTP_USER="$FTP_USER" ADEL_FTP_PASS="$FTP_PASSWORD"
-export ADEL_FTP_PORT="$FTP_PORT" ADEL_FTP_REMOTE="$FTP_REMOTE_DIR" ADEL_FTP_TLS="$FTP_USE_TLS"
-export ADEL_FTP_TIMEOUT="$FTP_TIMEOUT" ADEL_SRC="$SRC_DIR" ADEL_DELETE="$DELETE" ADEL_DRYRUN="$DRY_RUN"
-export ADEL_VERBOSE="$VERBOSE" ADEL_COMMITTED="$COMMITTED" ADEL_STAGED="$STAGED"
-export ADEL_LAST_COMMIT="$LAST_COMMIT"
-export ADEL_FORCE="$FORCE"
-export ADEL_INCLUDE_TMP="$INCLUDE_TMP" ADEL_INCLUDE_ALL="$INCLUDE_ALL"
-export ADEL_INCLUDE_ARJ_DIRS="$INCLUDE_ARJ_DIRS"
+export PHP_ENGINE_FTP_HOST="$FTP_HOST" PHP_ENGINE_FTP_USER="$FTP_USER" PHP_ENGINE_FTP_PASS="$FTP_PASSWORD"
+export PHP_ENGINE_FTP_PORT="$FTP_PORT" PHP_ENGINE_FTP_REMOTE="$FTP_REMOTE_DIR" PHP_ENGINE_FTP_TLS="$FTP_USE_TLS"
+export PHP_ENGINE_FTP_TIMEOUT="$FTP_TIMEOUT" PHP_ENGINE_SRC="$SRC_DIR" PHP_ENGINE_DELETE="$DELETE" PHP_ENGINE_DRYRUN="$DRY_RUN"
+export PHP_ENGINE_VERBOSE="$VERBOSE" PHP_ENGINE_COMMITTED="$COMMITTED" PHP_ENGINE_STAGED="$STAGED"
+export PHP_ENGINE_LAST_COMMIT="$LAST_COMMIT"
+export PHP_ENGINE_FORCE="$FORCE"
+export PHP_ENGINE_INCLUDE_TMP="$INCLUDE_TMP" PHP_ENGINE_INCLUDE_ALL="$INCLUDE_ALL"
+export PHP_ENGINE_INCLUDE_ARJ_DIRS="$INCLUDE_ARJ_DIRS"
 
 python3 - <<'EOF'
 import fnmatch, os, posixpath, sys
 from ftplib import FTP, FTP_TLS, error_perm
 
-host = os.environ["ADEL_FTP_HOST"]
-user = os.environ["ADEL_FTP_USER"]
-pw = os.environ["ADEL_FTP_PASS"]
-port = int(os.environ.get("ADEL_FTP_PORT", "21") or 21)
-remote_base = os.environ.get("ADEL_FTP_REMOTE", "/") or "/"
-use_tls = os.environ.get("ADEL_FTP_TLS", "false").lower() in ("1", "true", "yes")
-timeout = int(os.environ.get("ADEL_FTP_TIMEOUT", "30") or 30)
-src = os.environ.get("ADEL_SRC", "src")
-delete = os.environ.get("ADEL_DELETE") == "1"
-dryrun = os.environ.get("ADEL_DRYRUN") == "1"
-verbose = os.environ.get("ADEL_VERBOSE") == "1"
-committed_flag = os.environ.get("ADEL_COMMITTED") == "1"
-staged_flag = os.environ.get("ADEL_STAGED") == "1"
-last_commit_flag = os.environ.get("ADEL_LAST_COMMIT") == "1"
-force = os.environ.get("ADEL_FORCE") == "1"
-include_tmp = os.environ.get("ADEL_INCLUDE_TMP") == "1"
-include_all = os.environ.get("ADEL_INCLUDE_ALL") == "1"
-include_arj_dirs = os.environ.get("ADEL_INCLUDE_ARJ_DIRS") == "1"
+host = os.environ["PHP_ENGINE_FTP_HOST"]
+user = os.environ["PHP_ENGINE_FTP_USER"]
+pw = os.environ["PHP_ENGINE_FTP_PASS"]
+port = int(os.environ.get("PHP_ENGINE_FTP_PORT", "21") or 21)
+remote_base = os.environ.get("PHP_ENGINE_FTP_REMOTE", "/") or "/"
+use_tls = os.environ.get("PHP_ENGINE_FTP_TLS", "false").lower() in ("1", "true", "yes")
+timeout = int(os.environ.get("PHP_ENGINE_FTP_TIMEOUT", "30") or 30)
+src = os.environ.get("PHP_ENGINE_SRC", "src")
+delete = os.environ.get("PHP_ENGINE_DELETE") == "1"
+dryrun = os.environ.get("PHP_ENGINE_DRYRUN") == "1"
+verbose = os.environ.get("PHP_ENGINE_VERBOSE") == "1"
+committed_flag = os.environ.get("PHP_ENGINE_COMMITTED") == "1"
+staged_flag = os.environ.get("PHP_ENGINE_STAGED") == "1"
+last_commit_flag = os.environ.get("PHP_ENGINE_LAST_COMMIT") == "1"
+force = os.environ.get("PHP_ENGINE_FORCE") == "1"
+include_tmp = os.environ.get("PHP_ENGINE_INCLUDE_TMP") == "1"
+include_all = os.environ.get("PHP_ENGINE_INCLUDE_ALL") == "1"
+include_arj_dirs = os.environ.get("PHP_ENGINE_INCLUDE_ARJ_DIRS") == "1"
 
 # Junk that must never go to hosting (mirrors the repo's .gitignore logic).
 # NOTE: images are intentionally NOT excluded — hosting needs them.
@@ -432,8 +432,8 @@ def load_sel(path):
                     s.add(line)
     return s
 
-explicit = load_sel(os.environ.get("ADEL_ONLY_EXPLICIT", ""))
-gitsel = load_sel(os.environ.get("ADEL_ONLY_GIT", ""))
+explicit = load_sel(os.environ.get("PHP_ENGINE_ONLY_EXPLICIT", ""))
+gitsel = load_sel(os.environ.get("PHP_ENGINE_ONLY_GIT", ""))
 select_mode = bool(explicit or gitsel)
 
 local_files = {}  # rel_posix -> abs path

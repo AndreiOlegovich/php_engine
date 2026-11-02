@@ -158,34 +158,34 @@ echo "host: $FTP_HOST:$FTP_PORT (tls=$FTP_USE_TLS)"
 echo "dest: $DEST/ (prod/ dev/)"
 echo "only: $ONLY / force: $([ "$FORCE" -eq 1 ] && echo yes || echo no)"
 
-export ADEL_FTP_HOST="$FTP_HOST" ADEL_FTP_USER="$FTP_USER" ADEL_FTP_PASS="$FTP_PASSWORD"
-export ADEL_FTP_PORT="$FTP_PORT" ADEL_FTP_TLS="$FTP_USE_TLS"
-export ADEL_FTP_TIMEOUT="$FTP_TIMEOUT" ADEL_DEST="$DEST" ADEL_ONLY="$ONLY"
-export ADEL_PROD_DIR="$PROD_DIR" ADEL_DEV_DIR="$DEV_DIR" ADEL_ROOT_PREFIX="$ROOT_PREFIX"
-export ADEL_DRYRUN="$DRY_RUN" ADEL_VERBOSE="$VERBOSE" ADEL_FORCE="$FORCE"
+export PHP_ENGINE_FTP_HOST="$FTP_HOST" PHP_ENGINE_FTP_USER="$FTP_USER" PHP_ENGINE_FTP_PASS="$FTP_PASSWORD"
+export PHP_ENGINE_FTP_PORT="$FTP_PORT" PHP_ENGINE_FTP_TLS="$FTP_USE_TLS"
+export PHP_ENGINE_FTP_TIMEOUT="$FTP_TIMEOUT" PHP_ENGINE_DEST="$DEST" PHP_ENGINE_ONLY="$ONLY"
+export PHP_ENGINE_PROD_DIR="$PROD_DIR" PHP_ENGINE_DEV_DIR="$DEV_DIR" PHP_ENGINE_ROOT_PREFIX="$ROOT_PREFIX"
+export PHP_ENGINE_DRYRUN="$DRY_RUN" PHP_ENGINE_VERBOSE="$VERBOSE" PHP_ENGINE_FORCE="$FORCE"
 
 python3 - <<'EOF'
 import os
 import sys
 from ftplib import FTP, FTP_TLS, error_perm
 
-host = os.environ["ADEL_FTP_HOST"]
-user = os.environ["ADEL_FTP_USER"]
-pw = os.environ["ADEL_FTP_PASS"]
-port = int(os.environ.get("ADEL_FTP_PORT", "21") or 21)
-use_tls = os.environ.get("ADEL_FTP_TLS", "false").lower() in ("1", "true", "yes")
-timeout = int(os.environ.get("ADEL_FTP_TIMEOUT", "30") or 30)
-dest = os.environ["ADEL_DEST"]
-only = os.environ.get("ADEL_ONLY", "all")
-dryrun = os.environ.get("ADEL_DRYRUN") == "1"
-verbose = os.environ.get("ADEL_VERBOSE") == "1"
-force = os.environ.get("ADEL_FORCE") == "1"
+host = os.environ["PHP_ENGINE_FTP_HOST"]
+user = os.environ["PHP_ENGINE_FTP_USER"]
+pw = os.environ["PHP_ENGINE_FTP_PASS"]
+port = int(os.environ.get("PHP_ENGINE_FTP_PORT", "21") or 21)
+use_tls = os.environ.get("PHP_ENGINE_FTP_TLS", "false").lower() in ("1", "true", "yes")
+timeout = int(os.environ.get("PHP_ENGINE_FTP_TIMEOUT", "30") or 30)
+dest = os.environ["PHP_ENGINE_DEST"]
+only = os.environ.get("PHP_ENGINE_ONLY", "all")
+dryrun = os.environ.get("PHP_ENGINE_DRYRUN") == "1"
+verbose = os.environ.get("PHP_ENGINE_VERBOSE") == "1"
+force = os.environ.get("PHP_ENGINE_FORCE") == "1"
 
 # (remote dir or root glob, local subdir under dest)
 SOURCES = {
-    "prod": [(os.environ.get("ADEL_PROD_DIR", "prod_logs"), "prod", None)],
-    "dev": [(os.environ.get("ADEL_DEV_DIR", "dev_logs"), "dev", None)],
-    "root": [(None, "dev", os.environ.get("ADEL_ROOT_PREFIX", "dev.example.com."))],
+    "prod": [(os.environ.get("PHP_ENGINE_PROD_DIR", "prod_logs"), "prod", None)],
+    "dev": [(os.environ.get("PHP_ENGINE_DEV_DIR", "dev_logs"), "dev", None)],
+    "root": [(None, "dev", os.environ.get("PHP_ENGINE_ROOT_PREFIX", "dev.example.com."))],
 }
 if only == "all":
     wanted = SOURCES["prod"] + SOURCES["dev"] + SOURCES["root"]

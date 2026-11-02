@@ -132,5 +132,5 @@ raise `--level` only when level N is quiet.
 - Update a tool: delete its `.phar` from `~/.cache/php_engine-tools/`; the next
   run re-downloads latest. Check versions any time:
   `docker run --rm -v ~/.cache/php_engine-tools:/tools:ro php:8.2-cli php /tools/phpstan.phar --version`
-- Different PHP runtime: `ADEL_STATIC_PHP_IMAGE=php:8.3-cli ./tools/linters/lint-static.sh ...`
-- Different PHAR cache dir: `ADEL_STATIC_TOOL_CACHE=/path ./tools/linters/lint-static.sh ...`
+- Different PHP runtime: `PHP_ENGINE_STATIC_PHP_IMAGE=php:8.3-cli ./tools/linters/lint-static.sh ...`
+- Different PHAR cache dir: `PHP_ENGINE_STATIC_TOOL_CACHE=/path ./tools/linters/lint-static.sh ...`

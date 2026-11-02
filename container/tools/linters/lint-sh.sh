@@ -30,7 +30,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TOP="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$TOP" ] || { echo "ERROR: not inside a git repo." >&2; exit 1; }
 
-SHELLCHECK_IMAGE="${ADEL_SHELLCHECK_IMAGE:-koalaman/shellcheck:stable}"
+SHELLCHECK_IMAGE="${PHP_ENGINE_SHELLCHECK_IMAGE:-koalaman/shellcheck:stable}"
 
 ALL=0; STAGED=0
 FILES_LIST=()

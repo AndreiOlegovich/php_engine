@@ -1,4 +1,4 @@
-# Pre-commit gates for the aredel repo (repo root: this file's directory).
+# Pre-commit gates for the php_engine repo (repo root: this file's directory).
 #
 # Install once per clone:
 #   pre-commit install

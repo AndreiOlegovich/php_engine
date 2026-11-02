@@ -195,7 +195,7 @@ Symptom: subpages show blocks like `Deprecated: Creation of dynamic
 property SxGeo::$b_idx_len ...` or `Optional parameter $type declared
 before required parameter ...`. The old framework was written for PHP 5/7.
 
-Fix: `containerfiles/php-aredel.ini` sets
+Fix: `containerfiles/php-engine.ini` sets
 
 ```ini
 error_reporting = E_ALL & ~E_DEPRECATED
@@ -206,7 +206,7 @@ log_errors = On
 It is live-mounted in `docker-compose.yml`:
 
 ```yaml
-- ./containerfiles/php-aredel.ini:/usr/local/etc/php/conf.d/aredel.ini:ro
+- ./containerfiles/php-engine.ini:/usr/local/etc/php/conf.d/php-engine.ini:ro
 ```
 
 (and also `COPY`d in `containerfiles/Dockerfile.php` for fresh builds).
@@ -238,7 +238,7 @@ docker compose ps   # NAME should be php-apache
 ## PHP version (pinned to 8.0)
 
 `containerfiles/Dockerfile.php` uses `FROM php:8.0-apache` — the baseline we
-make the site work on first. `containerfiles/php-aredel.ini` additionally
+make the site work on first. `containerfiles/php-engine.ini` additionally
 hides `E_DEPRECATED` in browser output. To change version later, edit the
 `FROM` line and run `docker compose up -d --build`.
 

@@ -7,10 +7,10 @@ paths resolve the same).
 
 ## What it checks
 
-| Check label | What it catches | Real examples found in this tree |
+| Check label | What it catches | Examples |
 |---|---|---|
-| `doubled-scheme` | `http(s)://` appearing twice — two URLs concatenated | `https://www.testsetup.ruhttps://aredel.com/…` (og:image), `https://https://aredel.com/ru/i/`, `http://http://www.mandriva.ru/`, `…/installhttps://aredel.com/ru/linux/` |
-| `dotless-host` | scheme followed by a host with no dot — path text mistaken for a host | `https://ru/qa/aredel.com/ru/i/` (breadcrumb URLs; the intended host is `aredel.com`) |
+| `doubled-scheme` | `http(s)://` appearing twice — two URLs concatenated | `https://www.example.orghttps://example.com/…` (og:image), `https://https://example.com/docs/i/`, `http://http://www.example.net/`, `…/installhttps://example.com/docs/linux/` |
+| `dotless-host` | scheme followed by a host with no dot — path text mistaken for a host | `https://docs/blog/example.com/docs/i/` (breadcrumb URLs; the intended host is `example.com`) |
 
 Deliberately skipped (not reported): `localhost` (any port) and doc
 placeholders (`http://url/`, `http://foo/bar`, `http://hostname/`,
@@ -40,7 +40,7 @@ plugs straight into gates and hooks.
 Each hit is one line:
 
 ```text
-ru/qa/locust/help.php:12:$page_og_image_url = 'https://www.testsetup.ruhttps://aredel.com/ru/code/python/img/python_log.svg.png'; [doubled-scheme]
+docs/tools/help.php:12:$page_og_image_url = 'https://www.example.orghttps://example.com/docs/img/logo.png'; [doubled-scheme]
 ```
 
 | Field | Meaning |
@@ -70,9 +70,9 @@ OK: no malformed URLs.
    before every commit/upload — small output, obvious fixes.
 2. Judge each hit — the script cannot tell these apart, all need eyes:
    - **real bug** (majority so far): split the glued URLs, e.g.
-     `https://www.testsetup.ruhttps://aredel.com/…` → keep the half that
+     `https://www.example.orghttps://example.com/…` → keep the half that
      actually resolves (check with `curl -o /dev/null -w '%{http_code}'`);
-     `https://ru/qa/aredel.com/ru/i/` → `https://aredel.com/ru/i/`.
+     `https://docs/blog/example.com/docs/i/` → `https://example.com/docs/i/`.
    - **example text**: command output or docs *showing* an error
      (e.g. `locust: error: …`) — leave alone.
    - **new placeholder**: a dummy host not yet in the skip list — add it
@@ -94,7 +94,7 @@ find-malformed-urls.sh   the script (bash + grep -P, no dependencies)
 - Reported paths are `src/`-relative; line numbers are 1-based (`grep -n`).
 - The `dotless-host` pattern only matches bare labels (`ru`, `localhost`,
   …). Hosts containing `.` or `:` (`127.0.0.1:8089`, `0.0.0.0:8089`,
-  `aredel.com`, …) never match.
+  `example.com`, …) never match.
 - Needs `grep -P` (PCRE); errors out clearly where unavailable.
 - Like the other scripts, it `cd`s to the project root on start, so you can
   invoke it from anywhere: `container/tools/linters/find-malformed-urls.sh --staged`.

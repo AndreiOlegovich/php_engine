@@ -15,7 +15,7 @@ ARG HOST_GID=1000
 RUN groupmod -g ${HOST_GID} www-data && usermod -u ${HOST_UID} www-data
 
 # PHP settings for old codebase on PHP 8.0 (hide E_DEPRECATED in browser)
-COPY containerfiles/php-aredel.ini /usr/local/etc/php/conf.d/aredel.ini
+COPY containerfiles/php-engine.ini /usr/local/etc/php/conf.d/php-engine.ini
 
 # Set working directory (code comes from the ./src bind mount at runtime,
 # so we intentionally do NOT COPY src/ here — it was a 2.8 GB build context

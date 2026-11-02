@@ -1,6 +1,6 @@
-# aredel container
+# php_engine container
 
-Local Docker setup for the aredel.com PHP site (PHP 8.2 + Apache by default,
+Local Docker setup for a PHP site (PHP 8.2 + Apache by default,
 PHP 8.0 still available), plus a pytest link checker with Allure reporting.
 
 All commands run from this directory (`container/`).
@@ -51,8 +51,8 @@ docker compose up -d --build`.
 ## PHP version (8.2 default, 8.0 available)
 
 ```bash
-docker compose up -d --build            # PHP 8.2 (image aredel:8.2)
-PHP_VER=8.0 docker compose up -d --build  # PHP 8.0 (image aredel:8.0)
+docker compose up -d --build            # PHP 8.2 (image php_engine:8.2)
+PHP_VER=8.0 docker compose up -d --build  # PHP 8.0 (image php_engine:8.0)
 docker compose exec php-apache php -v   # check which is running
 ```
 
@@ -115,7 +115,7 @@ the linters (`--staged`, `--committed`, `--files`, paths, `--all`):
 ```bash
 tools/linters/find-malformed-urls.sh --staged
 tools/linters/find-malformed-urls.sh --all     # ~100 hits tree-wide, mostly
-                                   # testsetup.ru+aredel.com concatenations
+                                   # two glued-together domains
                                    # and https://ru/… breadcrumb URLs
 ```
 
@@ -141,13 +141,12 @@ Config lives in `pyproject.toml` (ruff select `E,F,W,I,N,UP,B,C4,SIM`,
 line-length 100; lenient mypy baseline; pylint with pytest-fixture
 `redefined-outer-name` disabled). Baseline is green.
 
-Pre-commit (installed via `uv tool install pre-commit`; repo root is the
-parent dir, so run from there):
+Pre-commit (installed via `uv tool install pre-commit`; the config sits at
+the repo root, the parent of `container/`, so run from there):
 
 ```bash
-cd ~/github
-pre-commit run --config aredel/container/.pre-commit-config.yaml --files \
-  aredel/container/pytest_web/test_sitemap.py
+cd ..
+pre-commit run --files container/pytest_web/test_sitemap.py
 ```
 
 Hooks: ruff check, ruff format, mypy, pylint (all scoped to `pytest_web/`)
@@ -213,7 +212,7 @@ tools/build-static-report.sh        # after a pytest_web run
 
 ```bash
 tools/generate-sitemap.sh [src_dir] [output.xml]   # default: src/sitemap_new.xml
-BASE_URL=https://www.aredel.com tools/generate-sitemap.sh
+BASE_URL=https://www.example.com tools/generate-sitemap.sh
 ```
 
 Scans `*.php`, skips framework/includes/backups (dot-/`_`-dirs pruned,

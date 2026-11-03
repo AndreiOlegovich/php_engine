@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Inside the container only. opencode-docker.sh starts OpenCode with
+  // --auto, which approves every ask; the limit is what the container
+  // holds, not a rule list.
+  "model": "opencode/deepseek-v4.1-flash-free",
+  // Read after AGENTS.md: what differs in the container (no git, read-only
+  // folders, what stays on the host).
+  "instructions": ["CONTAINER.md"]
+}

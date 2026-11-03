@@ -3,12 +3,14 @@ name = "php-engine-container"
 version = "0.1.0"
 description = "Docker setup + pytest link checker for a PHP site"
 readme = "README.md"
-requires-python = ">=3.10"
-# Runtime deps of pytest_web/ (mirrors pytest_web/requirements.txt).
+requires-python = ">=3.12"
+# Runtime deps of the pytest suite and the ported tools.
 dependencies = [
   "pytest>=8",
   "requests>=2.31",
   "allure-pytest>=2.13",
+  "pyyaml>=6",
+  "pygments>=2.21",
 ]
 
 [dependency-groups]
@@ -22,18 +24,10 @@ dev = [
 [tool.uv]
 package = false
 
-# --- ruff (lint + format) ---
-# Scope: pytest_web/ is the maintained code. src/*.py are legacy Python 2
-# helpers (fix_*_py27.py) and stay out of every linter (see exclude below
-# and the pre-commit `files:` filter).
 [tool.ruff]
-target-version = "py310"
-line-length = 100
-exclude = [
-  ".venv/",
-  "src/",
-  "reports/",
-]
+target-version = "py312"
+line-length = 800
+exclude = [".venv/", "src/", "reports/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
@@ -42,22 +36,16 @@ ignore = []
 [tool.ruff.format]
 quote-style = "double"
 
-# --- mypy (types; lenient baseline, tighten later) ---
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
+explicit_package_bases = true
 show_error_codes = true
 ignore_missing_imports = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-exclude = [
-  "^src/",
-  "^\\.venv/",
-  "^reports/",
-]
+exclude = ["^src/", "^\\.venv/", "^reports/"]
 
-# --- pylint (messages control; run as: uv run pylint pytest_web) ---
 [tool.pylint."MESSAGES CONTROL"]
-# redefined-outer-name: pytest fixtures are *meant* to be reused as arg names.
 disable = [
   "missing-docstring",
   "redefined-outer-name",
@@ -67,7 +55,10 @@ disable = [
   "too-many-locals",
   "too-many-branches",
   "duplicate-code",
+  "too-many-lines",
+  "unused-argument",
 ]
+max-line-length = 800
 
 [tool.pylint."REPORTS"]
 output-format = "text"

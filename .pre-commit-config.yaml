@@ -1,3 +1,6 @@
+default_language_version:
+  python: python3.12
+
 # Pre-commit gates for the php_engine repo (repo root: this file's directory).
 #
 # Install once per clone:
@@ -22,6 +25,15 @@
 # conflicts) applies to the maintained text files; formatters may modify
 # files on the first run — `git add` the result and commit again.
 repos:
+  - repo: local
+    hooks:
+      - id: check-python-consistency
+        name: python 3.12 consistency
+        entry: python3.12 container/tools/linters/check_python_consistency.py --require-precommit
+        language: system
+        always_run: true
+        pass_filenames: false
+
   # --- Python: ruff (lint + format) ---
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.8

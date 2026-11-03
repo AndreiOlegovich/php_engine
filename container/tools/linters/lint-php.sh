@@ -117,7 +117,10 @@ if [ "${#FILES_LIST[@]}" -gt 0 ] || [ "${#POSITIONAL[@]}" -gt 0 ]; then
         printf '%s\n' "${f#"$SRC_ABS"/}"
       done >> "$REL_LIST"
     elif [ -f "$ap" ]; then
-      printf '%s\n' "$t" >> "$REL_LIST"
+      case "$t" in
+        *.php) printf '%s\n' "$t" >> "$REL_LIST" ;;
+        *) echo "WARNING: skipping '$tok' (not a PHP file)." >&2 ;;
+      esac
     else
       echo "WARNING: skipping '$tok' (not found under $SRC_DIR)." >&2
     fi

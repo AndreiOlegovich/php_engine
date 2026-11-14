@@ -38,3 +38,9 @@ tools/run-tests-venv.sh      uv venv + pytest runner
 ```
 
 Docker-backed linters are skipped when `docker` is not on `PATH`.
+
+## Course checks (offline)
+
+| File | Asserts |
+|---|---|
+| `test_course_check.py` | block extraction, quiz parsing and the `dump_quiz.php` token reader (class from `SITE_QUIZ_CLASS`) on fixture pages |

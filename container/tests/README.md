@@ -55,3 +55,11 @@ Site values come from `container/site-profile.env` (see
 `site-profile.env.example`); a test whose key is unset skips.
 `tests/url_selection.py` narrows a run to `PATHS_FILE`;
 `tests/run_sitemap_tests.sh --test link|all` picks the group.
+
+## Search tools (offline)
+
+| File | Asserts |
+|---|---|
+| `our_tools/test_find_article.py` | ranking and first-mention scan on generic fixture pages (`SITE_LANG_DIRS`) |
+| `our_tools/test_site_index.py` | the per-language export and its determinism on a temp docroot |
+| `our_tools/test_site_search.py` | the PHP search class matches the Python tokenizer; skips when `src/.php/SiteSearch.php` is absent |

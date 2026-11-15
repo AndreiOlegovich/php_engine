@@ -40,6 +40,14 @@ tools/run-tests-venv.sh      uv venv + pytest runner
 Docker-backed linters are skipped when `docker` is not on `PATH`.
 
 
+## Translation pipeline (offline)
+
+| File | Asserts |
+|---|---|
+| `tools/test_en_ru_pairs.py` | the en/ru twin pairing of page trees, tag-aware, with notes for the weak matches |
+| `tools/test_ru_en_translate.py` | extract, translate, verify and apply in both directions; author credits from `SITE_RU_AUTHORS` / `SITE_EN_AUTHORS` |
+
+
 ## Log pipeline (offline)
 
 | File | Asserts |

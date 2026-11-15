@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.1
+# version 0.1.2
 # Set up .venv with uv and run the pytest suite with the venv python.
 #
 # No system-python pollution: everything lives in <root>/.venv.
@@ -57,7 +57,8 @@ if [ "$SETUP_ONLY" -eq 1 ]; then
 fi
 
 export BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
-echo "BASE_URL=$BASE_URL"
+export SITEMAP_FILE="${SITEMAP_FILE:-src/sitemap.xml}"
+echo "BASE_URL=$BASE_URL SITEMAP_FILE=$SITEMAP_FILE"
 
 if [ "$#" -eq 0 ]; then
   set -- tests/ -q

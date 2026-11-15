@@ -1,0 +1,57 @@
+# The image of Dockerfile.opencode plus the languages of src/dev that compile
+# to machine code, so the agent can build and run the examples of their
+# pages: assembler (nasm, as, ld, objdump, gdb), C and C++ (gcc, g++, make,
+# cmake), Fortran (gfortran), COBOL (cobc), Go (go), Rust (rustc, cargo) and
+# Haskell (ghc, ghci, runghc, cabal). pip, the Python headers, maturin and
+# patchelf are here too, for pages that extend Python with a compiled
+# language (venv, pip install, building an extension module), and valgrind,
+# strace and hyperfine for debugging and timing. The other languages are in
+# Dockerfile.vm.opencode and Dockerfile.script.opencode.
+# OpenCode for --auto runs on an agent worktree. The official image, plus PHP
+# for php -l and page renders, bash, Python, Perl and the GNU tools for the
+# scripts in container/tools, and a user with your UID, so the files the
+# agent writes stay yours.
+#
+# To leave a language out, put # in front of its package line in the RUN
+# below and, for Go, in front of its ENV line too: Docker skips a comment
+# line inside a continued RUN. The next run of opencode-docker.sh rebuilds
+# the image. Leave the lines above the first language and the last line
+# (&& ln -s ...) as they are.
+# Haskell is about 1 GB of the 3.1 GB, Rust 0.6 GB, Go 0.2 GB.
+FROM ghcr.io/anomalyco/opencode:2.1.4
+RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
+    php83 php83-ctype php83-dom php83-iconv php83-mbstring php83-session \
+    php83-simplexml php83-tokenizer php83-xml \
+# Assembler: nasm, the GNU as, ld and objdump, gdb.
+    nasm binutils gdb \
+# C and C++: gcc, g++, make, cmake. Without this line gcc stays, because
+# the compilers below need it, but g++, make and cmake go.
+    build-base cmake \
+# Fortran.
+    gfortran \
+# COBOL.
+    gnucobol \
+# Go.
+    go \
+# Rust: rustc and cargo, plus clippy and rustfmt (cargo clippy, cargo fmt).
+    rust cargo rust-clippy rustfmt \
+# Haskell.
+    ghc cabal \
+# Python extensions: pip and Python.h (python3 itself is in the first line),
+# maturin and patchelf for Rust modules and their wheels.
+    py3-pip python3-dev maturin patchelf \
+# Debugging and measuring any of the languages above: valgrind, strace,
+# hyperfine (timing a command over several runs).
+    valgrind strace hyperfine \
+ && ln -s /usr/bin/php83 /usr/local/bin/php
+# Go: the installed toolchain only, never a download of the one a go.mod names.
+ENV GOTOOLCHAIN=local
+ARG HOST_UID=1000
+ARG HOST_GID=1000
+RUN addgroup -g ${HOST_GID} agent \
+ && adduser -D -u ${HOST_UID} -G agent agent \
+ && mkdir -p /work && chown agent:agent /work
+USER agent
+# Created by the user, so a new named volume mounted here is writable.
+RUN mkdir -p /home/agent/.local/share/opencode
+WORKDIR /work

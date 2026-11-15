@@ -40,6 +40,13 @@ tools/run-tests-venv.sh      uv venv + pytest runner
 Docker-backed linters are skipped when `docker` is not on `PATH`.
 
 
+## Log pipeline (offline)
+
+| File | Asserts |
+|---|---|
+| `tools/test_refresh_metrika.py` | the refresh chain runs under its lock, with the log folder from `SITE_LOG_DIR` |
+
+
 ## Article feed (offline)
 
 | File | Asserts |

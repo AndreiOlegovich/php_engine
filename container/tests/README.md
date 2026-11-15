@@ -40,6 +40,14 @@ tools/run-tests-venv.sh      uv venv + pytest runner
 Docker-backed linters are skipped when `docker` is not on `PATH`.
 
 
+## Article feed (offline)
+
+| File | Asserts |
+|---|---|
+| `test_post_to_feed.py` | the feed records created, modified and moved events on a temp repo |
+| `our_tools/test_if_file_is_an_article.py` | the article test on fixture pages (`SITE_PAGE_CLASSES`, `SITE_HEADER_INCLUDES`); skips when `tests/our_tools/fixtures/` is absent |
+
+
 ## Course checks (offline)
 
 | File | Asserts |

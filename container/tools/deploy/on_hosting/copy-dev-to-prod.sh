@@ -7,7 +7,7 @@
 #
 #   No flags: copy only new files/dirs, never overwrite.
 #   -f:       overwrite differing files, backing up old DEST versions first.
-#   --duplicate-check full|size: forwarded to copy_with_shadow_backup.sh
+#   --duplicate-check full|size: forwarded to copy-with-shadow-backup.sh
 #             (full = size + content, default; size = size only, faster but
 #             same-size edits are missed).
 #

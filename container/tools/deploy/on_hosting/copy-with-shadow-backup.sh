@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Copy source tree into destination with optional forced overwrite + shadow backup.
 # Usage:
-#   ./copy_with_shadow_backup.sh [-f|--force] [--duplicate-check full|size] <source_dir> <dest_dir>
-#   ./copy_with_shadow_backup.sh <source_dir> <dest_dir> [-f|--force]
+#   ./copy-with-shadow-backup.sh [-f|--force] [--duplicate-check full|size] <source_dir> <dest_dir>
+#   ./copy-with-shadow-backup.sh <source_dir> <dest_dir> [-f|--force]
 #
 # Without -f: copy only new files/dirs, never overwrite existing files.
 # With -f:    overwrite differing files in DEST, but first save the old

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Copy a selected file set from the dev site tree to the prod site tree
-# with shadow backup (same convention as copy_with_shadow_backup.sh).
+# with shadow backup (same convention as copy-with-shadow-backup.sh).
 #
 # Run ON the server, where these paths exist:
-#   ./copy_selected_dev_to_prod.sh [--duplicate-check full|size] [dev_dir] [prod_dir]
+#   ./copy-selected-dev-to-prod.sh [--duplicate-check full|size] [dev_dir] [prod_dir]
 #
 # Defaults:
 #   dev_dir   /home/user/dev/public_html
@@ -63,7 +63,7 @@ mkdir -p "$PROD" "$BACKUP"
 
 COPIED=0; SKIPPED=0; BACKED_UP=0; MISSING=0
 
-# Same files_differ() as in copy_with_shadow_backup.sh (duplicated on
+# Same files_differ() as in copy-with-shadow-backup.sh (duplicated on
 # purpose: these files run standalone on hosting, no shared library).
 DIFF_WHY=""
 files_differ() {

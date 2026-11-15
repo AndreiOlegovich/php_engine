@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-# version 0.1.1
+# version 0.1.0
 """Find snake_case method calls that miss the camelCase engine APIs.
 
 phpcs only checks method *declarations*; a page calling
 ``$page->get_ads_block()`` on a camelCase engine passes lint and fatals
-at runtime (see the engine API docs). This script
+at runtime (see section/errors/wrong-method-dialect.php). This script
 closes that gap.
 
-How it works: every ``function camelName()`` declared in the engine tree
-(src/.php) yields its
+How it works: every ``function camelName()`` declared in the engine
+trees (every folder named .php under src) yields its
 snake_case shadow (``createHead`` -> ``create_head``). Any
 ``->shadow(`` or ``::shadow(`` call site is an ERROR. Any other
 ``->[a-z][a-z0-9]*_[a-z0-9_]*\\(`` call is a WARNING for review
@@ -32,7 +32,20 @@ import re
 import subprocess
 import sys
 
-ENGINE_DIRS = (".php",)
+ENGINE_DIRS = ()  # empty: discovered per tree by engine_dirs()
+
+
+def engine_dirs(src):
+    """Every folder named .php under src: the framework of that tree."""
+    found = []
+    for root, dirs, _files in os.walk(src):
+        for name in dirs:
+            if name == ".php":
+                rel = os.path.relpath(os.path.join(root, name), src)
+                found.append(rel.replace(os.sep, "/"))
+    return sorted(found)
+
+
 # Vendored code is not ours — never flag inside it.
 VENDOR_DIRS = ("SxGeo",)
 METHOD_DEF = re.compile(r"function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")
@@ -54,7 +67,7 @@ def read_text(path):
 def engine_methods(src):
     """camelCase methods declared in engine trees -> {snake: camel}."""
     out = {}
-    for tree in ENGINE_DIRS:
+    for tree in ENGINE_DIRS or engine_dirs(src):
         d = os.path.join(src, *tree.split("/"))
         for root, _, files in os.walk(d):
             if any(v in root.split(os.sep) for v in VENDOR_DIRS):

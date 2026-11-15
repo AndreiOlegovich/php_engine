@@ -161,3 +161,14 @@ repos:
         files: ^(container/tools/linters/lint-static\.sh|container/phpcs\.xml|\.pre-commit-config\.yaml)$
         pass_filenames: false
         additional_dependencies: ["pytest>=8", "pyyaml>=6"]
+
+  # --- lint-static.py self test (Python port of the phpcs gate) ---
+  - repo: local
+    hooks:
+      - id: lint-static-py-selftest
+        name: lint-static.py self test
+        entry: pytest container/tests/linters/test_lint_static_fix_offer.py -q
+        language: python
+        files: ^(container/tools/linters/lint-static\.py|container/tools/linters/lint_static_with_py/.*)$
+        pass_filenames: false
+        additional_dependencies: ["pytest>=8"]

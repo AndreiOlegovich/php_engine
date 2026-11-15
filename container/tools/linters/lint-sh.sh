@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# version 0.0.3
 # Lint shell scripts with shellcheck via a one-off Docker image.
 #
 # No host installs: koalaman/shellcheck:stable is pulled once, reused after.
@@ -8,8 +9,8 @@
 #   ./lint-sh.sh [--all] [--staged] [--files F ...] [paths...]
 #
 # Selection (default: --all; flags/paths combine as a union):
-#   --all           every maintained script (container/tools/**/*.sh and
-#                   top-level container_php83/*.sh).
+#   --all           every maintained script (container/tools/*.sh, subdirs, tests,
+#                   container/css_pipeline).
 #   --staged        staged *.sh files (explicit user action: legacy files
 #                   staged here are checked too, not skipped).
 #   --files F ...   explicit files/dirs (space and/or comma separated,
@@ -23,6 +24,11 @@
 #
 # Exit: 0 = clean, 1 = findings (or usage/setup failure: 1/2).
 set -euo pipefail
+
+# A hook in a linked worktree gets GIT_DIR without GIT_WORK_TREE, and then
+# git -C <dir> takes <dir> for the top of the work tree. Let git find the
+# worktree from the folder instead.
+unset GIT_DIR GIT_WORK_TREE
 
 _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
@@ -112,13 +118,16 @@ fi
 
 # --- 2) staged *.sh (added/copied/modified/renamed; deletions excluded) ---
 if [ "$STAGED" -eq 1 ]; then
+  # Image-batch helpers under */img/* are data-dir tools, not maintained
+  # scripts (same exclusion as the sitemap generator); explicit --files
+  # still checks them on request.
   git -C "$TOP" diff --cached --name-only -z --diff-filter=ACMR -- '*.sh' 2>/dev/null \
-    | tr '\0' '\n' | grep '\.sh$' >> "$REL_LIST" || true
+    | tr '\0' '\n' | grep '\.sh$' | grep -v '/img/' | grep -v 'tools/images/' >> "$REL_LIST" || true
 fi
 
 # --- 3) default/all: maintained scripts only (legacy src/ bulk excluded) ---
 if [ "$ALL" -eq 1 ] || { [ "${#FILES_LIST[@]}" -eq 0 ] && [ "${#POSITIONAL[@]}" -eq 0 ] && [ "$STAGED" -eq 0 ]; }; then
-  for f in "$TOP/container/tools/"*.sh "$TOP/container/tools/"*/*.sh "$TOP/container/tools/"*/*/*.sh "$TOP/container_php83/"*.sh; do
+  for f in "$TOP/container/tools/"*.sh "$TOP/container/tools/"*/*.sh "$TOP/container/tests/"*.sh "$TOP/container/css_pipeline/"*.sh; do
     [ -f "$f" ] || continue
     printf '%s\n' "${f#"$TOP"/}" >> "$REL_LIST"
   done

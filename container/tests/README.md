@@ -39,8 +39,27 @@ tools/run-tests-venv.sh      uv venv + pytest runner
 
 Docker-backed linters are skipped when `docker` is not on `PATH`.
 
+
 ## Course checks (offline)
 
 | File | Asserts |
 |---|---|
 | `test_course_check.py` | block extraction, quiz parsing and the `dump_quiz.php` token reader (class from `SITE_QUIZ_CLASS`) on fixture pages |
+
+## HTTP tests (need the local site and a sitemap)
+
+| File | Asserts |
+|---|---|
+| `test_sitemap.py` | every sitemap `<loc>` answers 200 (one case per URL) |
+| `test_content_loaded.py` | every page renders the bottom marker (`SITE_BOTTOM_MARKER`) |
+| `test_page_html_id.py` | every page renders one shell marker (`SITE_PAGE_MARKERS`) |
+| `test_page_stylesheets.py` | each tree links its own sheet (`SITE_TREE_SHEETS`) |
+| `test_page_wrapped_once.py` | no width wrapper inside another (`SITE_WRAPPER_CLASSES`) |
+| `test_footer_wrapped.py` | the footer table sits inside a wrapper |
+| `test_internal_links.py` | every root-relative link answers 200 |
+
+Site values come from `container/site-profile.env` (see
+`site-profile.env.example`); a test whose key is unset skips.
+`tests/url_selection.py` narrows a run to `PATHS_FILE`;
+`tests/run_sitemap_tests.sh --test link|all` picks the group.
+

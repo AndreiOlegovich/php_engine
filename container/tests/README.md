@@ -87,6 +87,15 @@ Site values come from `container/site-profile.env` (see
 `tests/run_sitemap_tests.sh --test link|all` picks the group.
 
 
+## Redirect, error and image gates (need the local site)
+
+| File | Asserts |
+|---|---|
+| `test_redirects.py` | one request per case in `redirect_cases.py`: status and exact `Location` (copy `redirect_cases.example.py`) |
+| `test_error_regression.py` | pages in `error_regression_cases.py` render without the PHP fatal signature |
+| `test_img_src.py` | every `<img>` has a usable `src`; own-host URLs resolve locally (`SITE_OWN_HOSTS`) |
+
+
 ## CSS tests (run without a server unless noted)
 
 | File | Asserts |

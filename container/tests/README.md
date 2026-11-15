@@ -86,3 +86,12 @@ Site values come from `container/site-profile.env` (see
 `tests/url_selection.py` narrows a run to `PATHS_FILE`;
 `tests/run_sitemap_tests.sh --test link|all` picks the group.
 
+
+## CSS tests (run without a server unless noted)
+
+| File | Asserts |
+|---|---|
+| `test_css_coverage.py` | every `<aside>` on a page has a matching rule (`SITE_ASIDE_TAG`; needs a sitemap) |
+| `test_css_parity.py` | the served sheet is byte-identical on local, dev and prod (`SITE_CSS_SHEET`, `SITE_URL`, `SITE_DEV_URL`) |
+| `test_css_sources.py` | every CSS source feeds a target, and the shared target is core + the sheet (`SITE_CSS_TARGETS`; needs a css_pipeline) |
+=======

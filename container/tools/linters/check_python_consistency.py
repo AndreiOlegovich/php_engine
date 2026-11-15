@@ -1,4 +1,4 @@
-# version 0.1.1
+# version 0.1.0
 """Check that the repository's Python toolchain is consistently on 3.12.
 
 Run from the repository root:
@@ -12,12 +12,12 @@ The checker is deliberately stdlib-only so it also works before the project
 virtualenv exists. It inspects:
 
 * the interpreter running the checker and the root ``.python-version`` pin;
-* the project ``pyproject.toml`` and its ``uv.lock`` file;
+* both project ``pyproject.toml`` files and their ``uv.lock`` files;
 * the Python Docker images;
 * the pre-commit default language and hook wiring;
 * the stale-venv recreation logic in ``container/tools/run-tests-venv.sh``;
-* the existing ``container/.venv`` and the uv-installed pre-commit
-  environment.
+* existing ``container/.venv``, ``backoffice-container/.venv`` and the
+  uv-installed pre-commit environment.
 """
 
 from __future__ import annotations
@@ -39,10 +39,21 @@ DOCKER_IMAGE = "python:3.12-slim"
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
 PYTHON_VERSION_FILE = ".python-version"
-PYPROJECTS = ("container/pyproject.toml",)
-LOCKFILES = ("container/uv.lock",)
-DOCKERFILES = ("container/pytest_web/Dockerfile",)
-VENVS = ("container/.venv",)
+
+
+def _present(*relatives: str) -> tuple[str, ...]:
+    """Only the projects this checkout actually has (one or many)."""
+    return tuple(rel for rel in relatives if (REPO_ROOT / rel).exists())
+
+
+PYPROJECTS = _present("container/pyproject.toml", "backoffice-container/pyproject.toml")
+LOCKFILES = _present("container/uv.lock", "backoffice-container/uv.lock")
+DOCKERFILES = _present(
+    "container/containerfiles/Dockerfile.pytest",
+    "container/pytest_web/Dockerfile",
+    "container/tools/pycode-highlight/Dockerfile",
+)
+VENVS = _present("container/.venv", "backoffice-container/.venv")
 
 
 def _run(args: Sequence[str], timeout: int = 30) -> subprocess.CompletedProcess[str]:

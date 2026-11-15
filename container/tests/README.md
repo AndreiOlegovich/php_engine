@@ -39,6 +39,36 @@ tools/run-tests-venv.sh      uv venv + pytest runner
 
 Docker-backed linters are skipped when `docker` is not on `PATH`.
 
+
+## Translation pipeline (offline)
+
+| File | Asserts |
+|---|---|
+| `tools/test_en_ru_pairs.py` | the en/ru twin pairing of page trees, tag-aware, with notes for the weak matches |
+| `tools/test_ru_en_translate.py` | extract, translate, verify and apply in both directions; author credits from `SITE_RU_AUTHORS` / `SITE_EN_AUTHORS` |
+
+
+## Log pipeline (offline)
+
+| File | Asserts |
+|---|---|
+| `tools/test_refresh_metrika.py` | the refresh chain runs under its lock, with the log folder from `SITE_LOG_DIR` |
+
+
+## Article feed (offline)
+
+| File | Asserts |
+|---|---|
+| `test_post_to_feed.py` | the feed records created, modified and moved events on a temp repo |
+| `our_tools/test_if_file_is_an_article.py` | the article test on fixture pages (`SITE_PAGE_CLASSES`, `SITE_HEADER_INCLUDES`); skips when `tests/our_tools/fixtures/` is absent |
+
+
+## Course checks (offline)
+
+| File | Asserts |
+|---|---|
+| `test_course_check.py` | block extraction, quiz parsing and the `dump_quiz.php` token reader (class from `SITE_QUIZ_CLASS`) on fixture pages |
+
 ## HTTP tests (need the local site and a sitemap)
 
 | File | Asserts |
@@ -56,6 +86,7 @@ Site values come from `container/site-profile.env` (see
 `tests/url_selection.py` narrows a run to `PATHS_FILE`;
 `tests/run_sitemap_tests.sh --test link|all` picks the group.
 
+
 ## Redirect, error and image gates (need the local site)
 
 | File | Asserts |
@@ -63,3 +94,13 @@ Site values come from `container/site-profile.env` (see
 | `test_redirects.py` | one request per case in `redirect_cases.py`: status and exact `Location` (copy `redirect_cases.example.py`) |
 | `test_error_regression.py` | pages in `error_regression_cases.py` render without the PHP fatal signature |
 | `test_img_src.py` | every `<img>` has a usable `src`; own-host URLs resolve locally (`SITE_OWN_HOSTS`) |
+
+
+## CSS tests (run without a server unless noted)
+
+| File | Asserts |
+|---|---|
+| `test_css_coverage.py` | every `<aside>` on a page has a matching rule (`SITE_ASIDE_TAG`; needs a sitemap) |
+| `test_css_parity.py` | the served sheet is byte-identical on local, dev and prod (`SITE_CSS_SHEET`, `SITE_URL`, `SITE_DEV_URL`) |
+| `test_css_sources.py` | every CSS source feeds a target, and the shared target is core + the sheet (`SITE_CSS_TARGETS`; needs a css_pipeline) |
+=======

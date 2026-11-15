@@ -87,6 +87,15 @@ Site values come from `container/site-profile.env` (see
 `tests/run_sitemap_tests.sh --test link|all` picks the group.
 
 
+## Search tools (offline)
+
+| File | Asserts |
+|---|---|
+| `our_tools/test_find_article.py` | ranking and first-mention scan on generic fixture pages (`SITE_LANG_DIRS`) |
+| `our_tools/test_site_index.py` | the per-language export and its determinism on a temp docroot |
+| `our_tools/test_site_search.py` | the PHP search class matches the Python tokenizer; skips when `src/.php/SiteSearch.php` is absent |
+
+
 ## Redirect, error and image gates (need the local site)
 
 | File | Asserts |
@@ -103,4 +112,4 @@ Site values come from `container/site-profile.env` (see
 | `test_css_coverage.py` | every `<aside>` on a page has a matching rule (`SITE_ASIDE_TAG`; needs a sitemap) |
 | `test_css_parity.py` | the served sheet is byte-identical on local, dev and prod (`SITE_CSS_SHEET`, `SITE_URL`, `SITE_DEV_URL`) |
 | `test_css_sources.py` | every CSS source feeds a target, and the shared target is core + the sheet (`SITE_CSS_TARGETS`; needs a css_pipeline) |
-=======
+

@@ -1,4 +1,4 @@
-# version 0.2.0
+# version 0.2.1
 """Self-test gate for the phpcs gate: container/tools/linters/lint-static.sh
 (phpcs mode), the container/phpcs.xml ruleset it enforces, and the phpcs-src
 hook wiring in .pre-commit-config.yaml.
@@ -117,6 +117,13 @@ def require_single_gate_hook():
     ids = [hook.get("id") for hook, _ in found]
     assert len(found) == 1, f"expected exactly one hook running lint-static.sh ... phpcs, found: {ids or 'none'}"
     return found[0]
+
+
+@pytest.fixture(autouse=True)
+def failed_list_in_tmp(tmp_path, monkeypatch):
+    """A --staged phpcs check saves the failing paths to a list; keep the
+    self-test fixtures out of the real container/log list."""
+    monkeypatch.setenv("PHPCS_FAILED_LIST", str(tmp_path / "phpcs-latest-commit-failed-list.log"))
 
 
 @pytest.fixture

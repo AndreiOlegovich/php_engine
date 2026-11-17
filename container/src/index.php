@@ -1,1 +1,3 @@
-<?php\necho TEST;\n?>
+<?php
+
+echo 'TEST';

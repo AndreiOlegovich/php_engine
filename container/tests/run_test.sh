@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.1
+# version 0.3.2
 # Run the container tests (container/tests) with the project venv.
 #
 # Usage (from any folder):
@@ -165,8 +165,8 @@ TESTS (name -> file: what it checks; example)
                      and so on) (static).
                      ./run_test.sh page_stylesheets
 
-  post_to_feed       test_post_to_feed.py: reading page changes from the completed
-                     commit (git). Tests the feed hook's parsing.
+  post_to_feed       test_post_to_feed.py: the feed builder: page changes per
+                     commit, the walk over main, the feed-only commit (git).
                      ./run_test.sh post_to_feed
 
   python_version_consistency  test_python_version_consistency.py: Python 3.12

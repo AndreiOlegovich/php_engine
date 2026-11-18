@@ -51,3 +51,11 @@ run leaves the previous file untouched.
 - Validate the temporary file before replacing the target.
 - Replace with `mv`, never with `cp` (a copy is not atomic).
 - Remove the temporary file on every exit path (`trap ... EXIT`).
+
+## The feed writer
+
+`container/tools/feed/post_to_feed.py` rewrites two JSON files that pages and
+tests read, so it writes them the same way: a temp file in the same folder,
+`os.replace()`, and a `chmod` back to the old mode (`mkstemp` creates 0600).
+The builder runs by hand on `main`, never from a hook, so a reader never sees
+a half-written feed.

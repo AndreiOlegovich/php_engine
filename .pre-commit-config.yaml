@@ -104,11 +104,11 @@ repos:
         always_run: true
         pass_filenames: false
 
-  # --- Diff artifacts (EOL flips, encoding damage, full-file rewrites) ---
+  # --- Diff artifacts (EOL flips, encoding damage, mojibake, BOM) ---
   - repo: local
     hooks:
       - id: check-diff-artifacts
-        name: check-diff-artifacts (staged)
+        name: check-diff-artifacts (staged, byte damage only)
         entry: container/tools/check-diff-artifacts.sh --staged
         language: system
         always_run: true

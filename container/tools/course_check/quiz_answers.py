@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 1.2.0
+# version 1.6.0
 """Check the questions of lesson pages: their shape and their marked answers.
 
 The questions are read with dump_quiz.php, which finds the array argument of
@@ -8,8 +8,16 @@ question that carries a whole program is built and run, in parallel and each
 in a folder of its own, and its output is compared with the marked option; a
 question that cannot be built is compared with the first compiler error line
 instead, and a question about a warning or an exit status with the warning
-the build printed or the status the run returned. A question that points at
-something outside itself and carries no code is reported as REFERS.
+the build printed or the status the run returned. A program that dies of an
+uncaught error proves an option that names the error. A JavaScript question
+that calls its program a module is run as an .mjs file, and one that names
+its run command, as `node m.js`, under that file name, with the NAME=value
+variables in front of it. Another file the question gives inline, as "a.js
+is `module.exports = 1;`", is written next to the program when the program
+names it. A run that proves no
+option and died because a file of the lesson's project is missing, such as
+package.json, is a SKIP. A question that points at something outside itself
+and carries no code is reported as REFERS.
 
 Exit status: 0 when nothing needs attention, 1 on a wrong answer, a REFERS
 line or a structure finding, 2 on a usage error.
@@ -23,6 +31,7 @@ import argparse
 import json
 import re
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -32,11 +41,11 @@ DUMP_SCRIPT = Path(__file__).resolve().parent / "dump_quiz.php"
 
 EXAMPLES = """\
 examples:
-  quiz_answers.py ../src/examples/rust/course --lang rust
-  quiz_answers.py ../src/examples/rust/course --lang rust --jobs 8
-  quiz_answers.py ../src/examples/cpp/course/014_recursion.php --lang cpp
-  quiz_answers.py ../src/examples/c --lang c --docker opencode-agent-native
-  quiz_answers.py ../src/examples/rust/course --lang rust --count 0 --json /tmp/quiz.json
+  quiz_answers.py ../src/dev/rust/course --lang rust
+  quiz_answers.py ../src/dev/rust/course --lang rust --jobs 8
+  quiz_answers.py ../src/dev/cpp/course/014_recursion.php --lang cpp
+  quiz_answers.py ../src/dev/c --lang c --docker opencode-agent-native
+  quiz_answers.py ../src/dev/rust/course --lang rust --count 0 --json /tmp/quiz.json
 """
 
 # A question that uses one of these phrases points at the page, not at itself.
@@ -57,11 +66,16 @@ REFER_PHRASES: tuple[str, ...] = (
     "shown below",
 )
 REFER_FILE_RE = re.compile(
-    r"\b(?:in|from|see|read|open|inside|file)\s+`?([\w-]+\.(?:rs|c|cc|cpp|h|hpp|go|hs|f90|cob|cbl|asm|s))\b",
+    r"\b(?:in|from|see|read|open|inside|file)\s+`?([\w-]+\.(?:rs|c|cc|cpp|h|hpp|go|hs|f90|cob|cbl|asm|s|js|mjs|cjs))\b",
     re.IGNORECASE,
 )
 FENCE_RE = re.compile(r"```[A-Za-z0-9_+-]*\r?\n(.*?)```", re.DOTALL)
 INLINE_CODE_RE = re.compile(r"`([^`]+)`", re.DOTALL)
+# "this module", "A module contains:", '"type": "module"'; not module.exports.
+MODULE_WORD_RE = re.compile(r"\bmodule\b(?!\.)", re.IGNORECASE)
+COMMONJS_RE = re.compile(r"\bcommonjs\b", re.IGNORECASE)
+# A file name that this many options repeat is what the question is about.
+NAMED_IN_OPTIONS = 2
 
 
 @dataclass
@@ -91,7 +105,23 @@ def code_snippets(text: str) -> list[str]:
     return [snippet for snippet in snippets if snippet.strip()]
 
 
-def refer_phrase(question: str, snippets: list[str]) -> str:
+def program_snippet(text: str, pattern: re.Pattern[str]) -> str | None:
+    """The whole program a question carries, or None.
+
+    A fenced block is a program when the preset regex accepts it. An inline
+    span is a program only when it keeps several lines: a one-line span is a
+    mention of a call, as in "why is `console.log(map)` worse than JSON",
+    and running it would build a fragment that the question never showed.
+    """
+    fenced = [match.group(1).strip("\n") for match in FENCE_RE.finditer(text)]
+    rest = FENCE_RE.sub("", text)
+    spans = [match.group(1) for match in INLINE_CODE_RE.finditer(rest)]
+    candidates = [snippet for snippet in fenced if snippet.strip()]
+    candidates += [snippet for snippet in spans if "\n" in snippet.strip()]
+    return next((snippet for snippet in candidates if pattern.search(snippet)), None)
+
+
+def refer_phrase(question: str, snippets: list[str], options: Sequence[str] = ()) -> str:
     """The phrase with which a question points outside itself, or ''."""
     if snippets:
         return ""
@@ -99,8 +129,50 @@ def refer_phrase(question: str, snippets: list[str]) -> str:
     for phrase in REFER_PHRASES:
         if phrase in lowered:
             return phrase
-    match = REFER_FILE_RE.search(question)
-    return match.group(1) if match else ""
+    for match in REFER_FILE_RE.finditer(question):
+        name = match.group(1)
+        # A product name is not a file: "in Node.js", "in Next.js".
+        if name != name.lower():
+            continue
+        # "Which command runs the file hello.js?" asks about the name: the
+        # options are commands that repeat it, and its content does not matter.
+        if sum(name in option for option in options) >= NAMED_IN_OPTIONS:
+            continue
+        return name
+    return ""
+
+
+def says_module(question: str) -> bool:
+    """True when the prose of a question calls its program a module.
+
+    The code of the question is left out, so `module.exports = 1` in a span
+    does not count, and a CommonJS module is a script to Node, not a module.
+    """
+    prose = INLINE_CODE_RE.sub("", FENCE_RE.sub("", question))
+    return bool(MODULE_WORD_RE.search(prose)) and not COMMONJS_RE.search(prose)
+
+
+def source_extension(
+    preset: cc.Language,
+    question: str,
+    run_name: str,
+    default: str,
+) -> str:
+    """The extension of the file a question's program is written to.
+
+    A stated run command keeps the extension of its file, as `node count.cjs`
+    does. A question that calls its program a module ("What does this module
+    print?") gets the module extension of the preset, .mjs for JavaScript:
+    Node reads a plain .js file as a sloppy CommonJS script, and then typeof
+    require, this in a plain call and a write to a read-only property all
+    give another answer than a module does.
+    """
+    suffix = Path(run_name).suffix.lstrip(".")
+    if suffix and suffix in preset.named_extensions:
+        return suffix
+    if preset.module_extension and says_module(question):
+        return preset.module_extension
+    return default
 
 
 def structure_problems(
@@ -195,7 +267,7 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
     """Check every page given on the command line."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.timeout <= 0:
+    if args.timeout is not None and args.timeout <= 0:
         parser.error("--timeout must be greater than zero")
     if args.output_limit <= 0:
         parser.error("--output-limit must be greater than zero")
@@ -210,6 +282,7 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
     extension = args.ext or language.extension
     build = args.build or language.build
     pattern = cc.program_pattern(args.program_regex or language.program_regex)
+    timeout = language.timeout if args.timeout is None else args.timeout
 
     try:
         files = cc.collect_pages(args.paths)
@@ -251,7 +324,19 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
     try:
         for page in pages:
             for question in page.questions:
-                tasks.append(plan_question(page, question, pattern, build, extension, args.lang, work, jobs))
+                tasks.append(
+                    plan_question(
+                        page,
+                        question,
+                        pattern,
+                        build,
+                        extension,
+                        args.lang,
+                        work,
+                        jobs,
+                        fixed_extension=bool(args.ext),
+                    )
+                )
         session = cc.open_session(root=work, docker_image=args.docker, network=args.network)
         try:
             results = cc.run_jobs(
@@ -259,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:  # pylint: disable=too-many-loca
                 jobs,
                 workers=args.jobs,
                 run=True,
-                timeout=args.timeout,
+                timeout=timeout,
                 output_limit=args.output_limit,
             )
         finally:
@@ -310,21 +395,42 @@ def plan_question(  # pylint: disable=too-many-arguments,too-many-positional-arg
     language: str,
     root: Path,
     jobs: list[cc.BuildJob],
+    *,
+    fixed_extension: bool = False,
 ) -> QuestionTask:
-    """Find the REFERS phrase of a question and write the program it carries."""
+    """Find the REFERS phrase of a question and write the program it carries.
+
+    fixed_extension is set by --ext: every file then gets that extension,
+    whatever the question says about modules or its run command.
+    """
     snippets = code_snippets(question.q)
-    phrase = refer_phrase(question.q, snippets)
-    program = next((snippet for snippet in snippets if pattern.search(snippet)), None)
+    phrase = refer_phrase(question.q, snippets, question.options)
+    program = program_snippet(question.q, pattern)
     if program is None:
         return QuestionTask(page, question, phrase)
+    stated = cc.stated_page_run(snippets)
+    run_name, arguments = stated.name, stated.arguments
+    preset = cc.LANGUAGES[language]
+    if not fixed_extension:
+        extension = source_extension(preset, question.q, run_name, extension)
     command = cc.stated_build(language, snippets, build, extension)
-    run_name, arguments = cc.stated_run(snippets)
     stem = f"{page.path.parent.name}_{page.path.stem}_q{question.number}"
     workdir = root / stem
     workdir.mkdir(parents=True, exist_ok=True)
-    source_name = f"{stem}.{extension}"
+    source_name = stated_source_name(preset, run_name, extension) or f"{stem}.{extension}"
     (workdir / source_name).write_text(program + "\n", encoding="utf-8")
-    job = cc.BuildJob(workdir, source_name, command, run_name=run_name, arguments=arguments)
+    for name, content in question_files(question.q, program).items():
+        if name != source_name:
+            (workdir / name).write_text(content + "\n", encoding="utf-8")
+    job = cc.BuildJob(
+        workdir,
+        source_name,
+        command,
+        run_name=run_name,
+        arguments=arguments,
+        run_command=cc.LANGUAGES[language].run,
+        environment=stated.environment,
+    )
     jobs.append(job)
     return QuestionTask(page, question, phrase, program, job)
 
@@ -354,9 +460,9 @@ def check_task(  # pylint: disable=too-many-branches,too-many-return-statements
             return
         error = result.error_line
         marked = marked_option(question)
-        if cc.matches_error(marked, error):
+        if build_error_matches(marked, error):
             return
-        hits = [index for index, option in enumerate(question.options) if cc.matches_error(option, error)]
+        hits = [index for index, option in enumerate(question.options) if build_error_matches(option, error)]
         if hits:
             totals["wrong"] += 1
             print(f"WRONG {where}: marked [{question.answer}] {short(marked)!r}; the build error matches option {hits}: {short(error)!r}")
@@ -372,6 +478,15 @@ def check_task(  # pylint: disable=too-many-branches,too-many-return-statements
         print(f"UNMATCHED {where}: marked {short(marked_option(question))!r}; the program did not build")
         return
 
+    if result.exit_code not in (0, None):
+        reason = cc.skip_reason(result.error_output)
+        missing = cc.missing_file(result.error_output)
+        if not reason and missing and not any(output_matches(option, result, question.q) for option in question.options):
+            reason = f"a file outside the question: {missing}"
+        if reason:
+            print(f"SKIP {where}: {reason}")
+            return
+
     totals["programs"] += 1
     output = result.output.strip()
     marked = marked_option(question)
@@ -384,24 +499,90 @@ def check_task(  # pylint: disable=too-many-branches,too-many-return-statements
         records.append({"file": str(page.path), "question": question.number, "kind": "WRONG", "detail": output})
         return
     totals["unmatched"] += 1
-    print(f"UNMATCHED {where}: marked {short(marked)!r}; output {short(output or result.error_output)!r}")
-    records.append({"file": str(page.path), "question": question.number, "kind": "UNMATCHED", "detail": output})
+    seen = f"output {short(output or result.error_output)!r}"
+    if result.timed_out:
+        seen += ", then the run timed out (--timeout)"
+    print(f"UNMATCHED {where}: marked {short(marked)!r}; {seen}")
+    records.append(
+        {
+            "file": str(page.path),
+            "question": question.number,
+            "kind": "UNMATCHED",
+            "detail": output,
+            "timed_out": result.timed_out,
+        }
+    )
+
+
+QUESTION_FILE_RE = re.compile(r"\b([A-Za-z0-9_-]+\.(?:[cm]?js|json|txt))\b[^`\n]{0,40}?\b(?:is|holds|contains)\s+`([^`]+)`")
+
+
+def question_files(question: str, program: str) -> dict[str, str]:
+    """The other files a question gives inline, by name, when its program names them.
+
+    "Two files in one folder, a.js is `module.exports = { n: 1 };` and main.js
+    is:" gives a.js, which the program requires; "data.json next to the
+    program holds `{ "runs": 3 }`" gives data.json. A file the program never
+    names is not written, so a question that lists a folder sees no extra.
+    """
+    files: dict[str, str] = {}
+    for match in QUESTION_FILE_RE.finditer(question):
+        name, content = match.groups()
+        if name in program and name not in files:
+            files[name] = content
+    return files
+
+
+def stated_source_name(preset: cc.Language, run_name: str, extension: str) -> str:
+    """The file name an interpreted program takes from its run command, or ''.
+
+    "The file m.js contains ... What does `node m.js` print?" over a program
+    that requires "./m.js" is only true when the file is m.js, so the file
+    gets that name. A compiled program keeps its own: its run name is a link
+    to the built program.
+    """
+    name = Path(run_name).name
+    if preset.run and name and Path(name).suffix == f".{extension}":
+        return name
+    return ""
+
+
+def build_error_matches(option: str, error_line: str) -> bool:
+    """True when the option is the first error line of the build, or names its error.
+
+    'A SyntaxError, because the private name is used outside its class' is
+    proved by node --check reporting 'SyntaxError: Private field ...'.
+    """
+    return cc.matches_error(option, error_line) or cc.names_error(option, cc.thrown_error(error_line))
+
+
+def ends_with_error(option: str, result: cc.ProgramResult) -> bool:
+    """True when the program printed nothing, died of an uncaught error and the option names it.
+
+    'It throws a TypeError, because null has no fields' and 'Nothing, because
+    the assertion throws an AssertionError' are proved by the error line on
+    stderr and an exit status other than 0.
+    """
+    if result.exit_code in (0, None) or result.output.strip():
+        return False
+    return cc.names_error(option, cc.thrown_error(result.error_output))
 
 
 def output_matches(option: str, result: cc.ProgramResult, question: str = "") -> bool:
-    """True when the option is what the program printed, warned or returned.
+    """True when the option is what the program printed, warned, threw or returned.
 
-    Three forms of an option count: the output itself, a diagnostic the build
-    or the run printed, and an exit status. The status is either the last
-    ' / ' part of the option, as in 'about to leave / status: 3', or the
-    whole option when the question asks for the exit status of the program.
+    Four forms of an option count: the output itself, a diagnostic the build
+    or the run printed, the uncaught error a silent program died of, and an
+    exit status. The status is either the last ' / ' part of the option, as
+    in 'about to leave / status: 3', a 'then status 3' tail, or the whole
+    option when the question asks for the exit status of the program.
     """
     text, status = cc.split_status(option)
     if status is None and question and cc.asks_exit_status(question):
         bare = cc.BARE_STATUS_RE.match(option.strip())
         if bare:
             return result.exit_code is not None and result.exit_code == int(bare.group(1))
-    if text_matches(option, result):
+    if text_matches(option, result) or ends_with_error(option, result):
         return True
     if status is None:
         return False

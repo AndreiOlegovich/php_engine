@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.1
+# version 0.3.2
 # Upload the site to Dev unattended: forced, in small batches, with retries.
 #
 # Wrapper over deploy-ftp.sh for uploads that die halfway through a big
@@ -22,7 +22,7 @@
 # percentage changes.
 #
 # Target: the creds file deploy-ftp.sh reads (default
-# ~/.config/php_engine/ftp-creds.env, the Dev target). The host: and src: lines printed first show where files go.
+# ~/.config/php_engine/hosting-access.env, the Dev target). The host: and src: lines printed first show where files go.
 #
 # Usage:
 #   ./deploy-batches.sh [--batch-size N] [--retries N] [--pause SEC]

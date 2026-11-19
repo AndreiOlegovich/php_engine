@@ -47,6 +47,7 @@ id_rsa*
 .htpasswd
 *-creds.env
 ftp-creds.env
+hosting-access.env
 
 # Images (deliberate decision: images stay out of the repo, ~30k files / ~3.1 GB
 # across both src trees. Pages referencing them still render, images just 404.

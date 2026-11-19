@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# version 0.2.0
-# Deploy container/src to the the hosting provider docroot over SSH with rsync.
+# version 0.3.3
+# Deploy container/src to the hosting docroot over SSH with rsync.
 #
 # Uploads the CONTENTS of container/src into the docroot (~/example.com/),
 # never a src/ folder inside it. What goes up: the files git tracks, plus
@@ -20,17 +20,18 @@
 #   -n, --dry-run    show what would change, change nothing
 #   -c, --checksum   compare files by content, not by size and time
 #                    (slower; use it once when the host copy has other mtimes)
-#   -v, --verbose    one line per changed file (rsync --itemize-changes)
+#   -v, --verbose    one line per changed file (rsync --itemize-changes);
+#                    without it only the count of changed files is printed
 #   --host TARGET    user@server or a ~/.ssh/config alias
 #                    (default: HOSTING_SSH)
 #   --key PATH       SSH private key (default: HOSTING_KEY, else
 #                    ~/.ssh/hosting-upload when it exists)
 #   --remote-dir DIR docroot relative to the remote home
 #                    (default: HOSTING_DOCROOT, else example.com)
-#   --config PATH    settings file (default: ~/.config/php_engine/hosting.env)
+#   --config PATH    settings file (default: ~/.config/php_engine/hosting-access.env)
 #
 # Settings file, the same one fetch_hosting_logs.py reads; start from
-# deploy-ssh.env.example next to this script:
+# hosting-access.env.template next to this script:
 #   HOSTING_SSH=<user>@<server>.example.com
 #   HOSTING_KEY=~/.ssh/hosting-upload
 #   HOSTING_DOCROOT=example.com
@@ -44,7 +45,7 @@ _START_DIR="$(pwd -P)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="$(cd "$SCRIPT_DIR/../../src" && pwd)"
 
-CONFIG="${HOME}/.config/php_engine/hosting.env"
+CONFIG="${HOME}/.config/php_engine/hosting-access.env"
 HOST_ARG=""
 KEY_ARG=""
 REMOTE_ARG=""
@@ -140,13 +141,14 @@ git -C "$SRC" rev-parse --is-inside-work-tree >/dev/null 2>&1 || { echo "ERROR: 
 
 DRAFTS="$(mktemp)"
 LIST="$(mktemp)"
-trap 'rm -f "$DRAFTS" "$LIST"' EXIT
+RSYNC_OUT="$(mktemp)"
+trap 'rm -f "$DRAFTS" "$LIST" "$RSYNC_OUT"' EXIT
 
 # Draft pages: the marker in the first 4 KB, as deploy-ftp.sh checks it.
 (cd "$SRC" && grep -rl --include='*.php' --include='*.html' "${SITE_DRAFT_MARKER:-draft}" . 2>/dev/null || true) |
   while IFS= read -r f; do
     head4k="$(head -c 4096 "$SRC/$f")"
-    [[ "$head4k" == *${SITE_DRAFT_MARKER:-draft}* ]] && printf '%s\n' "${f#./}"
+    [[ "$head4k" == *"${SITE_DRAFT_MARKER:-draft}"* ]] && printf '%s\n' "${f#./}"
   done > "$DRAFTS" || true
 
 # Upload list, NUL-separated, paths relative to src: tracked files plus
@@ -174,8 +176,25 @@ fi
 RSYNC=(rsync -a -h --stats '--chmod=D755,F644' -e "$SSH_CMD" "${EXCLUDES[@]}" --from0 "--files-from=$LIST")
 [ "$DRY_RUN" -eq 1 ] && RSYNC+=(--dry-run)
 [ "$CHECKSUM" -eq 1 ] && RSYNC+=(--checksum)
-[ "$VERBOSE" -eq 1 ] && RSYNC+=(--itemize-changes)
+# Always itemized, so the count of changed files is known; the lines are
+# printed only with -v.
+RSYNC+=(--itemize-changes)
 
 echo "Uploading $SRC/ to $REMOTE_DIR/ on the host$([ "$DRY_RUN" -eq 1 ] && echo ' (dry run)')"
 # Trailing slashes on both sides: copy the contents of src, not src itself.
-"${RSYNC[@]}" "$SRC/" "$TARGET:$REMOTE_DIR/" || { echo "ERROR: rsync failed." >&2; exit 1; }
+"${RSYNC[@]}" "$SRC/" "$TARGET:$REMOTE_DIR/" > "$RSYNC_OUT" || { cat "$RSYNC_OUT"; echo "ERROR: rsync failed." >&2; exit 1; }
+
+# Itemized lines start with an 11-character code, e.g. "<f.st...... path" for
+# a file sent up (< is the push direction) and "cd+++++++ path" for a folder
+# created. A file sent starts with "<f".
+CHANGED="$(grep -c '^<f' "$RSYNC_OUT" || true)"
+if [ "$VERBOSE" -eq 1 ]; then
+  cat "$RSYNC_OUT"
+else
+  grep -Ev '^[<>ch.*][fdLDS]' "$RSYNC_OUT" || true
+fi
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "Files that would be uploaded: $CHANGED"
+else
+  echo "Files changed and uploaded: $CHANGED"
+fi

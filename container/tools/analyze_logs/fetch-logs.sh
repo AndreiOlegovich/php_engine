@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.3
+# version 0.0.4
 # Fetch prod logs every 30 minutes (cron) — skips quietly without internet.
 #
 # Single instance via flock; downloads only prod (error + access) with
@@ -23,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091  # shared resolver is checked separately by lint-sh.sh
 . "$SCRIPT_DIR/log-root.sh"
 
-CREDS="${HOME}/.config/php_engine/ftp-creds.env"
+CREDS="${HOME}/.config/php_engine/hosting-access.env"
 DEST=""
 DRY_RUN=0
 VERBOSE=0

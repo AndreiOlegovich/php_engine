@@ -57,7 +57,7 @@ Cron line (not installed by default — install it when ready):
 - `fetch-logs.sh [--creds PATH] [--dest DIR] [--dry-run] [-v]` —
   flock-guarded wrapper around `download-logs.sh --only prod --latest 2`.
   TCP-checks the FTP host first (creds stay in
-  `~/.config/php_engine/ftp-creds.env`, never logged); exit 0 when offline.
+  `~/.config/php_engine/hosting-access.env`, never logged); exit 0 when offline.
 - `refresh-metrika.sh [--skip-fetch] [--skip-devices] [--skip-users]
   [--skip-bots] [--skip-db] [--from-local] [--dry-run-fetch] [-v]` — the
   cron entrypoint; failures stop the chain. `--from-local` means

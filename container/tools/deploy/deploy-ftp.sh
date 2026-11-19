@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.4.2
+# version 0.4.3
 # Deploy the site to virtual hosting over FTP/FTPS.
 #
 # Uploads ./src (or --src DIR) to the hosting, mirroring the tree.
@@ -54,7 +54,7 @@
 #   ./deploy-ftp.sh --delete-removed 1 --dry-run
 #
 # Options:
-#   --creds PATH      secret file to source (default: ~/.config/php_engine/ftp-creds.env)
+#   --creds PATH      secret file to source (default: ~/.config/php_engine/hosting-access.env)
 #   --src DIR         local dir to upload (default: src)
 #   --remote-dir DIR  override FTP_REMOTE_DIR from the creds file
 #   --tls / --no-tls  force explicit FTPS on/off (default: FTP_USE_TLS from creds file)
@@ -85,7 +85,7 @@
 #   --php VER         PHP version for --lint (default 8.2, e.g. 8.2)
 #   -h, --help        this help
 #
-# Secret file format (shell env file, chmod 600, e.g. ~/.config/php_engine/ftp-creds.env):
+# Secret file format (shell env file, chmod 600, e.g. ~/.config/php_engine/hosting-access.env):
 #   FTP_HOST="ftp.example.com"
 #   FTP_USER="hosting_user"
 #   FTP_PASSWORD="secret-here"
@@ -94,7 +94,7 @@
 #   FTP_USE_TLS="false"      # optional, "true" for explicit FTPS
 #   FTP_TIMEOUT="30"         # optional, seconds
 #
-# See deploy-ftp.creds.example for a copy-paste template.
+# See hosting-access.env.template for a copy-paste template.
 set -euo pipefail
 
 _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
@@ -103,7 +103,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 cd ../..  # tools live in tools/deploy/; project root (compose file, src/) is the runtime cwd
 
-DEFAULT_CREDS="${HOME}/.config/php_engine/ftp-creds.env"
+DEFAULT_CREDS="${HOME}/.config/php_engine/hosting-access.env"
 CREDS="$DEFAULT_CREDS"
 SRC_DIR="src"
 REMOTE_DIR_OVERRIDE=""
@@ -243,7 +243,7 @@ fi
   echo "ERROR: creds file '$CREDS' not found." >&2
   echo "Create it (chmod 600) from the template:" >&2
   echo "  mkdir -p \"$(dirname "$CREDS")\"" >&2
-  echo "  cp tools/deploy/deploy-ftp.creds.example \"$CREDS\"" >&2
+  echo "  cp tools/deploy/hosting-access.env.template \"$CREDS\"" >&2
   echo "  chmod 600 \"$CREDS\" && \$EDITOR \"$CREDS\"" >&2
   echo "Or pass another location: $0 --creds /path/to/creds.env" >&2
   exit 1

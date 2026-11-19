@@ -21,14 +21,14 @@ project root two levels up, so `src/`, `docker-compose.yml` etc. resolve).
 Credentials NEVER live in this repo. Default location (outside the repo):
 
 ```
-~/.config/php_engine/ftp-creds.env
+~/.config/php_engine/hosting-access.env
 ```
 
 ```bash
 mkdir -p ~/.config/php_engine
-cp deploy-ftp.creds.example ~/.config/php_engine/ftp-creds.env
-chmod 600 ~/.config/php_engine/ftp-creds.env
-$EDITOR ~/.config/php_engine/ftp-creds.env
+cp hosting-access.env.template ~/.config/php_engine/hosting-access.env
+chmod 600 ~/.config/php_engine/hosting-access.env
+$EDITOR ~/.config/php_engine/hosting-access.env
 ```
 
 Fill in:
@@ -190,7 +190,7 @@ it is a plain line about every 1 %, so long uploads never look stuck;
 |---|---|---|
 | `creds file ... not found` | file not created yet | step 1 above, or pass `--creds` |
 | `creds file must live OUTSIDE the repo` | path is inside `container/` | move to `~/.config/php_engine/`, use `--creds` |
-| `FTP_HOST is empty ...` | field missing/typo in creds file | compare with `deploy-ftp.creds.example` |
+| `FTP_HOST is empty ...` | field missing/typo in creds file | compare with `hosting-access.env.template` |
 | `mode 644 (recommend: chmod 600)` | creds readable by others | `chmod 600 <creds file>` (warning only) |
 | login/auth failure | wrong user/password/host | verify in hosting panel; check `FTP_PORT`, try `--tls` / `--no-tls` per hoster docs |
 | `MLSD failed ... --delete skipped` | hoster lacks MLSD | upload still done; `--delete` partially skipped |
@@ -208,7 +208,7 @@ deploy-engine.sh         engine+css wrapper: uploads ONLY .php, ru/.php,
 deploy-batches.sh        unattended wrapper: the whole tree (or a selection),
                          --force, in batches of 10 files, a failed batch
                          rerun up to 5 times, a network outage waited out
-deploy-ftp.creds.example template (tracked; real creds never in repo)
+hosting-access.env.template template (tracked; real creds never in repo)
 ```
 
 ### Batch upload (whole site, unattended)
@@ -283,7 +283,7 @@ ignores changed files until then.
 ## 5. Security notes
 
 - Real creds file: `chmod 600`, outside the repo, never committed
-  (`.gitignore` covers `*-creds.env`, `ftp-creds.env` as a backstop).
+  (`.gitignore` covers `*-creds.env`, `hosting-access.env` as a backstop).
 - The password is passed to Python via environment, never via argv, and never
   printed (logs show host/user only).
 - `--delete` is destructive — remote files with no local counterpart are

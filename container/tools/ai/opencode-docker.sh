@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.8.0
+# version 0.8.2
 # Run OpenCode with --auto in a container that sees container/src of an
 # agent worktree read-write, and the instructions, docs and tools read-only.
 #
@@ -27,7 +27,9 @@
 #       Dockerfile.vm.opencode (JDK and Maven, Groovy, the .NET SDK,
 #       Erlang/OTP, Elixir, the Thrift compiler).
 #     --javascript --js --typescript, or --script: the image of
-#       Dockerfile.script.opencode (Node.js, npm, tsc, Ruby).
+#       Dockerfile.script.opencode (Node.js, npm, tsc, Ruby, and the npm
+#       packages the JavaScript lessons import: jsdom, semver, ms,
+#       @eslint/js).
 #     --erlang: the image of Dockerfile.erlang.opencode, Erlang/OTP alone
 #       (erl, erlc, escript).
 #     --ruby: the image of Dockerfile.ruby.opencode, Ruby alone (ruby, irb,

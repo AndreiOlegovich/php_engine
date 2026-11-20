@@ -2,21 +2,26 @@
 # to machine code, so the agent can build and run the examples of their
 # pages: assembler (nasm, as, ld, objdump, gdb), C and C++ (gcc, g++, make,
 # cmake), Fortran (gfortran), COBOL (cobc), Go (go), Rust (rustc, cargo) and
-# Haskell (ghc, ghci, runghc, cabal). pip, the Python headers, maturin and
-# patchelf are here too, for pages that extend Python with a compiled
-# language (venv, pip install, building an extension module), and valgrind,
-# strace and hyperfine for debugging and timing. The other languages are in
-# Dockerfile.vm.opencode and Dockerfile.script.opencode.
+# Haskell (ghc, ghci, runghc, cabal), each with the linters and formatters of
+# its language: cppcheck, clang-tidy, clang-format and gcovr for C and C++,
+# fortitude and fprettify for Fortran, golangci-lint and staticcheck for Go,
+# hlint and ormolu for Haskell, shellcheck and shfmt for the shell snippets
+# of the pages, and bandit next to the Python gates. pip, the Python headers,
+# maturin and patchelf are here too, for pages that extend Python with a
+# compiled language (venv, pip install, building an extension module), and
+# valgrind, strace and hyperfine for debugging and timing. The other
+# languages are in Dockerfile.vm.opencode and Dockerfile.script.opencode.
 # OpenCode for --auto runs on an agent worktree. The official image, plus PHP
 # for php -l and page renders, bash, Python, Perl and the GNU tools for the
 # scripts in container/tools, and a user with your UID, so the files the
 # agent writes stay yours.
 #
-# To leave a language out, put # in front of its package line in the RUN
-# below and, for Go, in front of its ENV line too: Docker skips a comment
-# line inside a continued RUN. The next run of opencode-docker.sh rebuilds
-# the image. Leave the lines above the first language and the last line
-# (&& ln -s ...) as they are.
+# To leave a language out, put # in front of every package line of it in the
+# RUN below (and of the RUN that installs its tools, if it has one) and, for
+# Go, in front of its ENV line too: Docker skips a comment line inside a
+# continued RUN. The next run of opencode-docker.sh rebuilds the image. Leave
+# the lines above the first language and the last line (&& ln -s ...) as
+# they are.
 # Haskell is about 1 GB of the 3.1 GB, Rust 0.6 GB, Go 0.2 GB.
 FROM ghcr.io/anomalyco/opencode:2.1.4
 RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
@@ -27,16 +32,28 @@ RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
 # C and C++: gcc, g++, make, cmake. Without this line gcc stays, because
 # the compilers below need it, but g++, make and cmake go.
     build-base cmake \
+# C and C++ static analysis, formatting and coverage: cppcheck 2.21.0,
+# clang-tidy and clang-format 22.1.3 (both in clang22-extra-tools) and
+# gcovr 8.6, which reads gcov data into a report.
+    cppcheck~=2.21 clang22-extra-tools~=22.1 gcovr~=8.6 \
 # Fortran.
     gfortran \
 # COBOL.
     gnucobol \
 # Go.
     go \
+# Go linters: golangci-lint 2.5.0 and staticcheck 2026.1; gofmt and go vet
+# come with the go package.
+    golangci-lint~=2.5 staticcheck~=2026.1 \
 # Rust: rustc and cargo, plus clippy and rustfmt (cargo clippy, cargo fmt).
     rust cargo rust-clippy rustfmt \
 # Haskell.
     ghc cabal \
+# Haskell lint and format: hlint 3.10 and ormolu 0.8.0.2.
+    hlint~=3.10 ormolu~=0.8 \
+# Shell: shellcheck 0.11.0 and shfmt 3.13.1, for the bash snippets of the
+# pages and the scripts in container/tools.
+    shellcheck~=0.11 shfmt~=3.13 \
 # Python extensions: pip and Python.h (python3 itself is in the first line),
 # maturin and patchelf for Rust modules and their wheels.
     py3-pip python3-dev maturin patchelf \
@@ -46,6 +63,38 @@ RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
  && ln -s /usr/bin/php83 /usr/local/bin/php
 # Go: the installed toolchain only, never a download of the one a go.mod names.
 ENV GOTOOLCHAIN=local
+# The system Python's libraries for the examples of the pages: numpy 2.4.6
+# and gunicorn 25.2.0, Alpine packages so nothing is compiled or fetched.
+# They are NOT in /opt/lint, which stays the linters' venv; the examples of
+# the pages run with plain python3, which does not see a venv.
+# Python linters at the versions of .pre-commit-config.yaml (ruff, mypy,
+# pylint), pytest, and bandit (1.9.4) for the security lint of the scripts in
+# container/tools, in their own venv with the commands on PATH, so the agent
+# can run the commit gates on the Python it writes:
+#   ruff format --config container/pyproject.toml FILE
+#   ruff check --config container/pyproject.toml FILE
+#   mypy --config-file container/pyproject.toml FILE
+#   pylint --rcfile=container/pyproject.toml FILE
+#   bandit -r container/tools
+# Keep the three versions equal to the rev lines of .pre-commit-config.yaml.
+RUN apk add --no-cache py3-pip py3-numpy~=2.4 py3-gunicorn~=25.2 \
+ && python3 -m venv /opt/lint \
+ && /opt/lint/bin/pip install --no-cache-dir ruff==0.16.8 mypy==2.3.1 \
+    pylint==4.0.8 pytest requests allure-pytest pyyaml bandit==1.9.4 \
+ && ln -s /opt/lint/bin/ruff /opt/lint/bin/mypy /opt/lint/bin/pylint \
+    /opt/lint/bin/pytest /opt/lint/bin/bandit /usr/local/bin/
+# Fortran linters and formatters, in their own venv so /opt/lint stays the
+# Python gates: fprettify 0.3.7 and fortitude 0.10.1. fortitude is the PyPI
+# package fortitude-lint (the name fortitude is another project) and comes as
+# a musllinux wheel, so nothing is built here. To leave Fortran out, put # in
+# front of this RUN too.
+#   fprettify --diff FILE.f90
+#   fortitude check FILE.f90
+RUN python3 -m venv /opt/fortran-tools \
+ && /opt/fortran-tools/bin/pip install --no-cache-dir fprettify==0.3.7 \
+    fortitude-lint==0.10.1 \
+ && ln -s /opt/fortran-tools/bin/fprettify /opt/fortran-tools/bin/fortitude \
+    /usr/local/bin/
 ARG HOST_UID=1000
 ARG HOST_GID=1000
 RUN addgroup -g ${HOST_GID} agent \

@@ -1,15 +1,19 @@
 # The image of Dockerfile.opencode plus the interpreted languages of src/dev,
 # so the agent can run the examples of their pages: JavaScript (node, npm),
 # TypeScript (tsc) and Ruby (ruby, irb, gem, erb), next to the PHP, Python
-# and Perl that every agent image has. The other languages are in
+# and Perl that every agent image has, each with the linter and formatter of
+# its language: eslint and prettier for JavaScript and TypeScript, rubocop
+# for Ruby, shellcheck and shfmt for the shell snippets of the pages, and
+# bandit next to the Python gates. The other languages are in
 # Dockerfile.native.opencode and Dockerfile.vm.opencode.
 # OpenCode for --auto runs on an agent worktree. The official image, plus PHP
 # for php -l and page renders, bash, Python, Perl and the GNU tools for the
 # scripts in container/tools, and a user with your UID, so the files the
 # agent writes stay yours.
 #
-# To leave a language out, put # in front of its package line in the RUN
-# below: Docker skips a comment line inside a continued RUN. The next run of
+# To leave a language out, put # in front of every package line of it in the
+# RUN below (and of the RUN that installs its tools, if it has one): Docker
+# skips a comment line inside a continued RUN. The next run of
 # opencode-docker.sh rebuilds the image. Leave the lines above the first
 # language and the last line (&& ln -s ...) as they are.
 # PHP, Python and Perl stay: the scripts in container/tools need them.
@@ -21,9 +25,79 @@ RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
     nodejs npm \
 # TypeScript: tsc.
     typescript \
-# Ruby; irb needs ruby-rdoc.
-    ruby ruby-rdoc \
+# Ruby; irb needs ruby-rdoc. ruby-racc is the racc gem that the parser gem
+# of rubocop needs: without it, gem install below builds racc from source and
+# wants ruby-dev and a compiler, which this image does not have.
+    ruby ruby-rdoc ruby-racc \
+# Formatting of JavaScript, TypeScript and the JSON around it: prettier
+# 3.8.3. eslint is not an Alpine package and comes from npm in its own RUN.
+    prettier~=3.8 \
+# Shell: shellcheck 0.11.0 and shfmt 3.13.1, for the bash snippets of the
+# pages and the scripts in container/tools.
+    shellcheck~=0.11 shfmt~=3.13 \
  && ln -s /usr/bin/php83 /usr/local/bin/php
+# npm packages that the JavaScript examples of src/dev import, at the
+# versions the lessons name, so require("jsdom") or import ... from "semver"
+# runs with no npm install in the folder of the file, also in the course
+# checks, which run with --network none. They are installed in
+# /opt/node-packages, and /node_modules links there: Node looks for a bare
+# name in every node_modules folder from the file up to /, for require()
+# and import alike (NODE_PATH serves require() only), so a file in /tmp or
+# /work finds them. An npm install in a lesson's own folder still wins,
+# because Node stops at the nearest node_modules.
+# To add a package, add a name@version line with the lessons that need it;
+# to leave one out, put # in front of its line.
+RUN mkdir -p /opt/node-packages \
+ && cd /opt/node-packages \
+ && npm init -y >/dev/null \
+ && npm install --save-exact --no-fund --no-audit \
+# jsdom: the DOM lessons dev/js/course/103-110 (lesson 103 names 30.1.3).
+    jsdom@30.1.3 \
+# semver: dev/js/course/113_dependencies_and_semver.php (7.8.5).
+    semver@7.8.5 \
+# ms: dev/js/course/113 and 114 install 2.1.2.
+    ms@2.1.2 \
+# @eslint/js: the eslint.config.js of dev/js/course/116 and 117 (10.0.1).
+# Its peer eslint is optional, so npm does not add the CLI.
+    @eslint/js@10.0.1 \
+ && npm cache clean --force \
+ && ln -s /opt/node-packages/node_modules /node_modules
+# eslint 10.14.0 is not an Alpine package. It lives in its own folder and not
+# in /opt/node-packages: /node_modules links there, so eslint's own 78
+# packages would become visible to every require() of a lesson. Only its bin
+# goes on PATH. 10.14.0 matches the @eslint/js 10.0.1 above, whose peer is
+# eslint ^10.0.0, and is the version dev/js/course/116 names.
+RUN mkdir -p /opt/node-tools \
+ && cd /opt/node-tools \
+ && npm init -y >/dev/null \
+ && npm install --save-exact --no-fund --no-audit eslint@10.14.0 \
+ && npm cache clean --force \
+ && ln -s /opt/node-tools/node_modules/.bin/eslint /usr/local/bin/eslint
+# Ruby lint and format: rubocop 1.92.2, pure Ruby once ruby-racc is installed
+# above; its only platform gem, prism, comes as a musllinux wheel. As root
+# gem writes the gem next to ruby in /usr/lib/ruby/gems and the command in
+# /usr/bin, which is on PATH.
+RUN gem install --no-document rubocop -v 1.92.2
+# The system Python's libraries for the examples of the pages: numpy 2.4.6
+# and gunicorn 25.2.0, Alpine packages so nothing is compiled or fetched.
+# They are NOT in /opt/lint, which stays the linters' venv; the examples of
+# the pages run with plain python3, which does not see a venv.
+# Python linters at the versions of .pre-commit-config.yaml (ruff, mypy,
+# pylint), pytest, and bandit (1.9.4) for the security lint of the scripts in
+# container/tools, in their own venv with the commands on PATH, so the agent
+# can run the commit gates on the Python it writes:
+#   ruff format --config container/pyproject.toml FILE
+#   ruff check --config container/pyproject.toml FILE
+#   mypy --config-file container/pyproject.toml FILE
+#   pylint --rcfile=container/pyproject.toml FILE
+#   bandit -r container/tools
+# Keep the three versions equal to the rev lines of .pre-commit-config.yaml.
+RUN apk add --no-cache py3-pip py3-numpy~=2.4 py3-gunicorn~=25.2 \
+ && python3 -m venv /opt/lint \
+ && /opt/lint/bin/pip install --no-cache-dir ruff==0.16.8 mypy==2.3.1 \
+    pylint==4.0.8 pytest requests allure-pytest pyyaml bandit==1.9.4 \
+ && ln -s /opt/lint/bin/ruff /opt/lint/bin/mypy /opt/lint/bin/pylint \
+    /opt/lint/bin/pytest /opt/lint/bin/bandit /usr/local/bin/
 ARG HOST_UID=1000
 ARG HOST_GID=1000
 RUN addgroup -g ${HOST_GID} agent \

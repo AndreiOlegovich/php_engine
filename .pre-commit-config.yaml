@@ -114,6 +114,57 @@ repos:
         always_run: true
         pass_filenames: false
 
+  # --- Site checkers (container/src): what the page files must look like ---
+  # Each hook scans the whole docroot, not only the staged files, because a
+  # rule about the site as a whole (line endings, a duplicate <loc>) cannot
+  # be judged file by file. What each failure means: container/docs/site-checks.md
+  - repo: local
+    hooks:
+      - id: site-line-endings
+        name: "line endings (container/src: LF, no mixed file)"
+        entry: container/tools/linters/check-line-endings.sh --search --all --src src
+        language: system
+        files: ^container/src/
+        pass_filenames: false
+      - id: site-php-blank-lines
+        name: PHP whitespace-only lines (container/src)
+        entry: container/tools/linters/check-php-blank-lines.sh --search --all --src src
+        language: system
+        files: ^container/src/
+        pass_filenames: false
+      - id: site-php-header
+        name: PHP opening header, one empty line (container/src)
+        entry: container/tools/linters/check-php-header.sh --search --all --src src
+        language: system
+        files: ^container/src/
+        pass_filenames: false
+      - id: site-malformed-urls
+        name: malformed URLs (container/src)
+        entry: container/tools/linters/find-malformed-urls.sh --all --src src
+        language: system
+        files: ^container/src/
+        pass_filenames: false
+      - id: site-snake-calls
+        name: snake_case method calls on the engine API (container/src)
+        entry: python3 container/tools/linters/find-snake-calls.py --src container/src
+        language: system
+        files: ^container/src/
+        pass_filenames: false
+      - id: site-sitemap
+        name: sitemap.xml parses, one document, unique loc (container/src)
+        entry: >-
+          bash -c '[ -f container/src/sitemap.xml ] || { echo "site-sitemap: SKIP, container/src/sitemap.xml does not exist yet"; exit 0; }; container/tools/check-sitemap.sh container/src/sitemap.xml'
+        language: system
+        always_run: true
+        pass_filenames: false
+      - id: site-redirected-pages
+        name: a new page is not a redirect source (container/src/.htaccess)
+        entry: >-
+          bash -c '[ -f container/src/.htaccess ] || { echo "site-redirected-pages: SKIP, container/src/.htaccess does not exist yet"; exit 0; }; container/tools/check-no-redirected-pages.sh'
+        language: system
+        always_run: true
+        pass_filenames: false
+
   # --- HTML/PHP reflower damage gate (whole-tree text scan) ---
   - repo: local
     hooks:

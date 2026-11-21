@@ -1,0 +1,108 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Free default. Start OpenCode with container/tools/ai/opencode.sh: it
+  // checks every pinned id first and moves a retired free id to the next
+  // live one in container/tools/ai/free-models.txt.
+  // Roles: .opencode/agents/ (triage, builder, reviewer).
+  // Permissions: the shell runs unasked, risky steps ask, secrets are
+  // denied. The last matching rule wins, so the denies come last. Path
+  // patterns start with * so they also match when OpenCode starts in a
+  // subfolder; every read deny has an edit twin, because a read deny alone
+  // does not stop writes. Never start OpenCode with --auto: it approves
+  // every ask.
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "permissions": [
+    // The shell runs; these steps ask first.
+    { "action": "shell", "resource": "*", "effect": "allow" },
+    { "action": "shell", "resource": "*git commit*", "effect": "ask" },
+    { "action": "shell", "resource": "*git reset*", "effect": "ask" },
+    { "action": "shell", "resource": "*git restore*", "effect": "ask" },
+    { "action": "shell", "resource": "*git checkout*", "effect": "ask" },
+    { "action": "shell", "resource": "*git switch*", "effect": "ask" },
+    { "action": "shell", "resource": "*git stash*", "effect": "ask" },
+    { "action": "shell", "resource": "*git clean*", "effect": "ask" },
+    { "action": "shell", "resource": "*git rebase*", "effect": "ask" },
+    { "action": "shell", "resource": "*git merge*", "effect": "ask" },
+    { "action": "shell", "resource": "*git rm *", "effect": "ask" },
+    { "action": "shell", "resource": "rm *", "effect": "ask" },
+    { "action": "shell", "resource": "* rm *", "effect": "ask" },
+    { "action": "shell", "resource": "*curl *", "effect": "ask" },
+    { "action": "shell", "resource": "*wget *", "effect": "ask" },
+    { "action": "shell", "resource": "*ssh *", "effect": "ask" },
+    { "action": "shell", "resource": "*scp *", "effect": "ask" },
+    { "action": "shell", "resource": "*rsync *", "effect": "ask" },
+    { "action": "shell", "resource": "*ftp *", "effect": "ask" },
+    { "action": "shell", "resource": "*deploy-ftp.sh*", "effect": "ask" },
+    { "action": "shell", "resource": "*deploy-ssh.sh*", "effect": "ask" },
+    { "action": "shell", "resource": "*deploy-batches.sh*", "effect": "ask" },
+    { "action": "shell", "resource": "*docker *", "effect": "ask" },
+    { "action": "shell", "resource": "*pip install*", "effect": "ask" },
+    { "action": "shell", "resource": "*npm install*", "effect": "ask" },
+    // grep -r ignores .gitignore and would read logs and other ignored data.
+    { "action": "shell", "resource": "*grep -r*", "effect": "ask" },
+    { "action": "shell", "resource": "*grep -R*", "effect": "ask" },
+    // Names-only recursive grep prints file names, never lines: it may run.
+    { "action": "shell", "resource": "grep -rl*", "effect": "allow" },
+    { "action": "shell", "resource": "grep -rL*", "effect": "allow" },
+    { "action": "shell", "resource": "grep -Rl*", "effect": "allow" },
+    // git grep reads tracked files only; these flags make git read
+    // untracked or ignored files too.
+    { "action": "shell", "resource": "*--no-index*", "effect": "ask" },
+    { "action": "shell", "resource": "*--no-exclude-standard*", "effect": "ask" },
+    // Inline code can reach the network or any file without naming it.
+    { "action": "shell", "resource": "*python3 -c*", "effect": "ask" },
+    { "action": "shell", "resource": "*python3 -", "effect": "ask" },
+    { "action": "shell", "resource": "*python3 - *", "effect": "ask" },
+    { "action": "shell", "resource": "*node -e*", "effect": "ask" },
+    { "action": "shell", "resource": "*php -r*", "effect": "ask" },
+
+    // Files outside the project ask, except OpenCode's saved tool output and /tmp/opencode/.
+    { "action": "external_directory", "resource": "*", "effect": "ask" },
+    { "action": "external_directory", "resource": "~/.local/share/opencode/tool-output/*", "effect": "allow" },
+    { "action": "external_directory", "resource": "/tmp/opencode/*", "effect": "allow" },
+    // The worktrees of delegate.py (../site-agent-SLUG): OpenCode as supervisor
+    // reviews them unasked; an edit there still asks, because the worker makes
+    // the change, not the supervisor.
+    { "action": "external_directory", "resource": "*/site-agent-*", "effect": "allow" },
+    { "action": "edit", "resource": "*/site-agent-*", "effect": "ask" },
+
+    // Logs hold visitor data: read only when you ask for them. The log
+    // tools find the folder themselves, so running them asks too.
+    { "action": "external_directory", "resource": "~/.local/share/php_engine/logs/*", "effect": "ask" },
+    { "action": "read", "resource": "*/.local/share/php_engine/logs/*", "effect": "ask" },
+    { "action": "shell", "resource": "*php_engine/logs*", "effect": "ask" },
+    { "action": "shell", "resource": "*analyze_logs*", "effect": "ask" },
+
+    // Secrets: denied, last, so nothing above reopens them.
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*creds*", "effect": "deny" },
+    { "action": "read", "resource": "~/.config/php_engine/*", "effect": "deny" },
+    { "action": "read", "resource": "*/.ssh/*", "effect": "deny" },
+    { "action": "read", "resource": "*/.gnupg/*", "effect": "deny" },
+    { "action": "read", "resource": "*/.docker/config.json", "effect": "deny" },
+    { "action": "read", "resource": "*/.local/share/opencode/auth.json", "effect": "deny" },
+    { "action": "read", "resource": "*/.local/share/opencode/opencode.db*", "effect": "deny" },
+    { "action": "edit", "resource": "*.env", "effect": "deny" },
+    { "action": "edit", "resource": "*creds*", "effect": "deny" },
+    { "action": "edit", "resource": "*/.local/share/php_engine/logs/*", "effect": "deny" },
+    { "action": "edit", "resource": "~/.config/php_engine/*", "effect": "deny" },
+    { "action": "edit", "resource": "*/.ssh/*", "effect": "deny" },
+    { "action": "edit", "resource": "*/.gnupg/*", "effect": "deny" },
+    { "action": "edit", "resource": "*/.docker/config.json", "effect": "deny" },
+    { "action": "edit", "resource": "*/.local/share/opencode/auth.json", "effect": "deny" },
+    { "action": "edit", "resource": "*/.local/share/opencode/opencode.db*", "effect": "deny" },
+    { "action": "shell", "resource": "*git push*", "effect": "deny" },
+    { "action": "shell", "resource": "*sudo *", "effect": "deny" },
+    { "action": "shell", "resource": "*git add -A*", "effect": "deny" },
+    { "action": "shell", "resource": "*git add --all*", "effect": "deny" },
+    { "action": "shell", "resource": "*--no-verify*", "effect": "deny" },
+    { "action": "shell", "resource": "*.env*", "effect": "deny" },
+    { "action": "shell", "resource": "*creds*", "effect": "deny" },
+    { "action": "shell", "resource": "*.config/php_engine*", "effect": "deny" },
+    { "action": "shell", "resource": "*.ssh/*", "effect": "deny" },
+    { "action": "shell", "resource": "*.gnupg*", "effect": "deny" },
+    { "action": "shell", "resource": "*.docker/config.json*", "effect": "deny" },
+    { "action": "shell", "resource": "*opencode/auth.json*", "effect": "deny" },
+    { "action": "shell", "resource": "*opencode.db*", "effect": "deny" }
+  ]
+}

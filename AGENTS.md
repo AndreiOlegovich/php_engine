@@ -10,6 +10,18 @@ The engine is copied for a new site: the pages, the hosts and the language
 folders belong to the site, and a tool or test reads them from the profile
 (`SITE_*` keys) instead of naming one site's value.
 
+## Route the task
+
+| Task | Load these skills first |
+|---|---|
+| Edit or create anything under `container/src` | `site-map` |
+| Redirects and rules in an `.htaccess` | `site-htaccess` |
+| `container/tools`, `container/tests`, a script or a Dockerfile | `site-tooling` |
+| Finish, verify or commit | `site-verify` |
+| "Is it done / merged / live?" | `site-fix-status` |
+| Claude Code only: the message starts with "assign to opencode" (or "delegate to opencode") | `assign-to-opencode` |
+| OpenCode only: the message starts with "delegate to container" (or "give it to the container") | `delegate-to-container` |
+
 ## Always
 
 - No attribution to any AI anywhere: no `Co-Authored-By` lines and no

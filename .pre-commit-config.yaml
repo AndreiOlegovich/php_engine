@@ -131,11 +131,11 @@ repos:
       - id: trailing-whitespace
         name: no trailing whitespace
         files: \.(py|sh|php|yaml|yml|toml|md)$
-        exclude: ^container/src/
+        exclude: ^(container/src/|container/tests/fixtures/broken_site/)
       - id: end-of-file-fixer
         name: EOF newline
         files: \.(py|sh|php|yaml|yml|toml|md)$
-        exclude: ^container/src/
+        exclude: ^(container/src/|container/tests/fixtures/broken_site/)
       - id: check-yaml
       - id: check-toml
       - id: check-merge-conflict

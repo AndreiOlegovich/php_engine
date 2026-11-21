@@ -1,0 +1,3 @@
+# Starter site directives: no redirects yet.
+DirectoryIndex index.php
+Options -Indexes

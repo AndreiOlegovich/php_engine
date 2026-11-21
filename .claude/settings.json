@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(~/.config/php_engine/**)",
+      "Read(~/.local/share/php_engine/logs/**)",
+      "Read(**/*.env)",
+      "Read(**/*creds*)",
+      "Bash(git push *)",
+      "Bash(sudo *)",
+      "Bash(git add -A*)",
+      "Bash(git add --all*)",
+      "Bash(* --no-verify*)"
+    ],
+    "allow": [
+      "Bash(python3 container/tools/ai/delegate.py *)"
+    ]
+  }
+}

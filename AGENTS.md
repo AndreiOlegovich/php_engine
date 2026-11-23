@@ -21,6 +21,7 @@ folders belong to the site, and a tool or test reads them from the profile
 | "Is it done / merged / live?" | `site-fix-status` |
 | Claude Code only: the message starts with "assign to opencode" (or "delegate to opencode") | `assign-to-opencode` |
 | OpenCode only: the message starts with "delegate to container" (or "give it to the container") | `delegate-to-container` |
+| The repo has just been copied for a new site, or its first commit fails the hooks | `new-site-onboarding` |
 
 ## Always
 

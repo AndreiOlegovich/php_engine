@@ -1,0 +1,74 @@
+# Start a new site from this repo
+
+A new site is a copy of the engine plus its own pages. The copy carries the
+tools, the tests, the agent roles, the skills and the commit gate;
+`container/src` starts with one stub page.
+
+## Copy
+
+From a checkout of this repo:
+
+```bash
+container/tools/new-project.sh ~/github/my_site --name "My Site"
+```
+
+The script copies the **tracked** files of the checkout it lives in, so an
+ignored log, a visitor export or a filled creds file never travels. It then:
+
+1. empties `container/src` to an `index.php` that prints the site name; the
+   engine's own folder `container/src/.php` stays;
+2. writes `container/site-profile.env` from the example, with `SITE_NAME`;
+3. runs `git init -b main` and `pre-commit install`; nothing is staged;
+4. creates `container/.venv` with `uv` when `uv` is installed.
+
+`container/site-profile.env` is ignored by git and holds the site values:
+hosts, language folders, engine folders, page classes and markers, the feed
+folder. A key you leave out falls back to a generic default, so the tree runs
+before the profile is complete.
+
+## Fill the profile
+
+| Key | What it decides |
+|---|---|
+| `SITE_URL`, `SITE_DEV_URL`, `SITE_LOCAL_URL` | the hosts the site tests use |
+| `SITE_OWN_HOSTS` | the host names that count as internal links |
+| `SITE_LANG_DIRS` | the language folders (empty for a one-language site) |
+| `SITE_ENGINE_DIRS` | the folders holding the framework classes |
+| `SITE_PAGE_CLASSES`, `SITE_PAGE_MARKERS` | what builds a page, and its marker in the HTML |
+| `SITE_FEED_DIR` | the folder of the article feed |
+| `SITE_PHP_VERSION` | the PHP version of the site |
+
+The full list, with the defaults, is `container/site-profile.env.example`.
+
+## First gate
+
+```bash
+container/tools/new-project.sh --check
+```
+
+It runs every site checker, shellcheck, `php -l` and phpcs (when Docker runs)
+and `pre-commit run --files` over every tracked and not-yet-added file. It does
+not stop at the first failure and ends with the list of what failed. Each row
+of `container/docs/site-checks.md` says what a failure means and how to fix it.
+The self-test hooks of the lint scripts need Docker; without it they fail for
+that reason alone.
+
+## First commit
+
+```bash
+git add -- container
+git commit -m "Start <site name>"
+```
+
+The hooks from `.pre-commit-config.yaml` run on the index. A failure is a
+message, not a stop: read the hook name, fix the file, `git add` it again and
+repeat. The skill `new-site-onboarding` gives the order: line endings, PHP
+syntax, phpcs, shell, Python, sitemap and redirects.
+
+## What the copy does not bring
+
+- the pages, images, `.htaccess` and sitemap of any other site;
+- hosting credentials: the deploy scripts read
+  `~/.config/php_engine/hosting-access.env`; start from
+  `container/tools/deploy/hosting-access.env.template` and keep the filled
+  file outside the repository.

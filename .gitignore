@@ -39,6 +39,7 @@ sess_*
 sitemap_new.xml
 
 # Secrets / local env
+site-profile.env
 .env
 .env.*
 *.key

@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-# version 1.0.0
-"""Build the article tree of a /dev/<language>/ hub from its folder structure.
+# version 1.0.1
+"""Build the article tree of a hub page from its folder structure.
 
-The hub page of a language (/dev/rust/, /dev/erlang/, ...) shows the cards of
-its sections and then one expandable tree of every article under the folder.
+A hub page (/countries/, /guides/, ...) shows the cards of its sections and
+then one expandable tree of every article under the folder.
 The tree is not written by hand: this tool walks the folder, takes the title
 of every article page and writes the node list that TreeList renders
 (the site tree-list module), so a new page appears in the tree with one
 command and no page edit.
 
-    python3 container/tools/dev_hub/build_tree.py container/src/dev/rust
-    python3 container/tools/dev_hub/build_tree.py container/src/dev/rust --write
-    python3 container/tools/dev_hub/build_tree.py container/src/dev/rust --check
-    python3 container/tools/dev_hub/build_tree.py container/src/dev/php --subhubs
+    python3 container/tools/dev_hub/build_tree.py container/src/countries
+    python3 container/tools/dev_hub/build_tree.py container/src/countries --write
+    python3 container/tools/dev_hub/build_tree.py container/src/countries --check
+    python3 container/tools/dev_hub/build_tree.py container/src/guides --subhubs
 
 Without a flag the tool prints the tree as plain text, the way it reads on
 the page but fully opened. --write puts it into <folder>/_hub_tree_inc.php,
@@ -22,13 +22,12 @@ a page that was added without the tool is caught before a commit.
 What is a page: a .php file that builds a page object (new ArticlePage, Page,
 BasePage or DictPage), uses a legacy header include, or requires a
 _template.php. Includes, PascalCase helpers (RelatedArticles.php), redirect
-stubs, index_legacy.php (the old hub kept for history) and the hub's own
-index.php are not articles.
+stubs and the hub's own index.php are not articles.
 
 The tree follows the folders: a folder is a branch named "<name>/", its
 index.php is the first leaf of the branch, its subfolders come next and its
 other pages after them. Pages named NN_something.php sort by NN and show as
-"NN Title", like the parts of the rust course; every other page sorts by
+"NN Title", like the parts of a course; every other page sorts by
 file name. All branches start collapsed, so the tree opens as a list of
 sections; "Expand all" (treelist.js) opens the whole tree.
 
@@ -54,16 +53,15 @@ from pathlib import Path
 from typing import TypedDict
 
 INCLUDE_NAME = "_hub_tree_inc.php"
-LEGACY_INDEX_NAME = "index_legacy.php"
 FIRST_VERSION = "1.0.0"
 
 EXAMPLES = """\
 examples:
-  build_tree.py container/src/dev/rust
-  build_tree.py container/src/dev/rust --write
-  build_tree.py container/src/dev/erlang --check
-  build_tree.py container/src/dev/php --subhubs --all
-  build_tree.py container/src/dev/ruby --json
+  build_tree.py container/src/countries
+  build_tree.py container/src/countries --write
+  build_tree.py container/src/countries --check
+  build_tree.py container/src/guides --subhubs --all
+  build_tree.py container/src/guides --json
 """
 
 # A page builds a page object, or keeps the legacy header, or is generated.
@@ -85,8 +83,8 @@ REDIRECT_RES = (
 )
 
 # The title of a page: the constructor argument, the legacy variable, the tag.
-# A single-quoted PHP string may hold an escaped quote, as in "rustc\'s
-# suggestions", so the pattern takes escape pairs and they are undone after.
+# A single-quoted PHP string may hold an escaped quote, as in "the author\'s
+# notes", so the pattern takes escape pairs and they are undone after.
 TITLE_RES = (
     re.compile(r"title:\s*'((?:[^'\\]|\\.)*)'"),
     re.compile(r'title:\s*"((?:[^"\\]|\\.)*)"'),
@@ -119,7 +117,7 @@ NON_CHAPTERS = frozenset(
 )
 
 # Names that are never an article file.
-EXCLUDED_FILES = frozenset({"RelatedArticles.php", LEGACY_INDEX_NAME})
+EXCLUDED_FILES = frozenset({"RelatedArticles.php"})
 EXCLUDED_SUFFIXES = ("_inc.php",)
 
 
@@ -155,7 +153,7 @@ class Page:
 
 @dataclass
 class Folder:  # pylint: disable=too-many-instance-attributes  # one field per part of a branch
-    """One directory of the language folder and the pages directly in it."""
+    """One directory of the hub folder and the pages directly in it."""
 
     path: Path
     name: str
@@ -317,7 +315,7 @@ def page_sort_key(page: Page) -> tuple[int, int, str]:
 
 
 def scan_folder(path: Path, src: Path, *, is_root: bool = False) -> Folder:
-    """Walk a language folder into Folder and Page records."""
+    """Walk a hub folder into Folder and Page records."""
     folder = Folder(
         path=path,
         name=path.name,
@@ -416,7 +414,7 @@ def php_node(node: Node, indent: int) -> list[str]:
 
 
 def render_php(folder: Folder, version: str) -> str:
-    """The _hub_tree_inc.php file of a language folder."""
+    """The _hub_tree_inc.php file of a hub folder."""
     url_dir = "/" + folder.url.strip("/") + "/"
     tool_path = folder.command_path
     lines = [
@@ -498,7 +496,7 @@ def check_include(folder: Folder, path: Path) -> tuple[bool, str]:
 
 
 def find_src_root(path: Path) -> Path | None:
-    """The docroot above a language folder, or None."""
+    """The docroot above a hub folder, or None."""
     for parent in (path, *path.parents):
         if parent.name == "src":
             return parent
@@ -532,11 +530,11 @@ def print_line(message: str) -> None:
 def build_parser() -> argparse.ArgumentParser:
     """The command line of the tool."""
     parser = argparse.ArgumentParser(
-        description="Build the article tree of a /dev/<language>/ hub from its folder structure.",
+        description="Build the article tree of a hub page from its folder structure.",
         epilog=EXAMPLES,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("directory", help="language folder, e.g. container/src/dev/rust")
+    parser.add_argument("directory", help="hub folder, e.g. container/src/countries")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--write", action="store_true", help=f"write {INCLUDE_NAME} into the folder")
     mode.add_argument("--check", action="store_true", help="exit 1 when the include file is out of date")
@@ -548,7 +546,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def resolve_directory(value: str) -> tuple[Path, Path] | None:
-    """The language folder and the docroot above it, or None after an error."""
+    """The hub folder and the docroot above it, or None after an error."""
     directory = Path(value).resolve()
     if not directory.is_dir():
         print_line(f"build_tree: {directory} is not a folder")

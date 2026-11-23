@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.2
+# version 0.3.3
 # Run the container tests (container/tests) with the project venv.
 #
 # Usage (from any folder):
@@ -25,7 +25,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VENV="$ROOT/.venv"
-REQS="$ROOT/tests/requirements.txt"
 PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
 
 show_help() {
@@ -269,12 +268,11 @@ venv_active() {
 
 create_venv() {
   command -v uv >/dev/null 2>&1 || { echo "ERROR: uv not found (https://docs.astral.sh/uv/)." >&2; exit 2; }
-  [ -f "$REQS" ] || { echo "ERROR: requirements not found: $REQS" >&2; exit 2; }
   rm -rf "$VENV"
   echo "creating $VENV for Python $PYTHON_VERSION ..."
   uv venv --python "$PYTHON_VERSION" "$VENV"
-  echo "installing test deps from $REQS ..."
-  uv pip install --python "$VENV/bin/python" -r "$REQS"
+  echo "installing locked deps ..."
+  UV_PROJECT_ENVIRONMENT="$VENV" uv sync --project "$ROOT" --locked --group dev --python "$PYTHON_VERSION"
 }
 
 if ! venv_ready; then

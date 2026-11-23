@@ -9,9 +9,10 @@ through the uv-managed venv:
 ./tools/run-tests-venv.sh -- tests/tools -q
 ```
 
-`run-tests-venv.sh` creates `container/.venv` with `uv`, installs
-`tests/requirements.txt` and recreates the venv when it was built for
-another Python minor. Only `uv` and Python 3.12 are needed on the host.
+`run-tests-venv.sh` creates `container/.venv` with `uv`, installs the versions
+in `uv.lock` (the test deps and the dev tools ruff, mypy and pylint) and
+recreates the venv when it was built for another Python minor. Only `uv` and
+Python 3.12 are needed on the host.
 
 ## Static checks (no server needed)
 
@@ -33,7 +34,7 @@ tests/conftest.py            progress output and shared pytest options
 tests/linters/               self-tests of the linters and gates
 tests/tools/                 tests of the ported command-line tools
 tests/test_*.py              whole-tree and toolchain gates
-tests/requirements.txt       pytest, requests, pyyaml
+tests/requirements.txt       test deps for a run without uv
 tools/run-tests-venv.sh      uv venv + pytest runner
 ```
 
@@ -112,4 +113,3 @@ Site values come from `container/site-profile.env` (see
 | `test_css_coverage.py` | every `<aside>` on a page has a matching rule (`SITE_ASIDE_TAG`; needs a sitemap) |
 | `test_css_parity.py` | the served sheet is byte-identical on local, dev and prod (`SITE_CSS_SHEET`, `SITE_URL`, `SITE_DEV_URL`) |
 | `test_css_sources.py` | every CSS source feeds a target, and the shared target is core + the sheet (`SITE_CSS_TARGETS`; needs a css_pipeline) |
-

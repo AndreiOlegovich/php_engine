@@ -1,10 +1,8 @@
-# version 1.0.0
+# version 1.0.1
 """Tests for tools/dev_hub/build_tree.py.
 
-The fixture is a small language folder under a temporary src docroot, so the
-expected tree, the PHP include and the subhub report are exact. One smoke
-test runs the tool over the real /dev/rust/ tree and only checks that the
-tree is the whole folder and that the PHP lints.
+The fixture is a small hub folder under a temporary src docroot, so the
+expected tree, the PHP include and the subhub report are exact.
 """
 
 from __future__ import annotations
@@ -48,10 +46,9 @@ def put(path: Path, text: str) -> Path:
 
 @pytest.fixture(name="demo")
 def fixture_demo(tmp_path: Path) -> Path:
-    """A language folder with sections, lessons and every kind of non-article."""
+    """A hub folder with sections, lessons and every kind of non-article."""
     lang = tmp_path / "src" / "dev" / "demo"
     put(lang / "index.php", page_source("Demo", ["The demo hub"]))
-    put(lang / "index_legacy.php", page_source("Demo legacy hub", ["Old", "Older"]))
     put(lang / "install.php", page_source("Install demo", ["Download"]))
     put(lang / "legacy.php", "$page_title = 'Legacy demo';\nrequire_once($root . '/.php/010_header.php');\n")
     put(lang / "_frag.php", page_source("A fragment", ["One", "Two"]))
@@ -64,7 +61,7 @@ def fixture_demo(tmp_path: Path) -> Path:
     put(lang / "course" / "001_start.php", page_source("Start here", ["Install", "First program"]))
     put(
         lang / "course" / "002_quote.php",
-        page_source("It's alive, the compiler says", ["Overview", "The program", "Rustc"]),
+        page_source("It's alive, the compiler says", ["Overview", "The program", "The compiler"]),
     )
     put(lang / "course" / "010_last.php", page_source("The last lesson", ["Threads", "Tests"]))
     put(lang / "course" / "_course_parts_inc.php", "<?php\nreturn array();\n")
@@ -158,7 +155,7 @@ def test_branches_start_collapsed(demo: Path) -> None:
 
 
 def test_hub_index_is_not_its_own_article(demo: Path) -> None:
-    """The index.php of the language folder is the page, not a leaf of its tree."""
+    """The index.php of the hub folder is the page, not a leaf of its tree."""
     _src, nodes = nodes_of(demo)
     urls = json.dumps(nodes)
     assert '"/dev/demo/"' not in urls
@@ -351,29 +348,3 @@ def test_cli_usage_errors(tmp_path: Path) -> None:
     assert run_cli(outside).returncode == 2
     assert run_cli(outside, "--write", "--json").returncode == 2
     assert run_cli(outside, "--all").returncode == 2
-
-
-def test_real_rust_tree(tmp_path: Path) -> None:
-    """The real rust folder builds a tree of the whole folder and lints."""
-    lang = CONTAINER / "src" / "dev" / "rust"
-    if not lang.is_dir():
-        pytest.skip("no rust course in this tree yet")
-    proc = run_cli(lang, "--php")
-    assert proc.returncode == 0, proc.stderr
-    include = proc.stdout
-    assert "'url' => '/dev/rust/course/'" in include
-    assert "'url' => '/dev/rust/course/001_what_is_rust.php'" in include
-    assert "'url' => '/dev/rust/basics/'" in include
-    urls = [line.split("'url' => ")[1].strip("',") for line in include.splitlines() if "'url' => " in line]
-    assert urls
-    assert all(url.startswith("/dev/rust/") for url in urls)
-
-    plain = run_cli(lang)
-    assert plain.returncode == 0, plain.stderr
-    assert plain.stdout.splitlines()[0] == "rust/"
-    assert len(plain.stdout.splitlines()) > 100
-
-    if PHP is not None:
-        target = tmp_path / "rust_inc.php"
-        target.write_text(include, encoding="utf-8")
-        assert subprocess.run([PHP, "-l", str(target)], capture_output=True, check=False).returncode == 0

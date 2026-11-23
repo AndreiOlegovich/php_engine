@@ -1,4 +1,4 @@
-# version 0.2.0
+# version 0.2.1
 """Content-loaded check: every <loc> in the sitemap must render the marker.
 
 Default marker is the bottom marker `<div id="footer-end"></div>`, rendered
@@ -128,6 +128,9 @@ def _matches_prefix(loc, prefix):
     path = urlparse(loc).path or "/"
     return path == prefix or path.startswith(prefix + "/")
 
+
+if not os.path.isfile(SITEMAP_FILE):
+    pytest.skip(f"no sitemap at {SITEMAP_FILE}: generate it first", allow_module_level=True)
 
 LOCS = [u for u in sitemap_locs(SITEMAP_FILE) if _matches_prefix(u, PATH_PREFIX) and not _is_excluded(u) and in_selection(u)]
 skip_if_nothing_selected(LOCS)

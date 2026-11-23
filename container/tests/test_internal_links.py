@@ -1,4 +1,4 @@
-# version 0.1.0
+# version 0.1.1
 """Internal-link check: every <a href="/..."> on a sitemap page must answer 200.
 
 Each sitemap page is fetched and parsed; every root-relative link
@@ -100,6 +100,9 @@ def _matches_prefix(loc, prefix):
     path = urlparse(loc).path or "/"
     return path == prefix or path.startswith(prefix + "/")
 
+
+if not os.path.isfile(SITEMAP_FILE):
+    pytest.skip(f"no sitemap at {SITEMAP_FILE}: generate it first", allow_module_level=True)
 
 ALL_LOCS = sitemap_locs(SITEMAP_FILE)
 LOCS = [u for u in ALL_LOCS if _matches_prefix(u, PATH_PREFIX) and not _is_excluded(u) and in_selection(u)]

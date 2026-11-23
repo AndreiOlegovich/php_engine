@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.2
+# version 0.1.3
 # Set up .venv with uv and run the pytest suite with the venv python.
 #
 # No system-python pollution: everything lives in <root>/.venv.
@@ -25,7 +25,6 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT"
 
 VENV="$ROOT/.venv"
-REQS="$ROOT/tests/requirements.txt"
 PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
 
 SETUP_ONLY=0
@@ -33,7 +32,6 @@ if [ "${1:-}" = "--setup-only" ]; then SETUP_ONLY=1; shift; fi
 if [ "${1:-}" = "--" ]; then shift; fi
 
 command -v uv >/dev/null 2>&1 || { echo "ERROR: uv not found (see https://docs.astral.sh/uv/)." >&2; exit 2; }
-[ -f "$REQS" ] || { echo "ERROR: requirements not found: $REQS" >&2; exit 2; }
 
 venv_python_version="$(
   "$VENV/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true
@@ -48,8 +46,10 @@ if [ ! -x "$VENV/bin/python" ] || [ "$venv_python_version" != "$PYTHON_VERSION" 
   uv venv --python "$PYTHON_VERSION" "$VENV"
 fi
 
-echo "installing test deps ..."
-uv pip install --python "$VENV/bin/python" -r "$REQS"
+# The lockfile holds the test deps and the dev tools (ruff, mypy, pylint) that
+# the lint self-tests call.
+echo "installing locked deps ..."
+UV_PROJECT_ENVIRONMENT="$VENV" uv sync --project "$ROOT" --locked --group dev --python "$PYTHON_VERSION"
 
 if [ "$SETUP_ONLY" -eq 1 ]; then
   echo "venv ready: $VENV (python $("$VENV/bin/python" --version 2>&1))"

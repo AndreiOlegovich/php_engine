@@ -1,4 +1,4 @@
-# version 0.1.3
+# version 0.1.4
 """Footer-wrapped check: every sitemap page that renders the contacts
 footer table must wrap it in a width-constraining div.
 
@@ -112,6 +112,9 @@ def _matches_prefix(loc, prefix):
     path = urlparse(loc).path or "/"
     return path == prefix or path.startswith(prefix + "/")
 
+
+if not os.path.isfile(SITEMAP_FILE):
+    pytest.skip(f"no sitemap at {SITEMAP_FILE}: generate it first", allow_module_level=True)
 
 LOCS = [u for u in sitemap_locs(SITEMAP_FILE) if _matches_prefix(u, PATH_PREFIX) and not _is_excluded(u) and in_selection(u)]
 skip_if_nothing_selected(LOCS)

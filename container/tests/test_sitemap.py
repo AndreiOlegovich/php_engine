@@ -1,4 +1,4 @@
-# version 0.1.0
+# version 0.1.1
 """Link checker: every <loc> in the sitemap must respond with HTTP 200.
 
 One pytest case per sitemap URL, so the Allure dashboard goes green/red
@@ -69,6 +69,9 @@ def _matches_prefix(loc, prefix):
     path = urlparse(loc).path or "/"
     return path == prefix or path.startswith(prefix + "/")
 
+
+if not os.path.isfile(SITEMAP_FILE):
+    pytest.skip(f"no sitemap at {SITEMAP_FILE}: generate it first", allow_module_level=True)
 
 LOCS = [u for u in sitemap_locs(SITEMAP_FILE) if _matches_prefix(u, PATH_PREFIX) and in_selection(u)]
 skip_if_nothing_selected(LOCS)

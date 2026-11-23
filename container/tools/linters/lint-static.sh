@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.2.1
+# version 0.2.2
 # Static analysis / code style for PHP via one-off Docker images.
 #
 # No host installs, no composer, no vendor/: tools run as versioned PHARs
@@ -610,7 +610,8 @@ trap 'rm -f "$REL_LIST"; for _d in $PSALM_CFG $RULESET_TMP; do [ -n "$_d" ] && r
 
 # <exclude-pattern> values from the shared ruleset (for the per-run echo).
 ruleset_excludes() {
-  grep -o '<exclude-pattern>[^<]*</exclude-pattern>' "$RULESET_FILE" 2>/dev/null \
+  # A ruleset without excludes is valid: grep's "no match" must not stop the run.
+  { grep -o '<exclude-pattern>[^<]*</exclude-pattern>' "$RULESET_FILE" 2>/dev/null || true; } \
     | sed 's#.*<exclude-pattern>##; s#</exclude-pattern>.*##'
 }
 

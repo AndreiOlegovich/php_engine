@@ -1,4 +1,4 @@
-# version 0.5.1
+# version 0.5.2
 """Engine-marker check: every <loc> in the sitemap must render one of the
 page-shell markers.
 
@@ -75,6 +75,7 @@ from xml.etree import ElementTree
 import allure
 import pytest
 import requests
+import site_profile
 from url_selection import in_selection, selection_label, skip_if_nothing_selected
 
 #: Printed when the file is run with plain python instead of pytest. It has
@@ -113,21 +114,9 @@ TIMEOUT = (5, 15)  # (connect, read) seconds
 RETRIES = max(0, int(os.environ.get("RETRIES", "2")))
 RETRY_WAIT = float(os.environ.get("RETRY_WAIT", "5"))
 
-MARKERS = (
-    "Page_html_id",
-    "BasePage_html_id",
-    "ArticlePage_html_id",
-    "AoPage_html_id",
-    "AoBasePage_html_id",
-    "AoArticlePage_html_id",
-    "RuPage_html_id",
-    "RuBasePage_html_id",
-    "RuArticlePage_html_id",
-    "RuQaPage_html_id",
-    "RuQaBasePage_html_id",
-    "RuQaArticlePage_html_id",
-)
-MARKER_RE = re.compile(rf'<div id="({"|".join(MARKERS)})"></div>')
+#: The shell markers of this site (SITE_PAGE_MARKERS in site-profile.env).
+MARKERS = tuple(site_profile.get_list("SITE_PAGE_MARKERS", "Page_html_id BasePage_html_id ArticlePage_html_id"))
+MARKER_RE = re.compile(rf'<div id="({"|".join(map(re.escape, MARKERS))})"></div>')
 
 
 def _normalize_prefix(raw):
@@ -183,6 +172,9 @@ def _matches_prefix(loc, prefix):
     path = urlparse(loc).path or "/"
     return path == prefix or path.startswith(prefix + "/")
 
+
+if not os.path.isfile(SITEMAP_FILE):
+    pytest.skip(f"no sitemap at {SITEMAP_FILE}: generate it first", allow_module_level=True)
 
 _PREFIXED_LOCS = [u for u in sitemap_locs(SITEMAP_FILE) if _matches_prefix(u, PATH_PREFIX) and in_selection(u)]
 IGNORED_LOCS = [u for u in _PREFIXED_LOCS if _is_excluded(u)]
@@ -351,22 +343,7 @@ def test_summary(checked):
         for loc in LOCS
     ]
     counts = Counter(_bucket(checked[loc]) for loc in LOCS)
-    keys = (
-        "Page_html_id",
-        "BasePage_html_id",
-        "ArticlePage_html_id",
-        "AoPage_html_id",
-        "AoBasePage_html_id",
-        "AoArticlePage_html_id",
-        "RuPage_html_id",
-        "RuBasePage_html_id",
-        "RuArticlePage_html_id",
-        "RuQaPage_html_id",
-        "RuQaBasePage_html_id",
-        "RuQaArticlePage_html_id",
-        "missing-marker",
-        "non-200",
-    )
+    keys = (*MARKERS, "missing-marker", "non-200")
     summary = {
         "base_url": BASE_URL,
         "sitemap": SITEMAP_FILE,

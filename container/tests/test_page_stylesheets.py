@@ -1,4 +1,4 @@
-# version 0.2.0
+# version 0.2.1
 """Each tree's page classes and pages link that tree's site sheet.
 
   src/          English            /.css/site.css
@@ -93,9 +93,10 @@ def findings(php: str, rel: str, exists: Callable[[str], bool] = _class_exists) 
     """A site sheet from another tree, and page classes that do not exist."""
     code = _without_comments(php)
     sheet = tree_sheet(rel)
+    site_sheets = {tree for _, tree in TREE_SHEETS}
     found = []
     for match in _CSS_ARG.finditer(code):
-        if match.group(2) != sheet:
+        if match.group(2) in site_sheets and match.group(2) != sheet:
             found.append((match.start(), f"css {match.group(2)}, this tree uses {sheet}"))
     for match in _CLASS_REQUIRE.finditer(code):
         if not exists(match.group(2)):
@@ -123,10 +124,26 @@ def page_files() -> list[Path]:
     return files
 
 
+#: The logic cases below run on this layout, whatever the site's profile holds.
+DEMO_TREES = [
+    ("section/", "/.css/section.css"),
+    ("extra/", "/.css/extra.css"),
+    ("ru/", "/.css/ru.css"),
+    ("", "/.css/site.css"),
+]
+
+
+@pytest.fixture(name="demo_trees")
+def fixture_demo_trees(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point tree_sheet() and findings() at the demo layout."""
+    monkeypatch.setitem(globals(), "TREE_SHEETS", DEMO_TREES)
+
+
+@pytest.mark.usefixtures("demo_trees")
 @pytest.mark.parametrize(
     ("rel", "sheet"),
     [
-        ("index.php", TREE_SHEETS[-1][1]),
+        ("index.php", "/.css/site.css"),
         ("qa/testcomplete/index.php", "/.css/site.css"),
         ("ru/linux/index.php", "/.css/ru.css"),
         ("section/index.php", "/.css/section.css"),
@@ -138,6 +155,7 @@ def test_tree_sheet(rel: str, sheet: str) -> None:
     assert tree_sheet(rel) == sheet
 
 
+@pytest.mark.usefixtures("demo_trees")
 @pytest.mark.parametrize(
     ("php", "rel", "expected"),
     [
@@ -163,7 +181,9 @@ def test_findings(php: str, rel: str, expected: list[str]) -> None:
 
 
 def test_every_tree_has_a_base_page() -> None:
-    missing = [prefix + ".php/BasePage.php" for prefix, _ in TREE_SHEETS if not (SRC / prefix / ".php" / "BasePage.php").is_file()]
+    """A tree with page classes has a BasePage; a new site may have none yet."""
+    with_classes = [prefix for prefix, _ in TREE_SHEETS if any((SRC / prefix / ".php" / f"{name}.php").is_file() for name in PAGE_CLASSES)]
+    missing = [prefix + ".php/BasePage.php" for prefix in with_classes if not (SRC / prefix / ".php" / "BasePage.php").is_file()]
     assert not missing, f"no BasePage in {missing}"
 
 

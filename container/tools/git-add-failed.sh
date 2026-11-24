@@ -7,7 +7,7 @@
 # Log formats understood (mixed in one file is fine):
 #   FILE: /app/src/aws/RelatedArticles.php        (lint-static.sh / phpcs report)
 #   FAIL: ao/api/php_auth/index.php               (lint-php.sh report)
-#   FAIL: ru/qa/.php/_footers/season/Aug.php
+#   FAIL: example/.php/Helper.php
 #
 # Path mapping:
 #   /app/src/<rel>  -> container/src/<rel>   (container mount in docker)

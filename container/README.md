@@ -24,11 +24,11 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/   # 200
 Open `http://127.0.0.1:8080/` in a browser. Code lives in `./src` and is
 bind-mounted to `/var/www/html` — edits are live, no rebuild needed.
 
-Note: pages under `ao/` and `ru/qa/` force `https://` in production (behind
+Note: a site's `.htaccess` may force `https://` in production (behind
 a TLS proxy). Locally there is no TLS listener, so the container emulates
 the proxy (`containerfiles/apache-local-dev.conf` sets
 `X-Forwarded-Proto: https`) and those pages open directly over plain `http`.
-Try `http://127.0.0.1:8080/ru/qa/`.
+Try the dummy page `http://127.0.0.1:8080/example/`.
 
 ## Everyday commands
 
@@ -69,7 +69,7 @@ container — started automatically if stopped) over all or selected files:
 
 ```bash
 tools/linters/lint-php.sh --staged                  # staged changes only
-tools/linters/lint-php.sh qa/index.php ru/qa/       # explicit files/dirs
+tools/linters/lint-php.sh example/index.php example/ # explicit files/dirs
 tools/linters/lint-php.sh --files "a.php,b.php"
 tools/linters/lint-php.sh --all                     # all 5k+ *.php under src/
 tools/linters/lint-php.sh --php 8.0 qa/index.php    # lint with PHP 8.0 (default: 8.2)
@@ -197,7 +197,7 @@ Where to click:
 
 How it works under the hood: sitemap hosts are rewritten to the local
 container, `X-Forwarded-Proto: https` emulates the production TLS proxy
-(`.htaccess` under `ao/`, `ru/qa/` forces https otherwise), redirects are
+(a site's `.htaccess` may force https otherwise), redirects are
 followed pinned to the local host, and landing on `/404.php` counts as 404.
 
 No-server fallback (same data, plain HTML table with filters):

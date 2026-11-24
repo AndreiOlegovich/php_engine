@@ -131,7 +131,7 @@ JSON, a full `all-urls` CSV, and one entry per non-200 URL.
 Notes:
 
 - The test sends `X-Forwarded-Proto: https` (emulates the production TLS
-  proxy; `.htaccess` under `ao/`, `ru/qa/` forces https otherwise) and follows
+  proxy; a site's `.htaccess` may force https otherwise) and follows
   redirects pinned to the local host. A landing on `/404.php` counts as 404.
 - `401` on `http_basic.php` pages is correct (they require auth), not a bug.
 - `sitemap.xml` (2021, 504 URLs) scores ~172×200 / 332×404: it references a

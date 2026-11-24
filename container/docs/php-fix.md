@@ -15,7 +15,7 @@ long runs; `-v` adds per-file detail; each tool reports elapsed time
 ## 1. Preview (report-only, changes nothing)
 
 ```bash
-./tools/linters/lint-static.sh --tool phpcs --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpcs --files example/.php/
 ```
 
 - Add `--report reports/phpcs-qa` to also save the output as `.txt`.
@@ -26,7 +26,7 @@ long runs; `-v` adds per-file detail; each tool reports elapsed time
 ## 2. Fix (in place)
 
 ```bash
-./tools/linters/lint-static.sh --tool phpcs --fix --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpcs --fix --files example/.php/
 ```
 
 - Runs `phpcbf` instead of `phpcs`. Fixes the `[x]` violations **in place**:

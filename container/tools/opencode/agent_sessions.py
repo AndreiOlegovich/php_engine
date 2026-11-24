@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# version 0.1.0
+# version 0.1.1
 """Read the sessions OpenCode keeps in the agent container's Docker volume.
 
 container/tools/ai/opencode-docker.sh mounts the named volume
-opencode-agent-data at /home/agent/.local/share/opencode, so every TUI or
+<project>-agent-data at /home/agent/.local/share/opencode, so every TUI or
 `run` session started in that container lives in one SQLite database there.
 This tool copies that database (main file, WAL and SHM) out of the volume
 into a temporary directory, opens the copy read-only and prints:
@@ -40,8 +40,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-DEFAULT_VOLUME = "opencode-agent-data"
-DEFAULT_IMAGE = "opencode-agent"
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from project_name import project_name  # pylint: disable=wrong-import-position,import-error  # noqa: E402
+
+DEFAULT_VOLUME = f"{project_name()}-agent-data"
+DEFAULT_IMAGE = f"{project_name()}-agent"
 TEXT_LIMIT = 3000
 TOOL_LIMIT = 500
 

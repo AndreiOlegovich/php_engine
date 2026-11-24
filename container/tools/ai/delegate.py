@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.5.0
+# version 0.5.1
 """Give a task to OpenCode in Docker and follow it: the supervisor side.
 
 Claude Code (skill assign-to-opencode) or OpenCode (skill
@@ -8,7 +8,7 @@ started by opencode-docker.sh is the worker. This tool gives the worker a task i
 own worktree, records the OpenCode session, and sends each follow-up fix into
 that same session, so the worker keeps its context between rounds.
 
-  start SLUG --brief FILE   worktree ../site-agent-SLUG on a new branch
+  start SLUG --brief FILE   worktree ../PROJECT-agent-SLUG on a new branch
                             agent/SLUG (or --worktree PATH), model check,
                             round 1 in a new session titled SLUG
   fix SLUG --brief FILE     the next round in the same session; -m and the
@@ -39,7 +39,7 @@ round-N.jsonl (OpenCode's events) and round-N.err (the launcher's stderr).
 Usage (any working directory):
   python3 container/tools/ai/delegate.py start fix-typo --brief /tmp/brief.md
   python3 container/tools/ai/delegate.py start ruby-batch --ruby --brief b.md
-  python3 container/tools/ai/delegate.py start more-pages --worktree ../site-agent-more-pages --brief b.md
+  python3 container/tools/ai/delegate.py start more-pages --worktree ../PROJECT-agent-more-pages --brief b.md
   python3 container/tools/ai/delegate.py fix fix-typo --message "Bump the version header too."
   python3 container/tools/ai/delegate.py fix big-task -m opencode-go/deepseek-v4.1-flash --opencode-key ~/.config/opencode-agent/opencode.key --brief fix-1.md
   python3 container/tools/ai/delegate.py status
@@ -70,8 +70,10 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 import check_opencode_models as models  # pylint: disable=wrong-import-position,import-error  # noqa: E402
+from project_name import project_name  # pylint: disable=wrong-import-position,import-error  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TOOLS_AI = REPO_ROOT / "container" / "tools" / "ai"
@@ -454,7 +456,7 @@ def command_start(env: Env, args: argparse.Namespace) -> int:
             if Path(other["worktree"]) == worktree and other["rounds"] and other["rounds"][-1]["status"] == "running":
                 raise TaskError(f"task {other['slug']} is running in {worktree}")
     else:
-        worktree = env.repo.parent / f"site-agent-{slug}"
+        worktree = env.repo.parent / f"{project_name(env.repo)}-agent-{slug}"
         branch = f"agent/{slug}"
         if worktree.exists():
             raise TaskError(f"{worktree} exists: pass --worktree {worktree} to give the task to it")
@@ -621,7 +623,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # No shortened options: --det would pass the argv filter of detach().
     start = subparsers.add_parser("start", help="new task: worktree, model check, round 1", allow_abbrev=False)
-    start.add_argument("slug", help="task name: worktree ../site-agent-SLUG, branch agent/SLUG")
+    start.add_argument("slug", help="task name: worktree ../PROJECT-agent-SLUG, branch agent/SLUG")
     task_text(start)
     start.add_argument("--worktree", type=Path, help="give the task to this existing worktree instead")
     start.add_argument("--base", default="main", help="branch or commit of the new worktree (default: main)")

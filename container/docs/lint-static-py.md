@@ -315,8 +315,8 @@ Another worktree is linted, and with `--fix` fixed, through `--worktree W`.
 - the branch of a worktree.
 
 ```bash
-./tools/linters/lint-static.py --worktree ~/github/site-agent-example --staged
-./tools/linters/lint-static.py --worktree site-agent-example --tool phpcs --files section
+./tools/linters/lint-static.py --worktree ~/github/my_site-agent-example --staged
+./tools/linters/lint-static.py --worktree my_site-agent-example --tool phpcs --files section
 ./tools/linters/lint-static.py --worktree agent/example --tool phpcs --fix --staged
 ./tools/linters/lint-static.py --worktree agent/example --fix tools/example.py
 ```
@@ -602,7 +602,7 @@ FAILED_TO_FIX_LOG=reports ./tools/linters/lint-static.py --tool phpcs --fix --al
 
 # 14. Another worktree: path, folder name or branch
 ./tools/linters/lint-static.py --worktree agent/example --tool phpcs --staged
-./tools/linters/lint-static.py --worktree ../site-agent-example --tool phpcs --fix section/functions.php
+./tools/linters/lint-static.py --worktree ../my_site-agent-example --tool phpcs --fix section/functions.php
 
 # 15. Verbose + custom runtime / cache
 ./tools/linters/lint-static.py -v --tool phpcs --files section/

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Download hosting logs over FTP/FTPS into a local folder outside the repo.
 #
-# Same credentials as deploy-ftp.sh (default: ~/.config/php_engine/hosting-access.env).
+# Same credentials as deploy-ftp.sh (default: ~/.config/<project>/hosting-access.env).
 # Remote layout this was built for (shared hosting where the FTP user
 # lands in the dev site root):
 #   prod_logs/  -> <dest>/prod/   (production logs)
@@ -39,10 +39,12 @@ set -euo pipefail
 _START_DIR="$(pwd -P)"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 cd "$SCRIPT_DIR"
 cd ../..  # container/ is the runtime cwd; repo root is one level up
 
-DEFAULT_CREDS="${HOME}/.config/php_engine/hosting-access.env"
+DEFAULT_CREDS="${HOME}/.config/${SITE_PROJECT}/hosting-access.env"
 CREDS="$DEFAULT_CREDS"
 DEST=""
 ONLY="all"

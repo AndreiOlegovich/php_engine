@@ -1,7 +1,7 @@
-# version 0.2.1
+# version 0.2.2
 """Resolve the external log root shared by the prod-log pipeline.
 
-Default: ${XDG_DATA_HOME:-$HOME/.local/share}/php_engine/logs
+Default: ${XDG_DATA_HOME:-$HOME/.local/share}/<project>/logs
 Override: SITE_LOG_DIR=/absolute/path
 
 Downloaded logs and device profiles live outside the repository; generated
@@ -11,6 +11,12 @@ databases (metrika.db, users.db) and reference lists stay beside the scripts.
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from project_name import project_name  # pylint: disable=wrong-import-position,import-error  # noqa: E402
 
 
 def log_root() -> str:
@@ -20,7 +26,7 @@ def log_root() -> str:
         return os.path.abspath(os.path.expanduser(override))
     xdg_data = os.environ.get("XDG_DATA_HOME", "").strip()
     base = os.path.expanduser(xdg_data) if xdg_data else os.path.join(os.path.expanduser("~"), ".local", "share")
-    return os.path.abspath(os.path.join(base, "php_engine", "logs"))
+    return os.path.abspath(os.path.join(base, project_name(), "logs"))
 
 
 def prod_dir() -> str:

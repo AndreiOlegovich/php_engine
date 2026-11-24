@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.2.2
+# version 0.2.3
 # Static analysis / code style for PHP via one-off Docker images.
 #
 # No host installs, no composer, no vendor/: tools run as versioned PHARs
@@ -157,10 +157,10 @@
 #     ./tools/linters/lint-static.sh --fix section/index.php tools/example.py
 #     ./tools/linters/lint-static.sh --fix section/python
 #   Another worktree (path, folder name or branch):
-#     ./tools/linters/lint-static.sh --worktree ~/github/site-agent-example --staged
-#     ./tools/linters/lint-static.sh --worktree site-agent-example --tool phpcs --files section
+#     ./tools/linters/lint-static.sh --worktree ~/github/my_site-agent-example --staged
+#     ./tools/linters/lint-static.sh --worktree my_site-agent-example --tool phpcs --files section
 #     ./tools/linters/lint-static.sh --worktree agent/example --tool phpcs --fix --staged
-#     ./tools/linters/lint-static.sh --worktree ../site-agent-example --tool phpcs --fix section/functions.php
+#     ./tools/linters/lint-static.sh --worktree ../my_site-agent-example --tool phpcs --fix section/functions.php
 #     ./tools/linters/lint-static.sh --worktree agent/example --fix tools/example.py
 #   Report and output:
 #     ./tools/linters/lint-static.sh --tool phpcs --all --report phpcs-all

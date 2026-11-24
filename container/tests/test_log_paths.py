@@ -1,4 +1,4 @@
-# version 0.1.2
+# version 0.1.3
 """Tests for the external log-root resolver."""
 
 from __future__ import annotations
@@ -19,17 +19,18 @@ def _load_log_paths():
 
 def test_default_log_root_uses_xdg_data_home(monkeypatch, tmp_path):
     monkeypatch.delenv("SITE_LOG_DIR", raising=False)
+    monkeypatch.setenv("SITE_PROJECT", "demo_site")
     monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "xdg"))
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
 
     log_paths = _load_log_paths()
 
-    assert log_paths.log_root() == str(tmp_path / "xdg" / "php_engine" / "logs")
-    assert log_paths.prod_access_dir() == str(tmp_path / "xdg" / "php_engine" / "logs" / "prod" / "access")
-    assert log_paths.prod_error_dir() == str(tmp_path / "xdg" / "php_engine" / "logs" / "prod" / "error")
-    assert log_paths.devices_dir() == str(tmp_path / "xdg" / "php_engine" / "logs" / "devices")
-    assert log_paths.user_profiles_dir() == str(tmp_path / "xdg" / "php_engine" / "logs" / "user_profiles")
-    assert log_paths.botlist_path() == str(tmp_path / "xdg" / "php_engine" / "logs" / "botlist.csv")
+    assert log_paths.log_root() == str(tmp_path / "xdg" / "demo_site" / "logs")
+    assert log_paths.prod_access_dir() == str(tmp_path / "xdg" / "demo_site" / "logs" / "prod" / "access")
+    assert log_paths.prod_error_dir() == str(tmp_path / "xdg" / "demo_site" / "logs" / "prod" / "error")
+    assert log_paths.devices_dir() == str(tmp_path / "xdg" / "demo_site" / "logs" / "devices")
+    assert log_paths.user_profiles_dir() == str(tmp_path / "xdg" / "demo_site" / "logs" / "user_profiles")
+    assert log_paths.botlist_path() == str(tmp_path / "xdg" / "demo_site" / "logs" / "botlist.csv")
 
 
 def test_override_expands_home(monkeypatch, tmp_path):

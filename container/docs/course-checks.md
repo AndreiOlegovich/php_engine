@@ -136,7 +136,7 @@ python3 container/tools/course_check/code_blocks.py \
 
 # a whole course, on the host, in the native image (no compilers on the host)
 python3 container/tools/course_check/code_blocks.py \
-  container/src/dev/cpp/course --lang cpp --docker opencode-agent-native
+  container/src/dev/cpp/course --lang cpp --docker <project>-agent-native
 
 # run the programs too, and keep the extracted sources
 python3 container/tools/course_check/code_blocks.py \
@@ -258,7 +258,7 @@ python3 container/tools/course_check/quiz_answers.py \
 
 # a whole course, on the host, in the native image
 python3 container/tools/course_check/quiz_answers.py \
-  container/src/dev/c/course --lang c --docker opencode-agent-native
+  container/src/dev/c/course --lang c --docker <project>-agent-native
 
 # only the shape of the questions, no compilers needed: '(?!)' matches no
 # text, so no question is taken for a program ('^$' would match a blank line)
@@ -311,12 +311,10 @@ or two) and, the first time, the pull.
   are skipped: the tools build one file with one command. `SKIP` lines say
   which.
 - A JavaScript program that imports an npm package runs only when the image
-  has that package. `opencode-agent-script` has the packages listed in
-  `container/containerfiles/Dockerfile.script.opencode`, at the versions
-  the lessons name (now jsdom 30.1.3, semver 7.8.5, ms 2.1.2 and
-  @eslint/js 10.0.1), and any other package shows `SKIP`. To cover a new
-  lesson, add its package to that file, not to the tools.
-- Build and run C, C++ and Rust in `opencode-agent-native`: the pages say
+  has that package. `<project>-agent-script` starts with none, and a
+  missing package shows `SKIP`. To cover a lesson, add its package to
+  `container/containerfiles/Dockerfile.script.opencode`, not to the tools.
+- Build and run C, C++ and Rust in `<project>-agent-native`: the pages say
   which compiler they were run with (gcc 15.2.0, rustc 1.96.1), and that is
   the image's. An older compiler on the host gives false findings: GCC 13
   does not take C23 by default and quotes its messages differently.
@@ -336,7 +334,7 @@ or two) and, the first time, the pull.
   answer.
 - Programs run with a timeout and their output is cut at `--output-limit`
   bytes (2000 by default). The timeout is the preset's, 5 s, and 15 s for
-  JavaScript: loading jsdom takes about 2 s in `opencode-agent-script`, and
+  JavaScript: loading a package such as jsdom takes about 2 s, and
   with `--jobs` at the number of CPUs a DOM program passed 5 s now and then.
   `--timeout` sets another one.
 - `--docker` runs one container per program with `--network none`. A build

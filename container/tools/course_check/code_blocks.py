@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 1.7.0
+# version 1.7.1
 """Build the whole programs of the code blocks of pages and check the failures.
 
 A block counts as a whole program when it matches the whole-program regex of
@@ -38,7 +38,7 @@ examples:
   code_blocks.py ../src/dev/rust/course --lang rust
   code_blocks.py ../src/dev/rust/course --lang rust --jobs 8
   code_blocks.py ../src/dev/rust/course/011_ownership.php --lang rust --run
-  code_blocks.py ../src/dev/cpp/course --lang cpp --docker opencode-agent-native
+  code_blocks.py ../src/dev/cpp/course --lang cpp --docker <project>-agent-native
   code_blocks.py ../src/dev/c --lang c --build 'gcc -std=c17 -Wall -Wextra {src} -o {out}'
 """
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.8.2
+# version 0.8.3
 # Run OpenCode with --auto in a container that sees container/src of an
 # agent worktree read-write, and the instructions, docs and tools read-only.
 #
@@ -27,9 +27,7 @@
 #       Dockerfile.vm.opencode (JDK and Maven, Groovy, the .NET SDK,
 #       Erlang/OTP, Elixir, the Thrift compiler).
 #     --javascript --js --typescript, or --script: the image of
-#       Dockerfile.script.opencode (Node.js, npm, tsc, Ruby, and the npm
-#       packages the JavaScript lessons import: jsdom, semver, ms,
-#       @eslint/js).
+#       Dockerfile.script.opencode (Node.js, npm, tsc, eslint, Ruby).
 #     --erlang: the image of Dockerfile.erlang.opencode, Erlang/OTP alone
 #       (erl, erlc, escript).
 #     --ruby: the image of Dockerfile.ruby.opencode, Ruby alone (ruby, irb,
@@ -41,6 +39,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 rw=(); ro_ext=(); keys=(); flavour=
 while :; do
   case "${1:-}" in
@@ -56,7 +56,7 @@ while :; do
     *) break ;;
   esac
 done
-dockerfile="Dockerfile${flavour:+.$flavour}.opencode"; image="opencode-agent${flavour:+-$flavour}"
+dockerfile="Dockerfile${flavour:+.$flavour}.opencode"; image="$SITE_PROJECT-agent${flavour:+-$flavour}"
 WT="$(cd "${1:?usage: opencode-docker.sh [--rw <path>]... [--openrouter-key <file>] [--opencode-key <file>] [--<language> | --native | --vm | --script] <worktree> [run <task> | shell]}" && pwd)"
 shift
 
@@ -163,7 +163,7 @@ while IFS= read -r f; do
 done < <(git -C "$WT" ls-files -- container | grep -E '\.env$|creds' || true)
 mounts+=(-v "$SCRIPT_DIR/docker/opencode.jsonc:/work/opencode.jsonc:ro"
          -v "$SCRIPT_DIR/docker/CONTAINER.md:/work/CONTAINER.md:ro"
-         -v opencode-agent-data:/home/agent/.local/share/opencode)
+         -v "$SITE_PROJECT-agent-data:/home/agent/.local/share/opencode")
 
 entry=()
 case "${1:-}" in

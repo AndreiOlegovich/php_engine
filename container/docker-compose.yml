@@ -1,6 +1,8 @@
+name: ${SITE_PROJECT:-php_engine}
+
 services:
   php-apache:
-    image: php_engine:${PHP_VER:-8.2}
+    image: ${SITE_PROJECT:-php_engine}:${PHP_VER:-8.2}
     build:
       context: .
       dockerfile: containerfiles/Dockerfile.php
@@ -8,9 +10,11 @@ services:
         PHP_VER: ${PHP_VER:-8.2}
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
-    container_name: php-apache
+    container_name: ${SITE_PROJECT:-php_engine}-apache
+    environment:
+      SITE_PROJECT: ${SITE_PROJECT:-php_engine}
     ports:
-      - "8080:80"
+      - "${SITE_HTTP_PORT:-8080}:80"
     volumes:
       - ./src:/var/www/html
       # PHP settings for old codebase (hide E_DEPRECATED in browser).
@@ -25,7 +29,7 @@ services:
     build:
       context: .
       dockerfile: pytest_web/Dockerfile
-    container_name: pytest-web
+    container_name: ${SITE_PROJECT:-php_engine}-pytest-web
     depends_on:
       - php-apache
     environment:
@@ -39,13 +43,13 @@ services:
     command: pytest -q --alluredir=/allure-results --clean-alluredir
 
   # Allure report viewer: watches allure-results, builds the HTML report
-  # and serves it at http://127.0.0.1:5050/allure-docker-service-ui/
+  # and serves it at http://127.0.0.1:<SITE_ALLURE_PORT>/allure-docker-service-ui/
   allure-web:
     image: frankescobar/allure-docker-service:latest
-    container_name: allure-web
+    container_name: ${SITE_PROJECT:-php_engine}-allure-web
     user: "0:0"  # image's app user can't write history into the volume otherwise
     ports:
-      - "5050:5050"
+      - "${SITE_ALLURE_PORT:-5050}:5050"
     environment:
       CHECK_RESULTS_EVERY_SECONDS: 5
       KEEP_HISTORY: 1

@@ -24,7 +24,9 @@ for arg in "$@"; do
   esac
 done
 
-URL_BASE="${URL_BASE:-http://127.0.0.1:8080}"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../project-env.sh"
+URL_BASE="${URL_BASE:-$SITE_LOCAL_BASE}"
 
 fail() { echo "ERROR: $*" >&2; exit 1; }
 info() { echo "==> $*"; }

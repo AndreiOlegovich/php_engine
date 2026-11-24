@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.3
+# version 0.3.4
 # Upload the site to Dev unattended: forced, in small batches, with retries.
 #
 # Wrapper over deploy-ftp.sh for uploads that die halfway through a big
@@ -22,7 +22,7 @@
 # percentage changes.
 #
 # Target: the creds file deploy-ftp.sh reads (default
-# ~/.config/php_engine/hosting-access.env, the Dev target). The host: and src: lines printed first show where files go.
+# ~/.config/<project>/hosting-access.env, the Dev target). The host: and src: lines printed first show where files go.
 #
 # Usage:
 #   ./deploy-batches.sh [--batch-size N] [--retries N] [--pause SEC]
@@ -49,7 +49,7 @@
 #                          interrupt message prints the exact command)
 #   --log-dir DIR          new folder for files.txt, run.log and
 #                          failed-files.txt (default
-#                          ~/.cache/php_engine/deploy-batches/<date-time>)
+#                          ~/.cache/<project>/deploy-batches/<date-time>)
 #   --dry-run              list the files and count the batches, upload
 #                          nothing
 #   -h, --help             this help
@@ -68,12 +68,14 @@
 #   ./deploy-batches.sh --dry-run
 #   ./deploy-batches.sh
 #   ./deploy-batches.sh --dirs example --no-images --batch-size 20
-#   ./deploy-batches.sh --list ~/.cache/php_engine/deploy-batches/20261024-230000/failed-files.txt
+#   ./deploy-batches.sh --list ~/.cache/<project>/deploy-batches/20261024-230000/failed-files.txt
 set -euo pipefail
 
 _START_DIR="$(pwd -P)"  # invocation cwd, for relative --list/--log-dir
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 cd "$SCRIPT_DIR"
 cd ../..  # tools live in tools/deploy/; project root (compose file, src/) is the runtime cwd
 
@@ -136,7 +138,7 @@ if [ -n "$LIST_FILE" ]; then
 fi
 command -v timeout >/dev/null || { echo "ERROR: timeout (GNU coreutils) not found." >&2; exit 1; }
 
-[ -n "$LOG_DIR" ] || LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/php_engine/deploy-batches/$(date +%Y%m%d-%H%M%S)"
+[ -n "$LOG_DIR" ] || LOG_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/$SITE_PROJECT/deploy-batches/$(date +%Y%m%d-%H%M%S)"
 [ ! -e "$LOG_DIR/run.log" ] || { echo "ERROR: $LOG_DIR already holds a run; pick a new --log-dir." >&2; exit 2; }
 mkdir -p "$LOG_DIR"
 LOG="$LOG_DIR/run.log"

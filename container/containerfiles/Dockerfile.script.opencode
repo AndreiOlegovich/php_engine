@@ -36,37 +36,23 @@ RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
 # pages and the scripts in container/tools.
     shellcheck~=0.11 shfmt~=3.13 \
  && ln -s /usr/bin/php83 /usr/local/bin/php
-# npm packages that the JavaScript examples of src/dev import, at the
-# versions the lessons name, so require("jsdom") or import ... from "semver"
-# runs with no npm install in the folder of the file, also in the course
-# checks, which run with --network none. They are installed in
+# npm packages that the JavaScript examples of a site import go in
 # /opt/node-packages, and /node_modules links there: Node looks for a bare
 # name in every node_modules folder from the file up to /, for require()
 # and import alike (NODE_PATH serves require() only), so a file in /tmp or
-# /work finds them. An npm install in a lesson's own folder still wins,
-# because Node stops at the nearest node_modules.
-# To add a package, add a name@version line with the lessons that need it;
-# to leave one out, put # in front of its line.
-RUN mkdir -p /opt/node-packages \
+# /work finds them, also in the course checks, which run with --network none.
+# An npm install in a page's own folder still wins, because Node stops at
+# the nearest node_modules. The engine ships no package. To add one, put
+#   && npm install --save-exact --no-fund --no-audit name@version \
+# before the ln line.
+RUN mkdir -p /opt/node-packages/node_modules \
  && cd /opt/node-packages \
  && npm init -y >/dev/null \
- && npm install --save-exact --no-fund --no-audit \
-# jsdom: the DOM lessons dev/js/course/103-110 (lesson 103 names 30.1.3).
-    jsdom@30.1.3 \
-# semver: dev/js/course/113_dependencies_and_semver.php (7.8.5).
-    semver@7.8.5 \
-# ms: dev/js/course/113 and 114 install 2.1.2.
-    ms@2.1.2 \
-# @eslint/js: the eslint.config.js of dev/js/course/116 and 117 (10.0.1).
-# Its peer eslint is optional, so npm does not add the CLI.
-    @eslint/js@10.0.1 \
- && npm cache clean --force \
  && ln -s /opt/node-packages/node_modules /node_modules
 # eslint 10.14.0 is not an Alpine package. It lives in its own folder and not
 # in /opt/node-packages: /node_modules links there, so eslint's own 78
 # packages would become visible to every require() of a lesson. Only its bin
-# goes on PATH. 10.14.0 matches the @eslint/js 10.0.1 above, whose peer is
-# eslint ^10.0.0, and is the version dev/js/course/116 names.
+# goes on PATH.
 RUN mkdir -p /opt/node-tools \
  && cd /opt/node-tools \
  && npm init -y >/dev/null \

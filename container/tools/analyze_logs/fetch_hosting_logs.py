@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.2
+# version 0.1.3
 """Download the hosting provider's logs of a time window over SSH.
 
 Finds every log on the hosting account and downloads the files that hold
@@ -26,10 +26,10 @@ last write to its own. Whole files are downloaded, so the first and last
 file can hold lines just outside the window.
 
 Files land under the external log root with the remote home layout kept:
-  ${SITE_LOG_DIR:-~/.local/share/php_engine/logs}/hosting/logs/<domain>/https/access.log
+  ${SITE_LOG_DIR:-~/.local/share/<project>/logs}/hosting/logs/<domain>/https/access.log
 rsync copies only files that changed since the last run.
 
-SSH target, from a flag, the environment or ~/.config/php_engine/hosting-access.env
+SSH target, from a flag, the environment or ~/.config/<project>/hosting-access.env
 (template: container/tools/deploy/hosting-access.env.template):
   HOSTING_SSH=<user>@<server>.example.com   (or a Host alias of ~/.ssh/config)
   HOSTING_KEY=~/.ssh/hosting-upload         (default when the file exists)
@@ -58,8 +58,9 @@ from datetime import datetime, time, timedelta
 from pathlib import Path
 
 from log_paths import log_root
+from project_name import project_name  # pylint: disable=import-error
 
-DEFAULT_CONFIG = Path("~/.config/php_engine/hosting-access.env").expanduser()
+DEFAULT_CONFIG = Path(f"~/.config/{project_name()}/hosting-access.env").expanduser()
 DEFAULT_KEY = Path("~/.ssh/hosting-upload").expanduser()
 SSH_OPTIONS = ("-o", "BatchMode=yes", "-o", "ConnectTimeout=15")
 

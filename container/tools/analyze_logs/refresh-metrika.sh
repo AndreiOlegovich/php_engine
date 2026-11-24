@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# version 0.1.0
+# version 0.1.1
 # Refresh the prod-log pipeline: fetch -> bots -> metrika DB.
 #
 # This is what cron runs every 30 minutes:
 #
-#   */30 * * * * /path/to/checkout/container/tools/analyze_logs/refresh-metrika.sh >> ~/.local/share/php_engine/logs/refresh-metrika.cron.log 2>&1
+#   */30 * * * * /path/to/checkout/container/tools/analyze_logs/refresh-metrika.sh >> ~/.local/share/<project>/logs/refresh-metrika.cron.log 2>&1
 #
 # Logs live outside the repository in
-# ${SITE_LOG_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/php_engine/logs};
+# ${SITE_LOG_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/<project>/logs};
 # metrika.db and users.db stay beside the scripts; botlist.csv lives in
 # the log root too, because it holds client IP addresses.
 #

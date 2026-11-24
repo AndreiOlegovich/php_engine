@@ -13,7 +13,7 @@ namespace PhpEngine\Modules;
 #   YANDEX_METRICA_URN_ID   legacy counter
 #
 # Lookup order per ID: getenv() / $_ENV / $_SERVER, then the file pointed at
-# by $SITE_ENV (if set), then ~/.config/php_engine/ftp-creds.env (optional
+# by $SITE_ENV (if set), then ~/.config/$SITE_PROJECT/ftp-creds.env (optional
 # overrides, see deploy-ftp.creds.example), then the code default below.
 class Metrica
 {
@@ -63,9 +63,14 @@ class Metrica
         if (isset($_SERVER['SITE_ENV']) && is_string($_SERVER['SITE_ENV']) && $_SERVER['SITE_ENV'] !== '') {
             $out[] = $_SERVER['SITE_ENV'];
         }
+        // Only this project's file: another site's counter must never load here.
         $home = getenv('HOME');
-        if (is_string($home) && $home !== '') {
-            $out[] = $home . '/.config/php_engine/ftp-creds.env';
+        $project = getenv('SITE_PROJECT');
+        if (
+            is_string($home) && $home !== ''
+            && is_string($project) && preg_match('/^[a-z0-9][a-z0-9_-]*$/', $project) === 1
+        ) {
+            $out[] = $home . '/.config/' . $project . '/ftp-creds.env';
         }
         return $out;
     }

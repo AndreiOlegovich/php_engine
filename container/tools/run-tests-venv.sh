@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.3
+# version 0.1.4
 # Set up .venv with uv and run the pytest suite with the venv python.
 #
 # No system-python pollution: everything lives in <root>/.venv.
@@ -14,8 +14,8 @@
 #   --setup-only   only ensure venv + deps, do not run pytest.
 #   -- ARGS...     forwarded to pytest (e.g. -- tests/ -q -k remarque).
 #
-# Host defaults (override via env): BASE_URL=http://127.0.0.1:8080
-# (the local PHP server on :8080), PYTHON_VERSION=3.12.
+# Host defaults (override via env): BASE_URL=http://127.0.0.1:<SITE_HTTP_PORT>
+# (the local PHP server of this project), PYTHON_VERSION=3.12.
 #
 # Exit: pytest's exit code (0 = pass).
 set -euo pipefail
@@ -56,7 +56,8 @@ if [ "$SETUP_ONLY" -eq 1 ]; then
   exit 0
 fi
 
-export BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+export BASE_URL="${BASE_URL:-$(. "$SCRIPT_DIR/project-env.sh"; printf '%s' "$SITE_LOCAL_BASE")}"
 export SITEMAP_FILE="${SITEMAP_FILE:-src/sitemap.xml}"
 echo "BASE_URL=$BASE_URL SITEMAP_FILE=$SITEMAP_FILE"
 

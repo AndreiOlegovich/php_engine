@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.2
+# version 0.0.3
 # Find and safely wrap PHP lines longer than a limit (default: 120 chars).
 #
 # Usage:
@@ -20,7 +20,7 @@
 #                counts afterwards (exit 1 if anything was introduced).
 #   --limit N    max line length (default: 120).
 #   --php-bin C  php binary used for the post-fix syntax check
-#                (default: auto — `docker exec php-apache`, else host `php`).
+#                (default: auto — `docker exec <project>-apache`, else host `php`).
 #                If no PHP is available, --fix refuses to run (safety first).
 #   paths...     files and/or directories (default: src/). Directories are
 #                scanned for *.php without descending into symlinked dirs.
@@ -48,6 +48,8 @@ set -euo pipefail
 _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 cd "$SCRIPT_DIR"
 cd ../..  # tools live in tools/fix/; project root (compose file, src/) is the runtime cwd
 
@@ -134,7 +136,7 @@ PHP_CMD=""
 if [ "$MODE_FIX" -eq 1 ]; then
   if [ -n "$PHP_BIN" ]; then
     PHP_CMD="$PHP_BIN"
-  elif docker exec php-apache php -v >/dev/null 2>&1; then
+  elif docker exec "$SITE_PROJECT-apache" php -v >/dev/null 2>&1; then
     # Wrapper: files under ./src lint via the running container (fast);
     # anything else via a one-off php:8.2-cli container (bind-mounted).
     PHP_CMD="$WRAP_TMPDIR/php-lint.sh"
@@ -145,7 +147,7 @@ op="\$1"; f="\$2"
 case "\$PWD/\$f" in
   "$PWD/src/"*)
     rel=\${f#src/}; rel=\${rel#./src/}
-    exec docker exec php-apache php "\$op" "/var/www/html/\$rel" ;;
+    exec docker exec "$SITE_PROJECT-apache" php "\$op" "/var/www/html/\$rel" ;;
   *)
     dir=\$(cd "\$(dirname "\$f")" && pwd); base=\$(basename "\$f")
     exec docker run --rm -v "\$dir:/w:ro" $PHPCS_IMG php "\$op" "/w/\$base" ;;
@@ -156,7 +158,7 @@ EOF
     PHP_CMD="php"
   else
     echo "ERROR: no PHP available for the post-fix syntax check" >&2
-    echo "  (tried: --php-bin, 'docker exec php-apache php', host 'php')." >&2
+    echo "  (tried: --php-bin, 'docker exec $SITE_PROJECT-apache php', host 'php')." >&2
     echo "  Refusing to modify files without verification." >&2
     exit 2
   fi

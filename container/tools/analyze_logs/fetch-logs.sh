@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.4
+# version 0.0.5
 # Fetch prod logs every 30 minutes (cron) — skips quietly without internet.
 #
 # Single instance via flock; downloads only prod (error + access) with
@@ -7,12 +7,12 @@
 # chain (devices -> users -> bots -> metrika DB) runs in refresh-metrika.sh, which
 # is what cron should call:
 #
-#   */30 * * * * /path/to/checkout/container/tools/analyze_logs/refresh-metrika.sh >> ~/.local/share/php_engine/logs/refresh-metrika.cron.log 2>&1
+#   */30 * * * * /path/to/checkout/container/tools/analyze_logs/refresh-metrika.sh >> ~/.local/share/<project>/logs/refresh-metrika.cron.log 2>&1
 #
 # Run directly for one fetch:
 #   ./fetch-logs.sh [--creds PATH] [--dest DIR] [--dry-run] [-v]
 #
-# Logs go to ${SITE_LOG_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/php_engine/logs}
+# Logs go to ${SITE_LOG_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/<project>/logs}
 # unless --dest is given.
 #
 # Exit 0 when downloaded OR skipped offline; 1 on real errors.
@@ -23,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC1091  # shared resolver is checked separately by lint-sh.sh
 . "$SCRIPT_DIR/log-root.sh"
 
-CREDS="${HOME}/.config/php_engine/hosting-access.env"
+CREDS="${HOME}/.config/${SITE_PROJECT}/hosting-access.env"
 DEST=""
 DRY_RUN=0
 VERBOSE=0

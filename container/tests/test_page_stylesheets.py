@@ -1,4 +1,4 @@
-# version 0.2.1
+# version 0.2.2
 """Each tree's page classes and pages link that tree's site sheet.
 
   src/          English            /.css/site.css
@@ -7,16 +7,16 @@
   src/extra/       Russian, ao        /.css/extra.css
 
 Every tree keeps its own copy of the page classes in its .php/ folder, and
-the sheet is set there: the default of BasePage and SidePage, the link that
+the sheet is set there: the default of BasePage and DictPage, the link that
 Page writes. ArticlePage inherits the BasePage default of its folder. A
 class copied from another tree keeps that tree's sheet: the English Page
-linked ao.css and the English SidePage ru.css, so English pages showed
+linked ao.css and the English DictPage ru.css, so English pages showed
 the Russian "Предыдущая статья" labels of those sheets.
 
 Checked:
 
 * every site sheet a page class names is its tree's sheet, the usage
-  example in its docblock included, and BasePage, SidePage and Page name
+  example in its docblock included, and BasePage, DictPage and Page name
   one; ArticlePage names none;
 * a page that passes a site sheet as css: passes its tree's sheet; a
   page-scoped sheet such as /.css/good-design.css is not a site sheet;
@@ -64,11 +64,11 @@ pytestmark = pytest.mark.skipif(
     not site_profile.get("SITE_TREE_SHEETS"),
     reason="SITE_TREE_SHEETS is unset: this module checks the tree layout of a configured site",
 )
-PAGE_CLASSES = ("BasePage", "ArticlePage", "ArticlePage", "Page")
+PAGE_CLASSES = ("BasePage", "ArticlePage", "DictPage", "Page")
 
 _SITE_SHEET = re.compile(r"/\.css/[A-Za-z0-9_.-]+\.css")
 _CSS_ARG = re.compile(r"\bcss\s*:\s*(['\"])(/\.css/[A-Za-z0-9_.-]+\.css)\1")
-_CLASS_REQUIRE = re.compile(r"\$root\s*\.\s*(['\"])(/(?:[\w-]+/)*\.php/(?:BasePage|ArticlePage|SidePage|Page)\.php)\1")
+_CLASS_REQUIRE = re.compile(r"\$root\s*\.\s*(['\"])(/(?:[\w-]+/)*\.php/(?:BasePage|ArticlePage|DictPage|Page)\.php)\1")
 _BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.S)
 _LINE_COMMENT = re.compile(r"^[ \t]*(?:#|//).*$", re.M)
 _BACKUP_COPY = re.compile(r"(?: copy(?:\(\d+\))?|copy\d+)\.php$")
@@ -102,6 +102,12 @@ def findings(php: str, rel: str, exists: Callable[[str], bool] = _class_exists) 
         if not exists(match.group(2)):
             found.append((match.start(), f"requires {match.group(2)}, which does not exist"))
     return [f"line {code.count(chr(10), 0, position) + 1}: {message}" for position, message in sorted(found)]
+
+
+def named_site_sheets(source: str) -> list[str]:
+    """The tree sheets a class names; a page-scoped sheet is not one of them."""
+    site_sheets = {tree for _, tree in TREE_SHEETS}
+    return sorted(set(_SITE_SHEET.findall(source)) & site_sheets)
 
 
 def page_class_params() -> list:
@@ -180,6 +186,24 @@ def test_findings(php: str, rel: str, expected: list[str]) -> None:
     assert findings(php, rel, exists=lambda path: path == "/.php/ArticlePage.php") == expected
 
 
+def test_each_page_class_is_checked_once() -> None:
+    assert len(set(PAGE_CLASSES)) == len(PAGE_CLASSES)
+    assert "DictPage" in PAGE_CLASSES
+
+
+@pytest.mark.usefixtures("demo_trees")
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        pytest.param("css = '/.css/ru.css'; aside = '/.css/dict_aside.css';", ["/.css/ru.css"], id="own-sheet-and-page-scoped-sheet"),
+        pytest.param("aside = '/.css/dict_aside.css';", [], id="only-a-page-scoped-sheet"),
+        pytest.param("a = '/.css/ru.css'; b = '/.css/site.css';", ["/.css/ru.css", "/.css/site.css"], id="two-tree-sheets"),
+    ],
+)
+def test_named_site_sheets(source: str, expected: list[str]) -> None:
+    assert named_site_sheets(source) == expected
+
+
 def test_every_tree_has_a_base_page() -> None:
     """A tree with page classes has a BasePage; a new site may have none yet."""
     with_classes = [prefix for prefix, _ in TREE_SHEETS if any((SRC / prefix / ".php" / f"{name}.php").is_file() for name in PAGE_CLASSES)]
@@ -189,7 +213,7 @@ def test_every_tree_has_a_base_page() -> None:
 
 @pytest.mark.parametrize(("path", "name", "sheet"), page_class_params())
 def test_page_class_names_its_tree_sheet(path: Path, name: str, sheet: str) -> None:
-    named = sorted(set(_SITE_SHEET.findall(path.read_text(encoding="utf-8"))))
+    named = named_site_sheets(path.read_text(encoding="utf-8"))
     rel = path.relative_to(SRC).as_posix()
     if name == "ArticlePage":
         assert not named, f"{rel} names {named}: ArticlePage inherits {sheet} from the BasePage of its folder"

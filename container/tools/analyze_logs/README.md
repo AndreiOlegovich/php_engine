@@ -9,7 +9,7 @@ from this directory; all paths below are relative to it unless noted.
 Downloaded logs and device profiles live outside the repository:
 
 ```
-${SITE_LOG_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/php_engine/logs}/
+${SITE_LOG_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/<project>/logs}/
   prod/access/  prod/error/  dev/  devices/  user_profiles/  botlist.csv
 ```
 
@@ -23,8 +23,8 @@ their deny rules.
 The old in-repo `site_logs/` tree is no longer read. It was moved once with:
 
 ```bash
-mkdir -p ~/.local/share/php_engine
-mv container/tools/analyze_logs/site_logs ~/.local/share/php_engine/logs
+mkdir -p ~/.local/share/<project>
+mv container/tools/analyze_logs/site_logs ~/.local/share/<project>/logs
 ```
 
 ## Chain
@@ -49,7 +49,7 @@ other scripts read the old or the new file, never a half-written one.
 Cron line (not installed by default — install it when ready):
 
 ```
-*/30 * * * * /path/to/checkout/container/tools/analyze_logs/refresh-metrika.sh >> ~/.local/share/php_engine/logs/refresh-metrika.cron.log 2>&1
+*/30 * * * * /path/to/checkout/container/tools/analyze_logs/refresh-metrika.sh >> ~/.local/share/<project>/logs/refresh-metrika.cron.log 2>&1
 ```
 
 ## Scripts
@@ -57,7 +57,7 @@ Cron line (not installed by default — install it when ready):
 - `fetch-logs.sh [--creds PATH] [--dest DIR] [--dry-run] [-v]` —
   flock-guarded wrapper around `download-logs.sh --only prod --latest 2`.
   TCP-checks the FTP host first (creds stay in
-  `~/.config/php_engine/hosting-access.env`, never logged); exit 0 when offline.
+  `~/.config/<project>/hosting-access.env`, never logged); exit 0 when offline.
 - `refresh-metrika.sh [--skip-fetch] [--skip-devices] [--skip-users]
   [--skip-bots] [--skip-db] [--from-local] [--dry-run-fetch] [-v]` — the
   cron entrypoint; failures stop the chain. `--from-local` means
@@ -125,7 +125,7 @@ Cron line (not installed by default — install it when ready):
   `data/devices.jsonl` (owner list); keyless visits land in
   `data/visitors.jsonl` (public log, never the owner list). Key sources in
   order: env `USER_PROFILE_KEY`, file `USER_PROFILE_KEY_FILE`, then
-  `$HOME/.config/php_engine/user-profile.key` (chmod 600, outside the repo).
+  `$HOME/.config/<project>/user-profile.key` (chmod 600, outside the repo).
   Make one with `openssl rand -hex 32`.
 - Public save form: visitors without the key see a thank-you page with a
   "Save your user profile" password + text-captcha form. A correct password

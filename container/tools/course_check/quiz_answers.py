@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 1.6.0
+# version 1.6.1
 """Check the questions of lesson pages: their shape and their marked answers.
 
 The questions are read with dump_quiz.php, which finds the array argument of
@@ -44,7 +44,7 @@ examples:
   quiz_answers.py ../src/dev/rust/course --lang rust
   quiz_answers.py ../src/dev/rust/course --lang rust --jobs 8
   quiz_answers.py ../src/dev/cpp/course/014_recursion.php --lang cpp
-  quiz_answers.py ../src/dev/c --lang c --docker opencode-agent-native
+  quiz_answers.py ../src/dev/c --lang c --docker <project>-agent-native
   quiz_answers.py ../src/dev/rust/course --lang rust --count 0 --json /tmp/quiz.json
 """
 

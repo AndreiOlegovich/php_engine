@@ -60,11 +60,11 @@
     { "action": "external_directory", "resource": "*", "effect": "ask" },
     { "action": "external_directory", "resource": "~/.local/share/opencode/tool-output/*", "effect": "allow" },
     { "action": "external_directory", "resource": "/tmp/opencode/*", "effect": "allow" },
-    // The worktrees of delegate.py (../site-agent-SLUG): OpenCode as supervisor
+    // The worktrees of delegate.py (../php_engine-agent-SLUG): OpenCode as supervisor
     // reviews them unasked; an edit there still asks, because the worker makes
     // the change, not the supervisor.
-    { "action": "external_directory", "resource": "*/site-agent-*", "effect": "allow" },
-    { "action": "edit", "resource": "*/site-agent-*", "effect": "ask" },
+    { "action": "external_directory", "resource": "*/php_engine-agent-*", "effect": "allow" },
+    { "action": "edit", "resource": "*/php_engine-agent-*", "effect": "ask" },
 
     // Logs hold visitor data: read only when you ask for them. The log
     // tools find the folder themselves, so running them asks too.

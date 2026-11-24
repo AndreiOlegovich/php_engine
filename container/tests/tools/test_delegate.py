@@ -1,4 +1,4 @@
-# version 0.1.2
+# version 0.1.3
 """Tests for tools/ai/delegate.py (offline: a temporary repo and a fake launcher)."""
 
 import json
@@ -42,7 +42,8 @@ def fake_launcher(path: Path, lines: list[str], code: int = 0) -> Path:
 
 
 @pytest.fixture
-def env(tmp_path: Path) -> delegate.Env:
+def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> delegate.Env:
+    monkeypatch.delenv("SITE_PROJECT", raising=False)
     repo = tmp_path / "project"
     (repo / "container" / "src").mkdir(parents=True)
     (repo / "container" / "src" / "index.php").write_text("<?php\n", encoding="utf-8")
@@ -105,7 +106,7 @@ def test_check_model(env: delegate.Env) -> None:
 
 def test_start_creates_worktree_and_records_the_session(env: delegate.Env, capsys: pytest.CaptureFixture[str]) -> None:
     assert delegate.main(["start", "fix-typo", "--message", "Reply with exactly: OK"], env) == 0
-    worktree = env.repo.parent / "site-agent-fix-typo"
+    worktree = env.repo.parent / "project-agent-fix-typo"
     assert git(worktree, "branch", "--show-current") == "agent/fix-typo"
     task = json.loads((env.state_root / "fix-typo" / "state.json").read_text(encoding="utf-8"))
     assert task["session"] == SESSION
@@ -131,7 +132,7 @@ def test_fix_continues_the_session_with_the_same_flags(env: delegate.Env, tmp_pa
     brief.write_text("- Bump the version.\n", encoding="utf-8")
     assert delegate.main(["fix", "pages", "--brief", str(brief)], env) == 0
     args = launcher_args(env)
-    assert args[:6] == ["--rw", "container/tools", "--opencode-key", str(key.resolve()), "--ruby", str(env.repo.parent / "site-agent-pages")]
+    assert args[:6] == ["--rw", "container/tools", "--opencode-key", str(key.resolve()), "--ruby", str(env.repo.parent / "project-agent-pages")]
     assert args[10:14] == ["--session", SESSION, "-m", "opencode/glm-5.3-flash-free"]
     assert args[-2:] == ["Task:", "- Bump the version."]  # one argument, printed one line per line
     task = delegate.load_task(env, "pages")
@@ -168,12 +169,12 @@ def test_error_event_fails_the_round(env: delegate.Env, capsys: pytest.CaptureFi
 
 def test_missing_model_stops_before_the_worktree(env: delegate.Env) -> None:
     assert delegate.main(["start", "gone", "--message", "x", "-m", "opencode/gone-free"], env) == 3
-    assert not (env.repo.parent / "site-agent-gone").exists()
+    assert not (env.repo.parent / "project-agent-gone").exists()
     assert not (env.state_root / "gone").exists()
 
 
 def test_existing_worktree_and_refusals(env: delegate.Env) -> None:
-    other = env.repo.parent / "site-agent-old"
+    other = env.repo.parent / "project-agent-old"
     git(env.repo, "worktree", "add", "-q", "-b", "agent/old", str(other))
     assert delegate.main(["start", "old", "--message", "x"], env) == 2  # the path exists
     assert delegate.main(["start", "old", "--message", "x", "--worktree", str(other)], env) == 0
@@ -186,7 +187,7 @@ def test_existing_worktree_and_refusals(env: delegate.Env) -> None:
 
 def test_fix_refuses_a_worktree_with_ignored_files(env: delegate.Env, capsys: pytest.CaptureFixture[str]) -> None:
     assert delegate.main(["start", "fix-typo", "--message", "x"], env) == 0
-    container = env.repo.parent / "site-agent-fix-typo" / "container"
+    container = env.repo.parent / "project-agent-fix-typo" / "container"
     (container / "__pycache__").mkdir()
     (container / "__pycache__" / "a.pyc").write_bytes(b"")
     assert delegate.main(["fix", "fix-typo", "--message", "y"], env) == 0  # caches are allowed

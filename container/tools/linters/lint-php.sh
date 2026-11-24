@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.0
+# version 0.1.1
 # Lint PHP files with the project's PHP 8.2 interpreter (php-apache container).
 #
 # Usage:
@@ -41,6 +41,8 @@ unset GIT_DIR GIT_WORK_TREE
 _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 cd "$SCRIPT_DIR"
 cd ../..  # tools live in tools/linters/; project root (compose file, src/) is the runtime cwd
 
@@ -238,16 +240,9 @@ if [ "$(git -C "$SCRIPT_DIR" rev-parse --absolute-git-dir 2>/dev/null)" != \
   IN_WORKTREE=1
 fi
 USE_PROJECT=0
-if [ "$PHP_VER" = "$PROJECT_PHP" ] && [ "$IN_WORKTREE" -eq 0 ]; then
-  if ! docker compose ps --status running 2>/dev/null | grep -q php-apache; then
-    echo "starting php-apache ..."
-    docker compose up -d php-apache >/dev/null
-  fi
-  for i in $(seq 1 30); do
-    docker compose exec -T php-apache php -v >/dev/null 2>&1 && break
-    sleep 1
-    [ "$i" -eq 30 ] && { echo "ERROR: php-apache did not become ready." >&2; exit 1; }
-  done
+# Only this project's own running container: a lint never starts a web server.
+if [ "$PHP_VER" = "$PROJECT_PHP" ] && [ "$IN_WORKTREE" -eq 0 ] \
+  && docker compose ps --status running 2>/dev/null | grep -q php-apache; then
   # A container started with another PHP_VER would lint with the wrong PHP.
   CONTAINER_PHP="$(docker compose exec -T php-apache php -r 'echo PHP_MAJOR_VERSION . "." . PHP_MINOR_VERSION;' 2>/dev/null || true)"
   if [ "$CONTAINER_PHP" = "$PHP_VER" ]; then

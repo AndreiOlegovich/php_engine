@@ -21,14 +21,14 @@ project root two levels up, so `src/`, `docker-compose.yml` etc. resolve).
 Credentials NEVER live in this repo. Default location (outside the repo):
 
 ```
-~/.config/php_engine/hosting-access.env
+~/.config/<project>/hosting-access.env
 ```
 
 ```bash
-mkdir -p ~/.config/php_engine
-cp hosting-access.env.template ~/.config/php_engine/hosting-access.env
-chmod 600 ~/.config/php_engine/hosting-access.env
-$EDITOR ~/.config/php_engine/hosting-access.env
+mkdir -p ~/.config/<project>
+cp hosting-access.env.template ~/.config/<project>/hosting-access.env
+chmod 600 ~/.config/<project>/hosting-access.env
+$EDITOR ~/.config/<project>/hosting-access.env
 ```
 
 Fill in:
@@ -189,7 +189,7 @@ it is a plain line about every 1 %, so long uploads never look stuck;
 | Symptom | Cause | Fix |
 |---|---|---|
 | `creds file ... not found` | file not created yet | step 1 above, or pass `--creds` |
-| `creds file must live OUTSIDE the repo` | path is inside `container/` | move to `~/.config/php_engine/`, use `--creds` |
+| `creds file must live OUTSIDE the repo` | path is inside `container/` | move to `~/.config/<project>/`, use `--creds` |
 | `FTP_HOST is empty ...` | field missing/typo in creds file | compare with `hosting-access.env.template` |
 | `mode 644 (recommend: chmod 600)` | creds readable by others | `chmod 600 <creds file>` (warning only) |
 | login/auth failure | wrong user/password/host | verify in hosting panel; check `FTP_PORT`, try `--tls` / `--no-tls` per hoster docs |
@@ -234,7 +234,7 @@ every later batch would fail too.
 nohup ./deploy-batches.sh > ~/deploy-batches.out 2>&1 &
 tail -f ~/deploy-batches.out                      # a line per batch, a progress line per percent
 ./deploy-batches.sh --dirs section --no-images      # a selection instead of the whole tree
-./deploy-batches.sh --list ~/.cache/php_engine/deploy-batches/<run>/failed-files.txt
+./deploy-batches.sh --list ~/.cache/<project>/deploy-batches/<run>/failed-files.txt
 ```
 
 | Option | Default | Meaning |
@@ -246,7 +246,7 @@ tail -f ~/deploy-batches.out                      # a line per batch, a progress
 | `--outage-wait SEC` | 3600 | how long one batch waits for an FTP host that does not answer; 0 counts such attempts as retries |
 | `--list FILE` | | upload these src-relative paths instead of listing the tree |
 | `--start N` | 1 | begin at batch N (resume an interrupted run) |
-| `--log-dir DIR` | `~/.cache/php_engine/deploy-batches/<date-time>/` | `files.txt`, `run.log`, `failed-files.txt` |
+| `--log-dir DIR` | `~/.cache/<project>/deploy-batches/<date-time>/` | `files.txt`, `run.log`, `failed-files.txt` |
 
 - The target is the default creds file, as for `deploy-ftp.sh`; the
   `host:` line printed first shows where the files go.

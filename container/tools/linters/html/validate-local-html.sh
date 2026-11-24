@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.0
+# version 0.1.1
 # Validate locally served pages' HTML structure.
 # Fetches BASE_URL + path, then runs html-validate (pinned v7: works on
 # the stock Ubuntu 22.04 node 16; latest v8 needs node 22+).
@@ -16,7 +16,9 @@ set -u
 
 usage() { local self="$0"; sed -n '2,/^set -u/p' "$self" | sed 's/^# \{0,1\}//' | grep -v '^set -u'; }
 
-BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$(cd "$(dirname "$0")" && pwd)/../../project-env.sh"
+BASE_URL="${BASE_URL:-$SITE_LOCAL_BASE}"
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 FILES_LIST=()
 URLS=()

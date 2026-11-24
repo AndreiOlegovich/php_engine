@@ -27,6 +27,39 @@ hosts, language folders, engine folders, page classes and markers, the feed
 folder. A key you leave out falls back to a generic default, so the tree runs
 before the profile is complete.
 
+## Project name
+
+The script asks for a project name (or takes `--name`). Its lower-case form is
+`SITE_PROJECT` in `container/.env`, and everything two projects could collide
+on uses it, so several projects run side by side:
+
+| What | Name |
+|---|---|
+| Compose project | `<project>` |
+| Containers | `<project>-apache`, `<project>-pytest-web`, `<project>-allure-web` |
+| Site image | `<project>:<php version>` |
+| OpenCode images | `<project>-agent`, `<project>-agent-script`, ... |
+| OpenCode sessions | volume `<project>-agent-data` |
+| Agent worktrees | `../<project>-agent-<task>` |
+| Hosting credentials | `~/.config/<project>/hosting-access.env` |
+| Logs and translation runs | `~/.local/share/<project>/` |
+| Deploy logs | `~/.cache/<project>/deploy-batches/` |
+| Ports | `SITE_HTTP_PORT` and `SITE_ALLURE_PORT`, the first free ones |
+
+The agent permission files get the same name, so their rules keep covering
+this project's credentials and logs. A name that another project, image,
+volume or credentials folder already uses is refused.
+
+The ports 8080 and 5050 in the docs are the defaults of a checkout without
+`container/.env`; your own are in that file. OpenCode logins live in the
+volume, so each project logs in once or passes `--opencode-key`.
+
+An existing checkout gets a name and ports with:
+
+```bash
+container/tools/new-project.sh --configure --name my_site
+```
+
 ## Fill the profile
 
 | Key | What it decides |
@@ -70,6 +103,6 @@ syntax, phpcs, shell, Python, sitemap and redirects.
 
 - the pages, images, `.htaccess` and sitemap of any other site;
 - hosting credentials: the deploy scripts read
-  `~/.config/php_engine/hosting-access.env`; start from
+  `~/.config/<project>/hosting-access.env`; start from
   `container/tools/deploy/hosting-access.env.template` and keep the filled
   file outside the repository.

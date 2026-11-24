@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.3
+# version 0.3.4
 # Run the container tests (container/tests) with the project venv.
 #
 # Usage (from any folder):
@@ -17,7 +17,7 @@
 # not active it asks (Y/n) to use container/.venv for this run, and prints the
 # command that activates it in your shell.
 #
-# Environment: BASE_URL (default http://127.0.0.1:8080), SITEMAP_FILE (default
+# Environment: BASE_URL (default: this project's local site), SITEMAP_FILE (default
 # src/sitemap.xml), PYTHON_VERSION (default 3.12).
 # Exit: pytest's exit code, or 1/2 when the script stops before pytest.
 set -euo pipefail
@@ -69,7 +69,7 @@ VENV
   command has to be run by you.
 
 ENVIRONMENT (defaults are the same as the old tools/run-tests-venv.sh)
-  BASE_URL       the site under test       default http://127.0.0.1:8080
+  BASE_URL       the site under test       default http://127.0.0.1:<SITE_HTTP_PORT>
                  (local php-apache; use https://dev.example.com for dev,
                  https://example.com only for read-only checks)
   SITEMAP_FILE   sitemap for the sitemap tests  default src/sitemap.xml
@@ -302,7 +302,8 @@ if ! venv_active; then
   echo "using $VENV/bin/python for this run."
 fi
 
-export BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+export BASE_URL="${BASE_URL:-$(. "$ROOT/tools/project-env.sh"; printf '%s' "$SITE_LOCAL_BASE")}"
 export SITEMAP_FILE="${SITEMAP_FILE:-src/sitemap.xml}"
 echo "BASE_URL=$BASE_URL SITEMAP_FILE=$SITEMAP_FILE"
 

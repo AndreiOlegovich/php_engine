@@ -11,10 +11,14 @@ from pathlib import Path, PurePosixPath
 
 from ru_en_translate import cmd_apply, cmd_extract, cmd_translate, cmd_verify, load_manifest
 
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from project_name import project_name  # pylint: disable=wrong-import-position,import-error  # noqa: E402
+
 CONTAINER_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = CONTAINER_ROOT.parent
 SRC_ROOT = CONTAINER_ROOT / "src"
-DEFAULT_DATA_ROOT = Path.home() / ".local" / "share" / "php_engine" / "translation-runs"
+DEFAULT_DATA_ROOT = Path.home() / ".local" / "share" / project_name() / "translation-runs"
 RUN_ID_PATTERN = re.compile(r"^[a-f0-9]{32}$")
 CYRILLIC = re.compile(r"[А-Яа-яЁё]")
 MAX_FILES = 250

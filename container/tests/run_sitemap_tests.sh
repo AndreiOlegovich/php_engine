@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.2
+# version 0.3.3
 # Unified runner for the pytest_web sitemap link checker.
 #
 # Usage:
@@ -13,19 +13,19 @@
 # Tests (--test: single name, comma list, or "all"; default: all;
 # each test keeps its own Allure trend):
 #   link             test_sitemap.py (HTTP 200 per URL)
-#                      trend: http://127.0.0.1:5050 (allure-link)
+#                      trend: port SITE_ALLURE_PORT (allure-link)
 #   content          test_content_loaded.py (200 + id="footer-end" per URL)
-#                      trend: http://127.0.0.1:5051 (allure-content)
+#                      trend: port SITE_ALLURE_PORT + 1 (allure-content)
 #   css              test_css_coverage.py (asides have CSS rules)
-#                      trend: http://127.0.0.1:5052 (allure-css)
+#                      trend: port SITE_ALLURE_PORT + 2 (allure-css)
 #   html-id          test_page_html_id.py (200 + Page/BasePage/ArticlePage marker per URL)
-#                      trend: http://127.0.0.1:5053 (allure-html-id)
+#                      trend: port SITE_ALLURE_PORT + 3 (allure-html-id)
 #   regression       test_error_regression.py (error-log pages render without PHP fatal)
-#                      trend: http://127.0.0.1:5055 (allure-regression)
+#                      trend: port SITE_ALLURE_PORT + 5 (allure-regression)
 #   footer           test_footer_wrapped.py (contacts footer table in div.wrapper)
-#                      trend: http://127.0.0.1:5054 (allure-footer)
+#                      trend: port SITE_ALLURE_PORT + 4 (allure-footer)
 #   wrapped          test_page_wrapped_once.py (no wrapper inside another wrapper)
-#                      trend: http://127.0.0.1:5056 (allure-wrapped)
+#                      trend: port SITE_ALLURE_PORT + 6 (allure-wrapped)
 #   internal-links   test_internal_links.py (every <a href="/..."> on a page answers 200;
 #                      a broken link is listed with every page it is on)
 #                      no Allure viewer yet (results stay in the run container)
@@ -39,7 +39,7 @@
 # Modes (default: --local):
 #   --local            check the local container site.
 #                      docker backend: BASE_URL=http://php-apache
-#                      host backend:   BASE_URL=http://127.0.0.1:8080
+#                      host backend:   BASE_URL=http://127.0.0.1:<SITE_HTTP_PORT>
 #   --web              check a live site.
 #                      --url default: https://example.com
 #   --url URL          only meaningful with --web.
@@ -93,6 +93,8 @@ _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 cd ..  # runner lives in tests/; project root (compose file, src/) is the runtime cwd
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. tools/project-env.sh
 
 MODE="local"
 URL="https://example.com"
@@ -211,7 +213,7 @@ if [ "$MODE" = "local" ]; then
   if [ "$BACKEND" = "docker" ]; then
     BASE_URL="http://php-apache"
   else
-    BASE_URL="http://127.0.0.1:8080"
+    BASE_URL="$SITE_LOCAL_BASE"
   fi
   SITEMAP_LABEL="local ($BASE_URL <- src/$SITEMAP_BASE)"
 else
@@ -261,13 +263,13 @@ module_file() {
 }
 module_port() {
   case "$1" in
-    link) printf '5050' ;;
-    content) printf '5051' ;;
-    css) printf '5052' ;;
-    engine) printf '5053' ;;
-    regression) printf '5055' ;;
-    footer) printf '5054' ;;
-    wrapped) printf '5056' ;;
+    link) printf '%s' "$SITE_ALLURE_PORT" ;;
+    content) printf '%s' "$((SITE_ALLURE_PORT + 1))" ;;
+    css) printf '%s' "$((SITE_ALLURE_PORT + 2))" ;;
+    engine) printf '%s' "$((SITE_ALLURE_PORT + 3))" ;;
+    regression) printf '%s' "$((SITE_ALLURE_PORT + 5))" ;;
+    footer) printf '%s' "$((SITE_ALLURE_PORT + 4))" ;;
+    wrapped) printf '%s' "$((SITE_ALLURE_PORT + 6))" ;;
     internal-links) printf '' ;;  # no Allure viewer in docker-compose.yml yet
   esac
 }

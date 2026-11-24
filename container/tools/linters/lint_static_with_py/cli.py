@@ -1,4 +1,4 @@
-# version 0.2.0
+# version 0.2.1
 """CLI parsing: mirrors the lint-static.sh flag surface."""
 
 from __future__ import annotations
@@ -100,10 +100,10 @@ Examples (run from container/; paths are relative to src/):
     ./tools/linters/lint-static.py --fix section/index.php tools/example.py
     ./tools/linters/lint-static.py --fix section/python
   Another worktree (path, folder name or branch):
-    ./tools/linters/lint-static.py --worktree ~/github/site-agent-example --staged
-    ./tools/linters/lint-static.py --worktree site-agent-example --tool phpcs --files section
+    ./tools/linters/lint-static.py --worktree ~/github/my_site-agent-example --staged
+    ./tools/linters/lint-static.py --worktree my_site-agent-example --tool phpcs --files section
     ./tools/linters/lint-static.py --worktree agent/example --tool phpcs --fix --staged
-    ./tools/linters/lint-static.py --worktree ../site-agent-example --tool phpcs --fix section/functions.php
+    ./tools/linters/lint-static.py --worktree ../my_site-agent-example --tool phpcs --fix section/functions.php
     ./tools/linters/lint-static.py --worktree agent/example --fix tools/example.py
   Report and output:
     ./tools/linters/lint-static.py --tool phpcs --all --report phpcs-all

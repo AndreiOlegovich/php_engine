@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.3
+# version 0.3.4
 # Deploy container/src to the hosting docroot over SSH with rsync.
 #
 # Uploads the CONTENTS of container/src into the docroot (~/example.com/),
@@ -28,7 +28,7 @@
 #                    ~/.ssh/hosting-upload when it exists)
 #   --remote-dir DIR docroot relative to the remote home
 #                    (default: HOSTING_DOCROOT, else example.com)
-#   --config PATH    settings file (default: ~/.config/php_engine/hosting-access.env)
+#   --config PATH    settings file (default: ~/.config/<project>/hosting-access.env)
 #
 # Settings file, the same one fetch_hosting_logs.py reads; start from
 # hosting-access.env.template next to this script:
@@ -43,9 +43,11 @@ set -euo pipefail
 
 _START_DIR="$(pwd -P)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 SRC="$(cd "$SCRIPT_DIR/../../src" && pwd)"
 
-CONFIG="${HOME}/.config/php_engine/hosting-access.env"
+CONFIG="${HOME}/.config/${SITE_PROJECT}/hosting-access.env"
 HOST_ARG=""
 KEY_ARG=""
 REMOTE_ARG=""

@@ -65,6 +65,6 @@ folders belong to the site, and a tool or test reads them from the profile
 - Claude Code: the same three roles in `.claude/agents/`; permissions in
   `.claude/settings.json`.
 - Supervisor loop: `container/tools/ai/delegate.py` gives a task to OpenCode
-  in Docker, in its own worktree `../site-agent-<slug>`, and sends the fix
+  in Docker, in its own worktree `../<project>-agent-<slug>`, and sends the fix
   rounds into the same session. The worker follows
   `container/tools/ai/docker/CONTAINER.md`.

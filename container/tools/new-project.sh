@@ -1,17 +1,28 @@
 #!/usr/bin/env bash
-# version 0.1.0
-# Start a new site from this engine checkout.
+# version 0.2.0
+# Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
-#   container/tools/new-project.sh TARGET [--name NAME]
+#   container/tools/new-project.sh [TARGET] [--name NAME]
+#   container/tools/new-project.sh --configure [TARGET] [--name NAME]
 #   container/tools/new-project.sh --check [TARGET]
 #   container/tools/new-project.sh --help
 #
-#   TARGET        a new folder; it must not exist yet
-#   --name NAME   project name (default: the last part of TARGET)
+#   TARGET        a new folder; it must not exist yet. Without it the script
+#                 asks, and offers a folder next to this checkout
+#   --name NAME   project name. Without it the script asks in a terminal and
+#                 otherwise takes the last part of TARGET
+#   --configure   give an existing checkout (TARGET, default: this one) its
+#                 project name and free ports; nothing else changes
 #   --check       run the whole gate over TARGET (default: the current
 #                 checkout) and print what failed and where it is explained;
 #                 exit 1 when anything failed
+#
+# The project name keeps projects apart. Its lower-case form is SITE_PROJECT
+# in container/.env and names the Compose project, the containers, the site
+# and agent images, the OpenCode volume, the agent worktrees, the hosting
+# credentials folder and the log folders. The script refuses a name another
+# project already uses and picks free ports for the site and Allure.
 #
 # What it copies: the tracked files of the checkout this script lives in.
 # Never .git, .venv, caches, site-profile.env, creds or *.env: an ignored log,
@@ -19,12 +30,20 @@
 # new one.
 # What it empties: container/src, down to an index.php that prints the site
 # name. The engine's own folder container/src/.php stays.
-# What it writes: container/site-profile.env from the example, with SITE_NAME,
-# and git init -b main. Nothing is staged: add the files you mean to commit.
+# What it writes: container/.env, container/site-profile.env from the example
+# with SITE_NAME, the project name in the agent permission files, and
+# git init -b main. Nothing is staged: add the files you mean to commit.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ALLURE_VIEWERS=7
+
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/project-env.sh"
+# Only project_slug stays: a value of this checkout must not reach the tools
+# that this script runs in another one.
+unset SITE_PROJECT SITE_HTTP_PORT SITE_ALLURE_PORT SITE_LOCAL_BASE
 
 usage() {
   sed -n '2,/^set -euo pipefail$/p' "$0" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'
@@ -32,33 +51,222 @@ usage() {
 
 NAME=""
 CHECK=0
+CONFIGURE=0
 TARGET=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --name) [ $# -ge 2 ] || { echo "ERROR: --name needs a value." >&2; exit 2; }; NAME="$2"; shift 2 ;;
     --name=*) NAME="${1#--name=}"; shift ;;
     --check) CHECK=1; shift ;;
+    --configure) CONFIGURE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     -*) echo "ERROR: unknown option: $1 (see --help)." >&2; exit 2 ;;
     *) [ -z "$TARGET" ] || { echo "ERROR: one TARGET only." >&2; exit 2; }; TARGET="$1"; shift ;;
   esac
 done
+[ $((CHECK + CONFIGURE)) -le 1 ] || { echo "ERROR: --check and --configure exclude each other." >&2; exit 2; }
 
-bootstrap() {
-  [ -n "$TARGET" ] || { echo "ERROR: TARGET is required to create a site." >&2; exit 2; }
-  [ ! -e "$TARGET" ] || { echo "ERROR: $TARGET already exists; pick a new folder." >&2; exit 2; }
-  git -C "$SOURCE" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-    || { echo "ERROR: $SOURCE is not a git checkout; the tracked file list is needed." >&2; exit 2; }
+# The name of a checkout, read the way its own tools read it.
+current_project() {
+  (
+    # shellcheck disable=SC1091  # shared resolver is checked separately
+    . "$1/container/tools/project-env.sh"
+    printf '%s' "$SITE_PROJECT"
+  )
+}
 
-  local name="${NAME:-$(basename "$TARGET")}"
+main_checkout() {
+  local common
+  common="$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  case "$common" in
+    */.git) printf '%s' "${common%/.git}" ;;
+    *) printf '%s' "$1" ;;
+  esac
+}
+
+env_value() {
+  [ -f "$1" ] || return 0
+  sed -n "s/^$2=[\"']\{0,1\}\([^\"']*\)[\"']\{0,1\}[[:space:]]*\$/\1/p" "$1" | tail -n 1
+}
+
+# Sets NAME: the option, else the answer in a terminal, else the suggestion.
+ask_name() {
+  local suggested="$1" answer=""
+  if [ -z "$NAME" ]; then
+    if [ -t 0 ]; then
+      read -r -p "Project name${suggested:+ [$suggested]}: " answer || true
+    fi
+    NAME="${answer:-$suggested}"
+  fi
+  [ -n "$NAME" ] || { echo "ERROR: give a project name with --name, or a TARGET." >&2; exit 2; }
   # The name goes into a PHP single-quoted string and a sourced env file, so
   # it may not hold text that needs quoting.
-  case "$name" in
+  case "$NAME" in
     *$'\n'*|*"'"*|*'"'*|*'$'*|*'`'*|*\\*)
       echo "ERROR: the name may not hold a newline, a quote, a backslash, \$ or \`." >&2
       exit 2
       ;;
   esac
+}
+
+slug_of_name() {
+  local slug
+  slug="$(project_slug "$NAME")"
+  [ -n "$slug" ] || {
+    echo "ERROR: '$NAME' has no Latin letter or digit; Docker names need one." >&2
+    exit 2
+  }
+  printf '%s' "$slug"
+}
+
+# Prints who uses the name and returns 0; returns 1 when it is free.
+# With "own" as the third argument the checkout already has this name, so its
+# own images and folders do not count.
+name_in_use() {
+  local slug="$1" root="$2" own="${3:-}" other
+  for other in "$(dirname "$root")"/*/container/.env; do
+    [ -f "$other" ] && [ "$other" != "$root/container/.env" ] || continue
+    if [ "$(env_value "$other" SITE_PROJECT)" = "$slug" ]; then
+      echo "the project in ${other%/container/.env}"
+      return 0
+    fi
+  done
+  [ -z "$own" ] || return 1
+  if [ -e "$HOME/.config/$slug" ]; then echo "the folder ~/.config/$slug"; return 0; fi
+  if [ -e "${XDG_DATA_HOME:-$HOME/.local/share}/$slug" ]; then echo "the data folder of $slug"; return 0; fi
+  docker info >/dev/null 2>&1 || return 1
+  if docker compose ls -a -q 2>/dev/null | grep -qx -- "$slug"; then echo "the Compose project $slug"; return 0; fi
+  if [ -n "$(docker image ls -q --filter "reference=$slug-agent*" 2>/dev/null)" ] \
+    || [ -n "$(docker image ls -q --filter "reference=$slug:*" 2>/dev/null)" ]; then
+    echo "a Docker image named $slug"
+    return 0
+  fi
+  if docker volume inspect "$slug-agent-data" >/dev/null 2>&1; then echo "the volume $slug-agent-data"; return 0; fi
+  return 1
+}
+
+refuse_used_name() {
+  local reason
+  if reason="$(name_in_use "$@")"; then
+    echo "ERROR: the project name '$1' is already used by $reason. Pick another one." >&2
+    exit 2
+  fi
+}
+
+port_free() {
+  python3 -c '
+import socket, sys
+with socket.socket() as sock:
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        sock.bind(("0.0.0.0", int(sys.argv[1])))
+    except OSError:
+        sys.exit(1)
+' "$1"
+}
+
+# The ports the other projects next to this one have claimed, running or not.
+claimed_ports() {
+  local root="$1" other value i
+  for other in "$(dirname "$root")"/*/container/.env; do
+    [ -f "$other" ] && [ "$other" != "$root/container/.env" ] || continue
+    value="$(env_value "$other" SITE_HTTP_PORT)"
+    [ -z "$value" ] || echo "$value"
+    value="$(env_value "$other" SITE_ALLURE_PORT)"
+    if [ -n "$value" ]; then
+      for ((i = value; i < value + ALLURE_VIEWERS; i++)); do echo "$i"; done
+    fi
+  done
+}
+
+# pick_port START COUNT [CLAIMED...]: the first run of COUNT free ports.
+pick_port() {
+  local port="$1" count="$2" i ok
+  shift 2
+  while [ "$port" -lt 65000 ]; do
+    ok=1
+    for ((i = port; i < port + count; i++)); do
+      if printf '%s\n' "$@" | grep -qx -- "$i" || ! port_free "$i"; then
+        ok=0
+        port=$((i + 1))
+        break
+      fi
+    done
+    if [ "$ok" -eq 1 ]; then
+      echo "$port"
+      return 0
+    fi
+  done
+  echo "ERROR: no free port from $1." >&2
+  return 1
+}
+
+# Writes container/.env and the local URL of the profile. Ports the checkout
+# already has stay. New ones start above the defaults 8080 and 5050-5056, which
+# a checkout without container/.env uses.
+write_identity() {
+  local root="$1" slug="$2" env_file="$1/container/.env" profile="$1/container/site-profile.env"
+  local http allure claimed=()
+  mapfile -t claimed < <(claimed_ports "$root")
+  http="$(env_value "$env_file" SITE_HTTP_PORT)"
+  allure="$(env_value "$env_file" SITE_ALLURE_PORT)"
+  [ -n "$http" ] || http="$(pick_port 8081 1 "${claimed[@]}")"
+  [ -n "$allure" ] || allure="$(pick_port 5060 "$ALLURE_VIEWERS" "${claimed[@]}")"
+  {
+    if [ -f "$env_file" ]; then
+      grep -vE '^SITE_(PROJECT|HTTP_PORT|ALLURE_PORT)=' "$env_file" || true
+    else
+      echo "# This project's name and ports (new-project.sh). Ignored by git."
+    fi
+    printf 'SITE_PROJECT="%s"\n' "$slug"
+    printf 'SITE_HTTP_PORT="%s"\n' "$http"
+    printf 'SITE_ALLURE_PORT="%s"\n' "$allure"
+  } > "$env_file.tmp"
+  mv "$env_file.tmp" "$env_file"
+  if [ -f "$profile" ]; then
+    sed "s#^SITE_LOCAL_URL=.*#SITE_LOCAL_URL=\"http://127.0.0.1:$http\"#" "$profile" > "$profile.tmp"
+    chmod --reference="$profile" "$profile.tmp"
+    mv "$profile.tmp" "$profile"
+  fi
+  printf '  project:      %s\n  site:         http://127.0.0.1:%s/\n  allure:       ports %s-%s\n' \
+    "$slug" "$http" "$allure" "$((allure + ALLURE_VIEWERS - 1))"
+  printf '  images:       %s:<php>, %s-agent, %s-agent-<language>\n' "$slug" "$slug" "$slug"
+  printf '  credentials:  ~/.config/%s/hosting-access.env\n' "$slug"
+}
+
+# The agents' deny rules name the credentials and log folders: they must follow
+# the project, or a new site's secrets would sit outside them.
+rename_protected() {
+  local root="$1" old="$2" new="$3" file
+  [ "$old" != "$new" ] || return 0
+  for file in .claude/settings.json opencode.jsonc .opencode/agents/reviewer.md; do
+    [ -f "$root/$file" ] || continue
+    sed -e "s#\.config/$old#.config/$new#g" \
+      -e "s#\.local/share/$old#.local/share/$new#g" \
+      -e "s#\*$old/logs#*$new/logs#g" \
+      -e "s#/$old-agent-#/$new-agent-#g" "$root/$file" > "$root/$file.tmp"
+    chmod --reference="$root/$file" "$root/$file.tmp"
+    mv "$root/$file.tmp" "$root/$file"
+  done
+}
+
+bootstrap() {
+  local suggested="" slug engine_project offered
+  [ -z "$TARGET" ] || suggested="$(basename "$TARGET")"
+  ask_name "$suggested"
+  slug="$(slug_of_name)"
+  if [ -z "$TARGET" ]; then
+    [ -t 0 ] || { echo "ERROR: TARGET is required outside a terminal." >&2; exit 2; }
+    offered="$(dirname "$SOURCE")/$slug"
+    read -r -p "Folder [$offered]: " TARGET || true
+    TARGET="${TARGET:-$offered}"
+  fi
+  TARGET="$(realpath -m "$TARGET")"
+  [ ! -e "$TARGET" ] || { echo "ERROR: $TARGET already exists; pick a new folder." >&2; exit 2; }
+  git -C "$SOURCE" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+    || { echo "ERROR: $SOURCE is not a git checkout; the tracked file list is needed." >&2; exit 2; }
+  refuse_used_name "$slug" "$TARGET"
+  engine_project="$(current_project "$SOURCE")"
 
   echo "Copying the tracked files of $SOURCE to $TARGET ..."
   mkdir -p "$TARGET"
@@ -70,7 +278,7 @@ bootstrap() {
   find "$src" -mindepth 1 -maxdepth 1 ! -name '.php' -exec rm -rf -- {} +
   {
     printf '%s\n' '<?php' ''
-    printf "%s\n" "\$siteName = '$name';" ''
+    printf "%s\n" "\$siteName = '$NAME';" ''
     printf '%s\n' "echo '<!DOCTYPE html>';" \
       "echo '<html lang=\"en\">';" \
       "echo '<head><meta charset=\"utf-8\"><title>' . htmlspecialchars(\$siteName, ENT_QUOTES) . '</title></head>';" \
@@ -81,9 +289,11 @@ bootstrap() {
       "echo '</html>';"
   } > "$src/index.php"
 
-  echo "Writing container/site-profile.env ..."
+  echo "Writing container/site-profile.env and container/.env ..."
   cp "$TARGET/container/site-profile.env.example" "$TARGET/container/site-profile.env"
-  printf 'SITE_NAME="%s"\n' "$name" >> "$TARGET/container/site-profile.env"
+  printf 'SITE_NAME="%s"\n' "$NAME" >> "$TARGET/container/site-profile.env"
+  write_identity "$TARGET" "$slug"
+  rename_protected "$TARGET" "$engine_project" "$slug"
 
   echo "Initialising git ..."
   git -C "$TARGET" init -q -b main
@@ -107,6 +317,27 @@ Next, in $TARGET:
   3. container/tools/new-project.sh --check
   4. git add -- <paths> && git commit -m "<subject>"
 NEXT
+}
+
+configure() {
+  local root current slug
+  root="$(main_checkout "$(realpath "${TARGET:-$SOURCE}")")"
+  [ -f "$root/container/tools/project-env.sh" ] \
+    || { echo "ERROR: $root has no container/tools/project-env.sh." >&2; exit 2; }
+  current="$(current_project "$root")"
+  ask_name "$current"
+  slug="$(slug_of_name)"
+  if [ "$slug" = "$current" ]; then
+    refuse_used_name "$slug" "$root" own
+  else
+    refuse_used_name "$slug" "$root"
+  fi
+  echo "Writing $root/container/.env ..."
+  write_identity "$root" "$slug"
+  rename_protected "$root" "$current" "$slug"
+  if [ "$slug" != "$current" ]; then
+    echo "note: anything under the old name $current stays: move ~/.config/$current by hand if it holds this site's credentials."
+  fi
 }
 
 check() {
@@ -171,6 +402,8 @@ DOC
 
 if [ "$CHECK" -eq 1 ]; then
   check
+elif [ "$CONFIGURE" -eq 1 ]; then
+  configure
 else
   bootstrap
 fi

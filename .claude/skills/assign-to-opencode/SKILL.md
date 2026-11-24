@@ -20,7 +20,7 @@ fresh run). Until then say "not on main yet" and print the commands that get
 it there. For a later "is it merged?" load `site-fix-status`.
 ## Workflow
 1. Name the task with a slug (lower case and dashes). The worker gets the new
-   worktree `../site-agent-<slug>` on the branch `agent/<slug>` from `main`;
+   worktree `../<project>-agent-<slug>` on the branch `agent/<slug>` from `main`;
    `--worktree PATH` gives it an existing one. Tell the user in one line: slug,
    worktree, model.
 1a. When the task needs a tool the image lacks, review the container first:

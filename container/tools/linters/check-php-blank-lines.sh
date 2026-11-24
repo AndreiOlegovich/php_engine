@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.2
+# version 0.0.3
 # Check (and optionally fix) whitespace-only lines in .php files.
 #
 # Correct state: no line consists of only spaces/tabs — such lines are
@@ -41,7 +41,7 @@
 # Examples:
 #   ./check-php-blank-lines.sh --search
 #   ./check-php-blank-lines.sh --search --staged
-#   ./check-php-blank-lines.sh --fix --files ru/qa/article.php
+#   ./check-php-blank-lines.sh --fix --files example/article.php
 #   ./check-php-blank-lines.sh --fix --all
 #
 # Exit: --search: 0 = clean, 1 = whitespace-only lines found (or usage

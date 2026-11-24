@@ -3,7 +3,7 @@
 Static analysis and code style for PHP, run from `container/`:
 
 ```bash
-./tools/linters/lint-static.sh --files ru/qa/.php/BasePage.php
+./tools/linters/lint-static.sh --files example/.php/Helper.php
 ```
 
 Companion to `lint-php.sh` (which only checks syntax via `php -l`):
@@ -34,14 +34,14 @@ in per run with `--fix-page` (uses a stripped temp copy of the ruleset).
 
 ```bash
 # Single tool (default), one file
-./tools/linters/lint-static.sh --files ru/qa/.php/BasePage.php
+./tools/linters/lint-static.sh --files example/.php/Helper.php
 ```
 
 Progress dots print by default on long runs; `-v` adds per-file detail,
 and each tool reports elapsed time (`(phpcs took 12s)`).
 
 # Several tools at once (comma or repeatable)
-./tools/linters/lint-static.sh --tool phpstan,psalm,phpcs --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpstan,psalm,phpcs --files example/.php/
 
 # Only your staged changes / tracked files
 ./tools/linters/lint-static.sh --tool psalm --staged
@@ -51,7 +51,7 @@ and each tool reports elapsed time (`(phpcs took 12s)`).
 ./tools/linters/lint-static.sh --all
 
 # PHPStan strictness 0-9 (default 1). Start low on legacy code.
-./tools/linters/lint-static.sh --tool phpstan --level 2 --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpstan --level 2 --files example/.php/
 
 # Other style standard
 ./tools/linters/lint-static.sh --tool phpcs --standard PSR2 --files ...
@@ -64,7 +64,7 @@ code; only `--fix` writes files (and it needs an explicit scope, see below).
 ## Reports
 
 ```bash
-./tools/linters/lint-static.sh --tool phpstan --files ru/qa/.php/ --report reports/phpstan-qa
+./tools/linters/lint-static.sh --tool phpstan --files example/.php/ --report reports/phpstan-example
 ```
 
 - Saves the full terminal output to a `.txt` report (`.txt` is appended
@@ -84,7 +84,7 @@ code; only `--fix` writes files (and it needs an explicit scope, see below).
 `phpcs` only reports. To actually fix, run the same selection with `--fix`:
 
 ```bash
-./tools/linters/lint-static.sh --tool phpcs --fix --files ru/qa/.php/
+./tools/linters/lint-static.sh --tool phpcs --fix --files example/.php/
 ```
 
 - Runs `phpcbf` (fetched automatically, same cache) instead of `phpcs`.

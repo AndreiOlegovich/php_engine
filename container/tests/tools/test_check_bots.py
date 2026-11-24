@@ -1,7 +1,7 @@
-# version 0.1.2
+# version 0.1.3
 """Tests for the bot-signature rule of check_bots.py.
 
-A scraper glues old card image names onto page paths (/ru/qa/it/gulp_card)
+A scraper glues old card image names onto page paths (/example/it/gulp_card)
 and forges a two-URL Referer, one request per IP, so only a signature can
 list it. Dummy log lines only; the client addresses are from the
 documentation ranges.
@@ -44,7 +44,7 @@ def _line(ip: str, target: str, status: int = 404, referer: str = "-") -> str:
     ("target", "expected"),
     [
         ("/ru/code/python/packages/layout/it/postgresql_card", True),
-        ("/ru/qa/it/gulp_card", True),
+        ("/example/it/gulp_card", True),
         ("/testing/robot/it/ms_powerpoint_card?x=1", True),
         ("/sport/injuries/meniscus/it/testing_edu_card/", True),
         ("/img/cards/it/postgresql_card.png", False),
@@ -77,7 +77,7 @@ def test_one_signature_request_lists_the_ip(tmp_path: Path) -> None:
     logs = tmp_path / "access"
     logs.mkdir()
     (logs / "example.com.access.log").write_text(
-        _line("203.0.113.10", "/ru/code/python/packages/layout/it/postgresql_card") + _line("203.0.113.11", "/ru/qa/robot/", 200, "https://google.com, https://old.example.invalid/testing/robot/") + _line("203.0.113.12", "/ru/code/python/class/variables.php") + _line("203.0.113.13", "/img/cards/it/postgresql_card.png", 200, "https://example.com/ru/i/postgres/") + _line("198.51.100.20", "/ru/git"),
+        _line("203.0.113.10", "/ru/code/python/packages/layout/it/postgresql_card") + _line("203.0.113.11", "/example/robot/", 200, "https://google.com, https://old.example.invalid/testing/robot/") + _line("203.0.113.12", "/ru/code/python/class/variables.php") + _line("203.0.113.13", "/img/cards/it/postgresql_card.png", 200, "https://example.com/ru/i/postgres/") + _line("198.51.100.20", "/ru/git"),
         encoding="utf-8",
     )
     output = tmp_path / "botlist.csv"

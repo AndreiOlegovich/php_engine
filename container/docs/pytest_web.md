@@ -65,7 +65,7 @@ SITEMAP_FILE=/data/sitemap_new.xml \
   `BASE_URL`, keeping path/query — so production URLs are checked
   against the local container.
 - The checker sends `X-Forwarded-Proto: https` (emulates the production
-  TLS proxy; `.htaccess` under `ao/`, `ru/qa/` would otherwise force a
+  TLS proxy; a site's `.htaccess` could otherwise force a
   redirect to https) and follows redirects pinned to the local host.
 - Landing on `/404.php` counts as 404 (`.htaccess` `ErrorDocument 404`
   serves it with a 200 status, so the path is the signal).

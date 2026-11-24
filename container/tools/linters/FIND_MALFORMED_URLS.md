@@ -22,7 +22,7 @@ placeholders (`http://url/`, `http://foo/bar`, `http://hostname/`,
 ./find-malformed-urls.sh --help          # full help
 ./find-malformed-urls.sh --staged        # staged changes only (pre-commit check)
 ./find-malformed-urls.sh --committed     # git-tracked files
-./find-malformed-urls.sh --files qa/jmeter/index.php ru/qa/
+./find-malformed-urls.sh --files example/index.php example/
 ./find-malformed-urls.sh qa/locust/      # positional path, same thing
 ./find-malformed-urls.sh --all           # whole src/ (~100 hits, takes a bit)
 ```
@@ -40,12 +40,12 @@ plugs straight into gates and hooks.
 Each hit is one line:
 
 ```text
-docs/tools/help.php:12:$page_og_image_url = 'https://www.example.orghttps://example.com/docs/img/logo.png'; [doubled-scheme]
+example/help.php:12:$page_og_image_url = 'https://www.example.orghttps://example.com/docs/img/logo.png'; [doubled-scheme]
 ```
 
 | Field | Meaning |
 |---|---|
-| `ru/qa/locust/help.php` | path **relative to `src/`** |
+| `example/help.php` | path **relative to `src/`** |
 | `:12:` | line number |
 | rest of line | the full source line, so you see the context (variable, HTML tag) |
 | `[doubled-scheme]` / `[dotless-host]` | which check fired (table above) |
@@ -79,8 +79,7 @@ OK: no malformed URLs.
      to `PLACEHOLDERS=` in the script instead of "fixing" the content.
 3. Re-run the same scope until `OK: no malformed URLs.` (exit 0).
 4. Full-tree `--all` is a backlog counter (~100 hits at the time of writing);
-   work it down section by section, e.g. together with porting `ru/qa/`
-   pages to `qa/`.
+   work it down section by section.
 
 ## Files
 

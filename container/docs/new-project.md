@@ -16,7 +16,8 @@ The script copies the **tracked** files of the checkout it lives in, so an
 ignored log, a visitor export or a filled creds file never travels. It then:
 
 1. empties `container/src` to an `index.php` that prints the site name; the
-   engine's own folder `container/src/.php` stays;
+   engine's own folder `container/src/.php` stays, and the dummy folder
+   `container/src/example`, the path the docs use in their examples, goes;
 2. writes `container/site-profile.env` from the example, with `SITE_NAME`;
 3. runs `git init -b main` and `pre-commit install`; nothing is staged;
 4. creates `container/.venv` with `uv` when `uv` is installed.

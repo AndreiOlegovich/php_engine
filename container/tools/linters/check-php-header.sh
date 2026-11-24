@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.2
+# version 0.0.3
 # Check (and optionally fix) the <?php opening header in .php files.
 #
 # Correct state: files starting with <?php begin with exactly
@@ -53,7 +53,7 @@
 # Examples:
 #   ./check-php-header.sh --search
 #   ./check-php-header.sh --search --staged
-#   ./check-php-header.sh --fix --files ru/qa/article.php
+#   ./check-php-header.sh --fix --files example/article.php
 #   ./check-php-header.sh --fix --all
 #
 # Exit: --search: 0 = all checked headers clean, 1 = wrong headers found

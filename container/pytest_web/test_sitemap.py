@@ -13,7 +13,7 @@ Env:
   SITEMAP_FILE     e.g. /data/sitemap.xml or /data/sitemap_new.xml
   FAIL_ON_NON_200  "true" (default) -> non-200 URL cases fail;
                    "false" -> report-only mode, URL cases always pass
-  PATH_PREFIX      e.g. /ru/qa -> only check sitemap URLs whose path is
+  PATH_PREFIX      e.g. /example -> only check sitemap URLs whose path is
                    exactly the prefix or starts with prefix + "/".
                    Empty (default) -> check all URLs.
 """

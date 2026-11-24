@@ -37,8 +37,8 @@ otf mp3 mp4 webm sqlite db db-journal`), editor backups (`* copy*`, `*.bak`,
 ./check-line-endings.sh --search            # whole src/, want LF (default)
 ./check-line-endings.sh --search --to crlf  # whole src/, want CRLF
 ./check-line-endings.sh --search --staged   # staged changes only
-./check-line-endings.sh --fix --files ru/qa/article.php
-./check-line-endings.sh --fix ru/qa/        # positional path, same thing
+./check-line-endings.sh --fix --files example/article.php
+./check-line-endings.sh --fix example/      # positional path, same thing
 ./check-line-endings.sh --correct --all     # legacy alias for --fix, want LF
 ./check-line-endings.sh --correct=crlf --files qa/index.php
 ```
@@ -78,23 +78,23 @@ Search mode prints one line per wrong file:
 
 ```text
 checking 6 file(s) under src/ (want LF) ...
-ru/qa/article.php: CRLF
-ru/qa/help.php: MIXED
+example/article.php: CRLF
+example/help.php: MIXED
 ----
 RESULT: 2 of 5 file(s) with wrong endings (want LF; skipped: 1 binary, 0 junk).
 ```
 
 | Field | Meaning |
 |---|---|
-| `ru/qa/article.php` | path **relative to `src/`** |
+| `example/article.php` | path **relative to `src/`** |
 | `CRLF` / `MIXED` | detected label (table above) |
 
 Fix mode prints one line per converted file:
 
 ```text
 checking 6 file(s) under src/ (want LF) ...
-fixed: ru/qa/article.php (CRLF -> LF)
-fixed: ru/qa/help.php (MIXED -> LF)
+fixed: example/article.php (CRLF -> LF)
+fixed: example/help.php (MIXED -> LF)
 ----
 OK: fixed 2 file(s) to LF (5 checked; skipped: 1 binary, 0 junk).
 ```

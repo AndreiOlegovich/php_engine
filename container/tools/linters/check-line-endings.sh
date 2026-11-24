@@ -46,7 +46,7 @@
 # Examples:
 #   ./check-line-endings.sh --search
 #   ./check-line-endings.sh --search --to crlf --staged
-#   ./check-line-endings.sh --fix --files ru/qa/article.php
+#   ./check-line-endings.sh --fix --files example/article.php
 #   ./check-line-endings.sh --correct --all
 #
 # Exit: --search: 0 = all clean, 1 = files with wrong endings (or usage

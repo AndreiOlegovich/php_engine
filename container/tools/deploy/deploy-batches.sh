@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.2
+# version 0.3.3
 # Upload the site to Dev unattended: forced, in small batches, with retries.
 #
 # Wrapper over deploy-ftp.sh for uploads that die halfway through a big
@@ -67,7 +67,7 @@
 # Examples:
 #   ./deploy-batches.sh --dry-run
 #   ./deploy-batches.sh
-#   ./deploy-batches.sh --dirs ru/qa --no-images --batch-size 20
+#   ./deploy-batches.sh --dirs example --no-images --batch-size 20
 #   ./deploy-batches.sh --list ~/.cache/php_engine/deploy-batches/20261024-230000/failed-files.txt
 set -euo pipefail
 

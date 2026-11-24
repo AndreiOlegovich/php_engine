@@ -45,7 +45,7 @@ or `-` for stdin.
 ```text
 FILE: /app/src/aws/RelatedArticles.php        <- lint-static.sh / phpcs report
 FAIL: ao/api/php_auth/index.php               <- lint-php.sh report
-FAIL: ru/qa/.php/_footers/season/Aug.php
+FAIL: example/.php/Helper.php
 ```
 
 Extraction: `awk '$1 == "FILE:" || $1 == "FAIL:" { print $2 }'`

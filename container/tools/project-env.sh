@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# version 0.1.0
+# version 0.1.1
 # Source this file. It names this project, so that several copies of the
 # engine can run side by side without sharing a Docker image, container,
 # volume, port, credentials file or log folder.
 #
 # It sets and exports:
-#   SITE_PROJECT      my-site: images my-site:8.2 and my-site-agent, container
+#   SITE_PROJECT      my-site: images my-site:8.5 and my-site-agent, container
 #                     my-site-apache, volume my-site-agent-data, ~/.config/my-site
 #   SITE_HTTP_PORT    host port of the local site (default 8080)
 #   SITE_ALLURE_PORT  first host port of the Allure viewers (default 5050)

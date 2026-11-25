@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.4.4
+# version 0.4.5
 # Deploy the site to virtual hosting over FTP/FTPS.
 #
 # Uploads ./src (or --src DIR) to the hosting, mirroring the tree.
@@ -82,7 +82,7 @@
 #                     Applies even with --include-all; explicit --files
 #                     entries still upload named images.
 #   --lint            run lint-php.sh on the same selection first, abort on errors
-#   --php VER         PHP version for --lint (default 8.2, e.g. 8.2)
+#   --php VER         PHP version for --lint (default 8.5, e.g. 7.4)
 #   -h, --help        this help
 #
 # Secret file format (shell env file, chmod 600, e.g. ~/.config/<project>/hosting-access.env):
@@ -115,7 +115,7 @@ FORCE=0
 DRY_RUN=0
 VERBOSE=0
 LINT=0
-PHP_VER="8.2"
+PHP_VER="8.5"
 PHP_SET=0
 FILES_LIST=()
 DIRS_LIST=()
@@ -152,7 +152,7 @@ while [ $# -gt 0 ]; do
     --dry-run) DRY_RUN=1; shift ;;
     -v|--verbose) VERBOSE=1; shift ;;
     --lint) LINT=1; shift ;;
-    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.2, 8.2)." >&2; exit 2; }
+    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.5, 7.4)." >&2; exit 2; }
       PHP_VER="$2"; PHP_SET=1; shift 2 ;;
     --php=*) PHP_VER="${1#--php=}"; PHP_SET=1; shift ;;
     --files)

@@ -1,7 +1,7 @@
-# version 0.1.0
+# version 0.1.1
 """The starter fixture passes every checker; every broken file is reported.
 
-`starter_site/` is what a new project starts from: valid PHP 8.2, LF
+`starter_site/` is what a new project starts from: valid PHP 8.5, LF
 endings, the standard header, no malformed URL, a valid sitemap.
 `broken_site/` holds one defect per checker. A checker that passes it
 silently has stopped working, and the test says which one.

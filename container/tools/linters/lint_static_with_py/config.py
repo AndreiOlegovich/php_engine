@@ -1,4 +1,4 @@
-# version 0.2.0
+# version 0.2.1
 """Shared configuration: defaults, env overrides, tool URLs, constants."""
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class Config:  # pylint: disable=too-many-instance-attributes
     tools_given: bool = False
 
     # Env-overridable runtime settings.
-    php_image: str = field(default_factory=lambda: os.environ.get("PHP_ENGINE_STATIC_PHP_IMAGE", "php:8.2-cli"))
+    php_image: str = field(default_factory=lambda: os.environ.get("PHP_ENGINE_STATIC_PHP_IMAGE", "php:8.5-cli"))
     tool_cache: str = field(
         default_factory=lambda: os.environ.get(
             "PHP_ENGINE_STATIC_TOOL_CACHE",

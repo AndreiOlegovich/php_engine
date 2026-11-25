@@ -1,4 +1,4 @@
-# version 0.1.1
+# version 0.1.2
 """Tests for the --help examples, the --worktree flag, the -v file list and the --fix offer of
 container/tools/linters/lint-static.sh and its Python port lint-static.py.
 
@@ -330,8 +330,8 @@ def test_verbose_lists_py_files_before_ruff(script, tmp_path):
 def test_port_runs_on_php_85_like_the_shell_script():
     shell = SCRIPTS["sh"].read_text(encoding="utf-8")
     config = (LINTERS / "lint_static_with_py" / "config.py").read_text(encoding="utf-8")
-    assert "PHP_ENGINE_STATIC_PHP_IMAGE:-php:8.2-cli" in shell
-    assert '"PHP_ENGINE_STATIC_PHP_IMAGE", "php:8.2-cli"' in config
+    assert "PHP_ENGINE_STATIC_PHP_IMAGE:-php:8.5-cli" in shell
+    assert '"PHP_ENGINE_STATIC_PHP_IMAGE", "php:8.5-cli"' in config
 
 
 # --- failed list of the commit check, --fix-failed --------------------------

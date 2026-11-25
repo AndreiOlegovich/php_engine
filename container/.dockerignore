@@ -1,0 +1,7 @@
+# The Compose builds (Dockerfile.php, pytest_web/Dockerfile) read only these
+# two folders. Everything else stays out of the build context, above all
+# src/: the site reaches the container through the ./src bind mount, and an
+# imported site can hold gigabytes of pages and images.
+*
+!containerfiles/
+!pytest_web/

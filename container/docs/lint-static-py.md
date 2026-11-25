@@ -194,7 +194,7 @@ message on stderr, exit `2`.
 
 | Var | Default | Meaning |
 |---|---|---|
-| `PHP_ENGINE_STATIC_PHP_IMAGE` | `php:8.2-cli` | Runtime image for all tool containers. |
+| `PHP_ENGINE_STATIC_PHP_IMAGE` | `php:8.5-cli` | Runtime image for all tool containers. |
 | `PHP_ENGINE_STATIC_TOOL_CACHE` | `~/.cache/php_engine-tools` | Host dir where `*.phar` files are cached (outside repo, never deployed). |
 | `PHPCS_FAILED_LIST` | `container/log/phpcs-latest-commit-failed-list.log` | Failed list of the commit check: written by `--staged` phpcs checks, read by `--fix-failed` (§10.3). |
 | `FAILED_TO_FIX_LOG` | `log` | Dir for `failed_to_fix_<timestamp>.log` after `--fix`. Relative → resolved under invocation dir, created with `mkdir -p`. Absolute → used as-is. |
@@ -695,7 +695,7 @@ python3 tools/linters/lint-static.py --tool phpcs --fix          # exit 2 (no sc
 
 - Update a tool: delete its `.phar` from `~/.cache/php_engine-tools/` (or
   `$PHP_ENGINE_STATIC_TOOL_CACHE`); next run re-downloads latest. Versions:
-  `docker run --rm -v ~/.cache/php_engine-tools:/tools:ro php:8.2-cli php /tools/phpstan.phar --version`
+  `docker run --rm -v ~/.cache/php_engine-tools:/tools:ro php:8.5-cli php /tools/phpstan.phar --version`
 - Different PHP runtime: `PHP_ENGINE_STATIC_PHP_IMAGE=php:8.3-cli ./tools/linters/lint-static.py ...`
 - Different PHAR cache: `PHP_ENGINE_STATIC_TOOL_CACHE=/path ./tools/linters/lint-static.py ...`
 - Different failure-log dir: `FAILED_TO_FIX_LOG=reports ./tools/linters/lint-static.py --tool phpcs --fix --all`

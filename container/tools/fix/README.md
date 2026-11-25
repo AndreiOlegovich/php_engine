@@ -54,8 +54,8 @@ vendor/bin/phpcbf --standard=phpcs.xml --sniffs=PSR2.Methods.FunctionCallSignatu
 ## Verify after any fix
 
 ```bash
-docker run --rm -v "$PWD:/app" -w /app php:8.2-cli php -l /app/src/.php/Page.php
-docker run --rm -v "$PWD:/app" -w /app -v "$HOME/.cache/php_engine-tools:/tools:ro" php:8.2-cli php /tools/phpcs.phar --standard=/app/phpcs.xml -- src/.php/Page.php
+docker run --rm -v "$PWD:/app" -w /app php:8.5-cli php -l /app/src/.php/Page.php
+docker run --rm -v "$PWD:/app" -w /app -v "$HOME/.cache/php_engine-tools:/tools:ro" php:8.5-cli php /tools/phpcs.phar --standard=/app/phpcs.xml -- src/.php/Page.php
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/
 ```
 

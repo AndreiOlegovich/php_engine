@@ -42,16 +42,17 @@ Only `./src` is mounted into `php-apache` (at `/var/www/html`);
 `tools/` is not, so copy the fixer in first. From the host:
 
 ```bash
+cd container
 docker compose up -d php-apache
-docker cp container/tools/fix/fix-closing-brace.php php-apache:/tmp/
-docker exec -it php-apache bash
+docker compose cp tools/fix/fix-closing-brace.php php-apache:/tmp/
+docker compose exec php-apache bash
 ```
 
-Inside the container (PHP 8.2 CLI is preinstalled, nothing to add):
+Inside the container (the PHP 8.5 CLI is preinstalled, nothing to add):
 
 ```bash
 php -v
-php /tmp/fix-closing-brace.php /var/www/html/ru/code/python/collections/set/
+php /tmp/fix-closing-brace.php /var/www/html/example/
 php /tmp/fix-closing-brace.php --force /var/www/html/
 ```
 
@@ -60,8 +61,8 @@ host afterwards and clean up the copy when done:
 
 ```bash
 exit
-./tools/linters/lint-static.sh --tool phpcs --files src/.php/Page.php
-docker exec php-apache rm /tmp/fix-closing-brace.php
+./tools/linters/lint-static.sh --tool phpcs --files src/example/index.php
+docker compose exec php-apache rm /tmp/fix-closing-brace.php
 ```
 
 ## Modes

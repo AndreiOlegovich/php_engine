@@ -15,7 +15,7 @@
 #
 # Examples:
 #   ./lint-js.sh --staged
-#   ./lint-js.sh ao/chessboard/game.js
+#   ./lint-js.sh example/js/menu.js
 #   ./lint-js.sh --files "a.js,b.js"
 #   ./lint-js.sh --all
 #

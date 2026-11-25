@@ -1,4 +1,4 @@
-# version 0.6.0
+# version 0.6.1
 """Engine-marker check: every <loc> in the sitemap must render one of the
 page-shell markers.
 
@@ -54,7 +54,7 @@ Env:
 
 Pages without a shell by design (an API endpoint, an app, a fragment):
   SITE_NO_MARKER_PATHS in container/site-profile.env lists parts of their URL
-  paths, e.g. SITE_NO_MARKER_PATHS="/api/ /tools/chessboard/". Every sitemap
+  paths, e.g. SITE_NO_MARKER_PATHS="/api/ /widgets/". Every sitemap
   URL whose path contains one of them is reported as a skipped test, with the
   part and the key that skipped it (pytest -rs lists them), so nothing is
   dropped silently. The default is empty: every page is checked.

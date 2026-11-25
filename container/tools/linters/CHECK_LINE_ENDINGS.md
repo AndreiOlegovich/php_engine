@@ -64,7 +64,7 @@ Modes (default: `--search`; fixing needs an explicit flag):
 Selection flags combine as a union (same convention as `lint-php.sh` /
 `find-malformed-urls.sh`): `--files`, positional paths, `--staged`,
 `--committed`, `--all` (default when nothing else is given). Names with
-spaces work (`--files "ao/chessboard copy/MinimalChess.js"`). Paths may be
+spaces work (`--files "example/old copy/menu.js"`). Paths may be
 `--src`-relative, `src/`-prefixed, or absolute under `--src`; dirs expand to
 all files below them.
 

@@ -2,12 +2,12 @@ name: ${SITE_PROJECT:-php_engine}
 
 services:
   php-apache:
-    image: ${SITE_PROJECT:-php_engine}:${PHP_VER:-8.2}
+    image: ${SITE_PROJECT:-php_engine}:${PHP_VER:-8.5}
     build:
       context: .
       dockerfile: containerfiles/Dockerfile.php
       args:
-        PHP_VER: ${PHP_VER:-8.2}
+        PHP_VER: ${PHP_VER:-8.5}
         HOST_UID: ${HOST_UID:-1000}
         HOST_GID: ${HOST_GID:-1000}
     container_name: ${SITE_PROJECT:-php_engine}-apache

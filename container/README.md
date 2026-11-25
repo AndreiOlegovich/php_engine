@@ -1,89 +1,104 @@
 # php_engine container
 
-Local Docker setup for a PHP site (PHP 8.2 + Apache by default,
-PHP 8.0 still available), plus a pytest link checker with Allure reporting.
+Local Docker setup for a PHP site (PHP 8.5 and Apache), plus a pytest link
+checker with Allure reporting. To start a new site, read the README at the
+repository root first.
 
-All commands run from this directory (`container/`).
+All commands run from this directory (`container/`). The names and ports come
+from `container/.env`, which `tools/new-project.sh` writes: `<project>` below
+is its `SITE_PROJECT`, `<port>` its `SITE_HTTP_PORT` and `<allure-port>` its
+`SITE_ALLURE_PORT`. Without that file they are `php_engine`, 8080 and 5050.
 
 ## Services
 
 | Service | Container | What | URL |
 |---|---|---|---|
-| `php-apache` | `php-apache` | the site (PHP 8.2, Apache — or 8.0, see below) | `http://127.0.0.1:8080/` |
-| `pytest_web` | `pytest-web` | one-shot link checker (pytest) | — |
-| `allure-web` | `allure-web` | Allure report viewer | `http://127.0.0.1:5050/` |
+| `php-apache` | `<project>-apache` | the site (PHP 8.5, Apache) | `http://127.0.0.1:<port>/` |
+| `pytest_web` | `<project>-pytest-web` | one-shot link checker (pytest) | — |
+| `allure-web` | `<project>-allure-web` | Allure report viewer | `http://127.0.0.1:<allure-port>/` |
+
+Compose commands take the service name (`php-apache`); plain `docker`
+commands take the container name (`<project>-apache`).
 
 ## Quickstart
 
 ```bash
-docker compose up -d --build   # build + start everything
-docker compose ps              # check status
-curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/   # 200
+docker compose up -d --build php-apache   # build and start the site
+docker compose ps                         # status
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:<port>/   # 200
 ```
 
-Open `http://127.0.0.1:8080/` in a browser. Code lives in `./src` and is
-bind-mounted to `/var/www/html` — edits are live, no rebuild needed.
+Open `http://127.0.0.1:<port>/` in a browser. Code lives in `./src` and is
+bind-mounted to `/var/www/html`: edits are live, no rebuild needed.
 
-Note: a site's `.htaccess` may force `https://` in production (behind
-a TLS proxy). Locally there is no TLS listener, so the container emulates
-the proxy (`containerfiles/apache-local-dev.conf` sets
-`X-Forwarded-Proto: https`) and those pages open directly over plain `http`.
-Try the dummy page `http://127.0.0.1:8080/example/`.
+Start only `php-apache`: a plain `docker compose up -d` also runs the one-shot
+link checker, which needs a sitemap (see "Link checker" below).
+
+A page with a PHP error can still answer `200`: `display_errors` is on, so
+PHP prints the error into the page. The error log is the place to look:
+
+```bash
+docker compose logs php-apache 2>&1 | grep -E 'PHP (Parse|Fatal) error'
+```
 
 ## Everyday commands
 
 ```bash
-docker compose up -d            # start
-docker compose stop             # stop (keeps containers)
-docker compose start            # start again
-docker compose restart          # restart
-docker compose down             # stop + remove containers (code in ./src is safe)
-docker compose logs --tail=30   # apache access/error log
-docker compose logs -f          # follow logs
-docker compose exec php-apache bash                 # shell in web container (root)
+docker compose up -d php-apache   # start
+docker compose stop               # stop (keeps containers)
+docker compose start              # start again
+docker compose restart php-apache # restart, e.g. after editing php-engine.ini
+docker compose down               # stop and remove containers (code in ./src is safe)
+docker compose logs --tail=30 php-apache   # Apache access and error log
+docker compose logs -f php-apache          # follow the log
+docker compose exec php-apache bash                 # shell in the web container (root)
 docker compose exec --user www-data php-apache bash # shell as the Apache user
 ```
 
-Builds stay fast on purpose: `.dockerignore` excludes `src/` (2.8 GB).
-To build for another host user: `HOST_UID=$(id -u) HOST_GID=$(id -g)
-docker compose up -d --build`.
+Builds stay fast whatever the size of the site: `.dockerignore` sends only
+`containerfiles/` and `pytest_web/` to Docker. To build for another host user:
+`HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up -d --build php-apache`.
 
-## PHP version (8.2 default, 8.0 available)
+## PHP version
 
 ```bash
-docker compose up -d --build            # PHP 8.2 (image php_engine:8.2)
-PHP_VER=8.0 docker compose up -d --build  # PHP 8.0 (image php_engine:8.0)
-docker compose exec php-apache php -v   # check which is running
+docker compose up -d --build php-apache              # PHP 8.5 (image <project>:8.5)
+PHP_VER=7.4 docker compose up -d --build php-apache  # another version (image <project>:7.4)
+docker compose exec php-apache php -v                # which one runs
 ```
 
 The version is a build arg (`containerfiles/Dockerfile.php`: `ARG PHP_VER`),
-so both images can live side by side — switching only recreates the
-`php-apache` container, code in `./src` is untouched. The linter follows the
-same flag: `tools/linters/lint-php.sh` defaults to 8.2, `tools/linters/lint-php.sh --php 8.0 …`
-checks against 8.0.
+so the images live side by side; switching recreates only the `php-apache`
+container, and the code in `./src` is untouched. A version you want to keep
+for a while goes into `container/.env` as `PHP_VER=7.4`; without it the next
+`docker compose up` goes back to 8.5. An older version is for comparing how
+an imported site behaved before; the checks and the linters target 8.5.
+
+`containerfiles/php-engine.ini` hides `E_DEPRECATED` notices, from the page
+and from the log alike. To list them, set `error_reporting = E_ALL` there,
+run `docker compose restart php-apache` and read the log.
 
 ## PHP lint
 
-`lint-php.sh` runs `php -l` (project's PHP 8.2, via the `php-apache`
-container — started automatically if stopped) over all or selected files:
+`lint-php.sh` runs `php -l` with PHP 8.5 over all or selected files. It uses
+this project's `php-apache` container when it already runs PHP 8.5, and a
+one-off `php:8.5-cli` image otherwise:
 
 ```bash
 tools/linters/lint-php.sh --staged                  # staged changes only
-tools/linters/lint-php.sh example/index.php example/ # explicit files/dirs
+tools/linters/lint-php.sh example/index.php example/ # files and folders under src/
 tools/linters/lint-php.sh --files "a.php,b.php"
-tools/linters/lint-php.sh --all                     # all 5k+ *.php under src/
-tools/linters/lint-php.sh --php 8.0 qa/index.php    # lint with PHP 8.0 (default: 8.2)
+tools/linters/lint-php.sh --all                     # every *.php under src/
+tools/linters/lint-php.sh --php 7.4 old/page.php    # lint with another PHP
 ```
 
-Exit `0` = clean, `1` = syntax errors listed as `FAIL: <path>`.
-Deploy hook: `tools/deploy/deploy-ftp.sh --lint [--php VER] ...` lints the same selection
-first and aborts the upload on failure (works with `--dry-run` for a
-lint-only run). `--php` defaults to `8.2` (project container); other versions
-run via one-off `php:VER-cli` images, pulled once from Docker Hub.
+Exit `0` = clean, `1` = syntax errors listed as `FAIL: <path>`. `php -l`
+finds only syntax errors; a removed function such as `mysql_connect()` fails
+when the page runs, so read the error log as well.
 
-Known failures (pre-existing, pages 500 locally too): `ao/api/php_auth/index.php`,
-`ao/services/php_auth/digest.php`, `ru/api/php_auth/index.php` (stray text at
-line ~73). Fix separately; until then a full `--all` lint stays red.
+Deploy hook: `tools/deploy/deploy-ftp.sh --lint [--php VER] ...` lints the
+same selection first and aborts the upload on failure (works with `--dry-run`
+for a lint-only run).
 
 ## JS lint
 
@@ -93,30 +108,23 @@ positional paths, `--all` = default):
 
 ```bash
 tools/linters/lint-js.sh --staged
-tools/linters/lint-js.sh ao/chessboard/game.js
-tools/linters/lint-js.sh --all     # ~116 *.js under src/
+tools/linters/lint-js.sh js/app.js
+tools/linters/lint-js.sh --all
 ```
 
-Files with ESM syntax (`import`/`export`, e.g. `ao/chessboard/*.js`) are
-checked via a temp `.mjs` copy, since `node --check` parses `.js` as
-CommonJS. Exit `0` clean / `1` with `FAIL:` lines.
-
-Known failures (pre-existing): 2 truncated archive copies
-(`ao/chessboard/arj/MinimalChess.js`, `ao/chessboard copy/MinimalChess.js`)
-and 3 `disqus_en.js` files containing a literal `</script>` (they only work
-inlined in HTML, not as standalone JS).
+Files with ESM syntax (`import`/`export`) are checked via a temp `.mjs` copy,
+since `node --check` parses `.js` as CommonJS. Exit `0` clean / `1` with
+`FAIL:` lines.
 
 ## Malformed-URL scan
 
-`find-malformed-urls.sh` greps the tree for concatenated/dotless URLs
+`find-malformed-urls.sh` greps the tree for concatenated or dotless URLs
 (`https://…https://…`, `https://ru/…`, …) with the same selection flags as
 the linters (`--staged`, `--committed`, `--files`, paths, `--all`):
 
 ```bash
 tools/linters/find-malformed-urls.sh --staged
-tools/linters/find-malformed-urls.sh --all     # ~100 hits tree-wide, mostly
-                                   # two glued-together domains
-                                   # and https://ru/… breadcrumb URLs
+tools/linters/find-malformed-urls.sh --all
 ```
 
 Exit `0` clean / `1` with `path:line: … [check]` lines. Doc placeholders
@@ -125,80 +133,75 @@ needs human review before fixing.
 
 ## Python lint (uv + ruff + pylint + mypy + pre-commit)
 
-`pytest_web/` is the maintained Python (`src/*.py` are legacy Python 2
-helpers, out of scope for every linter). Managed with `uv`
-(`~/.local/bin/uv`; install: `curl -LsSf https://astral.sh/uv/install.sh | sh`):
+The maintained Python is in `pytest_web/`, `tools/` and `tests/`. The site's
+own Python under `src/` is often legacy (Python 2) and every Python linter and
+hook skips it. Managed with `uv` (install:
+`curl -LsSf https://astral.sh/uv/install.sh | sh`):
 
 ```bash
 uv sync                        # create .venv (deps from pyproject.toml)
-uv run --frozen ruff check pytest_web
-uv run --frozen ruff format --check pytest_web
+uv run --frozen ruff check pytest_web tools tests
+uv run --frozen ruff format --check pytest_web tools tests
 uv run --frozen mypy pytest_web
 uv run --frozen pylint pytest_web
 ```
 
 Config lives in `pyproject.toml` (ruff select `E,F,W,I,N,UP,B,C4,SIM`,
 line-length 100; lenient mypy baseline; pylint with pytest-fixture
-`redefined-outer-name` disabled). Baseline is green.
+`redefined-outer-name` disabled).
 
 Pre-commit (installed via `uv tool install pre-commit`; the config sits at
-the repo root, the parent of `container/`, so run from there):
+the repository root, the parent of `container/`, so run it from there):
 
 ```bash
 cd ..
 pre-commit run --files container/pytest_web/test_sitemap.py
 ```
 
-Hooks: ruff check, ruff format, mypy, pylint (all scoped to `pytest_web/`)
-plus whitespace/yaml/toml hygiene on the Python configs. Note: brand-new
-untracked files are invisible to bare `--all-files`; pass `--files` (as
-above) until the first commit.
+Brand-new untracked files are invisible to a bare `--all-files`; pass
+`--files` until the first commit.
 
 ## Link checker + Allure
 
-`pytest_web` GETs every URL from a sitemap against the web container:
+`pytest_web` GETs every URL of a sitemap against the web container:
 
 ```bash
+docker compose up -d allure-web                            # the report viewer
 docker compose run --rm pytest_web                         # checks src/sitemap.xml
 SITEMAP_FILE=/data/sitemap_new.xml FAIL_ON_NON_200=false \
   docker compose run --rm -e SITEMAP_FILE -e FAIL_ON_NON_200 pytest_web
 ```
 
 Env knobs: `BASE_URL` (default `http://php-apache`), `SITEMAP_FILE`
-(`/data/sitemap.xml` or `/data/sitemap_new.xml`), `FAIL_ON_NON_200`
-(`true` = non-200 cases fail, `false` = report-only).
-
-Expected results: `sitemap.xml` (2021, 504 URLs) is ~172×200 / 332×404 —
-it lists a retired tree (`/docker/`, `/code/…`, `/PC/…`) missing from this
-checkout. `sitemap_new.xml` (regenerated from real files, ~3.4k URLs) is
-~3418×200; the few non-200s are real behaviors (`401` on `http_basic.php`
-auth pages, `500`s in `ao/blog/` etc., a broken demo `login.php` chain).
+(default `/data/sitemap.xml`, which is `src/sitemap.xml` on the host),
+`FAIL_ON_NON_200` (`true` = non-200 cases fail, `false` = report-only).
+A site without a sitemap gets one from the generator below.
 
 ## Reading the Allure report
 
-`allure-web` rebuilds the report ~10s after each checker run (hard-refresh
-to see it):
+`allure-web` rebuilds the report about 10 s after each checker run
+(hard-refresh to see it):
 
 ```text
-http://127.0.0.1:5050/allure-docker-service/projects/default/reports/latest/index.html
+http://127.0.0.1:<allure-port>/allure-docker-service/projects/default/reports/latest/index.html
 ```
 
 Where to click:
 
-1. **`Suites`** (left sidebar) → `test_sitemap` → **one row per URL**
-   (`0000 /1.php`, `0231 /qa/`, …), green = 200, red = anything else.
-   Click a row for its `GET …` step and the `response` attachment
-   (final URL, status, redirect count).
-2. **Status filter** — the red **Failed** pill shows only the broken URLs.
-3. **`Graphs`** — pie chart of passed vs failed (= 200 vs non-200 URLs).
+1. **`Suites`** (left sidebar) → `test_sitemap` → **one row per URL**,
+   green = 200, red = anything else. Click a row for its `GET …` step and
+   the `response` attachment (final URL, status, redirect count).
+2. **Status filter**: the red **Failed** pill shows only the broken URLs.
+3. **`Graphs`**: pie chart of passed vs failed (= 200 vs non-200 URLs).
 4. **`test_summary`** (last case in Suites) → **Attachments**:
    `status-summary.txt` (200/404/other/error counts), `status-summary.json`,
-   `all-urls.csv` (every URL + status, downloadable).
+   `all-urls.csv` (every URL and status, downloadable).
 
 How it works under the hood: sitemap hosts are rewritten to the local
-container, `X-Forwarded-Proto: https` emulates the production TLS proxy
-(a site's `.htaccess` may force https otherwise), redirects are
-followed pinned to the local host, and landing on `/404.php` counts as 404.
+container, the checker sends `X-Forwarded-Proto: https` the way a hosting
+proxy does (so an `.htaccess` rule that forces https sees https), redirects
+are followed pinned to the local host, and landing on `/404.php` counts as
+404.
 
 No-server fallback (same data, plain HTML table with filters):
 
@@ -211,24 +214,25 @@ tools/build-static-report.sh        # after a pytest_web run
 ## Sitemap generator
 
 ```bash
-tools/generate-sitemap.sh [src_dir] [output.xml]   # default: src/sitemap_new.xml
-BASE_URL=https://www.example.com tools/generate-sitemap.sh
+BASE_URL=https://www.example.com tools/generate-sitemap.sh   # writes src/sitemap.xml
+tools/generate-sitemap.sh [src_dir] [output.xml]
+tools/check-sitemap.sh src/sitemap.xml                        # validate it
 ```
 
-Scans `*.php`, skips framework/includes/backups (dot-/`_`-dirs pruned,
-`arj*`, `*img`, `*RelatedArticles*`, `*_inc.php`, `*_arj.php`,
-`*_module_*`, `* copy.php`), `lastmod` from file mtime, priorities
-`/` → 1.00, `index.php` → 0.90, pages → 0.80. Same entry format as
-`src/sitemap.xml`.
+Scans `*.php` and skips what `tools/sitemap-excludes.conf` lists (dot- and
+`_`-folders, includes, backups); `lastmod` comes from the file time. The
+previous file is kept as `<output>.bak-<timestamp>`.
 
 ## Docs
 
-- `CONTAINER.md` — full operations manual (build/run/stop/enter/debug,
+- `CONTAINER.md`: full operations manual (build, run, stop, enter, debug,
   troubleshooting table, permanent permission fix).
-- `FIX_PERMISSIONS.md` — the `700`-permission problem: symptoms, manual fix,
-  framework symlinks (`src/.php`, `src/.css`), stale-container conflict.
-- `tools/fix/fix-permissions.sh` — permission diagnose/fix + health check
+- `tools/fix/FIX_PERMISSIONS.md`: the `700`-permission problem: symptoms,
+  manual fix, stale-container conflict.
+- `tools/fix/fix-permissions.sh`: permission diagnose/fix and health check
   (`--check` = diagnose only).
+- `docs/site-checks.md`: what each commit hook on `src/` blocks and how to
+  fix it.
 
 ## Tool index
 

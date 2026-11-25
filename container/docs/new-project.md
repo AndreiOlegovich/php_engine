@@ -2,7 +2,9 @@
 
 A new site is a copy of the engine plus its own pages. The copy carries the
 tools, the tests, the agent roles, the skills and the commit gate;
-`container/src` starts with one stub page.
+`container/src` starts with one stub page. The README at the repository root
+walks through the whole start, from the clone to the first commit; this page
+is the reference for the script, the project name and the profile.
 
 ## Copy
 
@@ -82,7 +84,8 @@ container/tools/new-project.sh --check
 
 It runs every site checker, shellcheck, `php -l` and phpcs (when Docker runs)
 and `pre-commit run --files` over every tracked and not-yet-added file. It does
-not stop at the first failure and ends with the list of what failed. Each row
+not stop at the first failure and ends with the list of what failed. On a new
+site the first run takes 10 to 15 minutes, because the lint self-tests run too. Each row
 of `container/docs/site-checks.md` says what a failure means and how to fix it.
 The self-test hooks of the lint scripts need Docker; without it they fail for
 that reason alone.
@@ -90,7 +93,7 @@ that reason alone.
 ## First commit
 
 ```bash
-git add -- container
+git add -- .gitignore .pre-commit-config.yaml .python-version AGENTS.md CLAUDE.md opencode.jsonc .claude .opencode container
 git commit -m "Start <site name>"
 ```
 

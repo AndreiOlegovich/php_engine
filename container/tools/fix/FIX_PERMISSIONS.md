@@ -40,7 +40,7 @@ Apache error log (`docker compose logs`) may show `Permission denied` or
 2. Inside the container Apache/PHP runs as `www-data` (`uid=33, gid=33`):
 
    ```bash
-   docker exec php-apache id www-data
+   docker compose exec php-apache id www-data
    # uid=33(www-data) gid=33(www-data)
    ```
 
@@ -93,7 +93,7 @@ stat -c '%a %U:%G %n' src/index.php
 # bad:  700 user:user src/index.php
 # good: 644 user:user src/index.php
 
-docker exec php-apache ls -l /var/www/html/index.php
+docker compose exec php-apache ls -l /var/www/html/index.php
 curl -s http://127.0.0.1:8080/ | head
 
 # 2. Fix directories (traverse + list)
@@ -235,12 +235,12 @@ docker compose ps   # NAME should be php-apache
 - Don't `chmod 700 -R src` or copy from a `~/.ssh`-style location.
 - Remember: with a bind mount, host `chmod` is container `chmod`.
 
-## PHP version (pinned to 8.0)
+## PHP version (8.5)
 
-`containerfiles/Dockerfile.php` uses `FROM php:8.0-apache` — the baseline we
-make the site work on first. `containerfiles/php-engine.ini` additionally
-hides `E_DEPRECATED` in browser output. To change version later, edit the
-`FROM` line and run `docker compose up -d --build`.
+`containerfiles/Dockerfile.php` builds `php:${PHP_VER}-apache`, and
+`PHP_VER` defaults to 8.5 in `docker-compose.yml`.
+`containerfiles/php-engine.ini` additionally hides `E_DEPRECATED` in browser
+output. To run another version, `PHP_VER=7.4 docker compose up -d --build`.
 
 Note: the Dockerfile intentionally does **not** `COPY src/` — the code comes
 from the `./src:/var/www/html` bind mount. Copying it made the build context

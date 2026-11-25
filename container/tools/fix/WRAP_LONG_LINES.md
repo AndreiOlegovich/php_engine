@@ -21,7 +21,7 @@ all commands run from `container/`.
 | `--fix` | Wraps overlong lines (see Safety), then `php -l` checks every touched file. Files failing the check are restored byte-for-byte. | 1 if anything failed or was skipped, else 0 |
 | `--validate` | Runs phpcs (PSR-12 project ruleset) on targets and reports totals. Alone: exit 1 on any finding. With `--fix`: compares findings before/after and reports `introduced`/`fixed`; exit 1 if anything was introduced. | as described |
 | `--limit N` | Max line length (default `120`). | — |
-| `--php-bin CMD` | PHP binary for the post-fix gate. Default: `docker exec php-apache php`, else host `php`. Without any PHP, `--fix` refuses to run. | — |
+| `--php-bin CMD` | PHP binary for the post-fix gate. Default: the PHP of this project's running `<project>-apache` container, else host `php`. Without any PHP, `--fix` refuses to run. | — |
 
 Paths are files and/or directories (default `src/`); directories are
 scanned for `*.php` without descending into symlinked dirs.
@@ -72,7 +72,7 @@ Fix one file, proving zero phpcs regressions:
 Fix with a custom limit and explicit PHP binary:
 
 ```bash
-./tools/fix/wrap-long-lines.sh --fix --limit 100 --php-bin "docker exec php-apache php" src/
+./tools/fix/wrap-long-lines.sh --fix --limit 100 --php-bin "docker compose exec -T php-apache php" src/
 ```
 
 ## Troubleshooting

@@ -8,7 +8,8 @@ default_language_version:
   python: python3.12
 #
 # Gates:
-#   .py  -> ruff check, ruff format, mypy, pylint.
+#   .py  -> ruff check, ruff format, mypy, pylint; not the site's own Python
+#           under container/src, which is often legacy (Python 2).
 #   .php -> php -l (syntax) + phpcs PSR-12 on staged files under container/src.
 #   .sh  -> shellcheck via container/tools/linters/lint-sh.sh.
 #   diff -> check-diff-artifacts.sh --staged on every commit.
@@ -22,10 +23,12 @@ repos:
       - id: ruff
         name: ruff check (.py)
         files: \.py$
+        exclude: ^container/src/
         args: [--config, container/pyproject.toml]
       - id: ruff-format
         name: ruff format (.py)
         files: \.py$
+        exclude: ^container/src/
         args: [--config, container/pyproject.toml]
 
   # --- Python: mypy (types; lenient baseline in container/pyproject.toml) ---
@@ -35,6 +38,7 @@ repos:
       - id: mypy
         name: mypy (.py)
         files: \.py$
+        exclude: ^container/src/
         args: [--config-file, container/pyproject.toml]
         additional_dependencies:
           - pytest>=8
@@ -48,6 +52,7 @@ repos:
       - id: pylint
         name: pylint (.py)
         files: \.py$
+        exclude: ^container/src/
         args: [--rcfile=container/pyproject.toml]
         additional_dependencies:
           - pytest>=8

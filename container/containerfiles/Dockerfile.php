@@ -1,4 +1,9 @@
-FROM php:8.0-apache
+# PHP major.minor, set by PHP_VER in docker-compose.yml:
+#   docker compose up -d --build              # PHP 8.5, the default
+#   PHP_VER=7.4 docker compose up -d --build  # another version, e.g. the one
+#                                             # an imported site ran on
+ARG PHP_VER=8.5
+FROM php:${PHP_VER}-apache
 
 # Enable Apache rewrite module
 RUN a2enmod rewrite
@@ -14,7 +19,7 @@ ARG HOST_UID=1000
 ARG HOST_GID=1000
 RUN groupmod -g ${HOST_GID} www-data && usermod -u ${HOST_UID} www-data
 
-# PHP settings for old codebase on PHP 8.0 (hide E_DEPRECATED in browser)
+# PHP settings for an old codebase on a newer PHP (hide E_DEPRECATED in browser)
 COPY containerfiles/php-engine.ini /usr/local/etc/php/conf.d/php-engine.ini
 
 # Set working directory (code comes from the ./src bind mount at runtime,

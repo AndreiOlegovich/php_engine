@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.3
+# version 0.0.4
 # Find and safely wrap PHP lines longer than a limit (default: 120 chars).
 #
 # Usage:
@@ -130,7 +130,7 @@ if [ "$MODE_SEARCH" -eq 1 ] && [ "$MODE_FIX" -eq 0 ] && [ "$MODE_VALIDATE" -eq 0
 fi
 
 # ---- --fix needs PHP ----
-PHPCS_IMG="php:8.2-cli"
+PHPCS_IMG="php:8.5-cli"
 TOOL_CACHE="${PHP_ENGINE_STATIC_TOOL_CACHE:-$HOME/.cache/php_engine-tools}"
 PHP_CMD=""
 if [ "$MODE_FIX" -eq 1 ]; then
@@ -138,7 +138,7 @@ if [ "$MODE_FIX" -eq 1 ]; then
     PHP_CMD="$PHP_BIN"
   elif docker exec "$SITE_PROJECT-apache" php -v >/dev/null 2>&1; then
     # Wrapper: files under ./src lint via the running container (fast);
-    # anything else via a one-off php:8.2-cli container (bind-mounted).
+    # anything else via a one-off php:8.5-cli container (bind-mounted).
     PHP_CMD="$WRAP_TMPDIR/php-lint.sh"
     cat > "$PHP_CMD" <<EOF
 #!/usr/bin/env bash

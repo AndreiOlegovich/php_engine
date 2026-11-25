@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# version 0.1.1
-# Lint PHP files with the project's PHP 8.2 interpreter (php-apache container).
+# version 0.2.0
+# Lint PHP files with the project's PHP 8.5 interpreter (php-apache container).
 #
 # Usage:
 #   ./lint-php.sh [--src DIR] [--php VER] [--all] [--staged] [--committed]
 #                 [--files F ...] [--dirs DIR ...] [paths...]
 #
-#   --php VER         PHP version to lint with (default: 8.2).
-#                     8.2 runs inside the php-apache container (project setup)
-#                     when that container runs 8.2; other versions (e.g. 8.0),
+#   --php VER         PHP version to lint with (default: 8.5).
+#                     8.5 runs inside the php-apache container (project setup)
+#                     when that container runs 8.5; other versions (e.g. 7.4),
 #                     or a container started on another version, run via
 #                     one-off php:VER-cli images (pulled on first use).
 #                     In a linked git worktree, which php-apache does not
-#                     mount, 8.2 runs via php:8.2-cli too.
+#                     mount, 8.5 runs via php:8.5-cli too.
 #
 # Selection (default: all *.php under --src; flags/paths combine as a union):
 #   --all             all *.php under --src (minus deploy junk)
@@ -47,7 +47,7 @@ cd "$SCRIPT_DIR"
 cd ../..  # tools live in tools/linters/; project root (compose file, src/) is the runtime cwd
 
 SRC_DIR="src"
-PROJECT_PHP="8.2"  # keep in step with PHP_VER in docker-compose.yml
+PROJECT_PHP="8.5"  # keep in step with PHP_VER in docker-compose.yml
 PHP_VER="$PROJECT_PHP"
 ALL=0; STAGED=0; COMMITTED=0
 FILES_LIST=()
@@ -63,7 +63,7 @@ while [ $# -gt 0 ]; do
     --src) [ $# -ge 2 ] || { echo "ERROR: --src needs a value." >&2; exit 2; }
       SRC_DIR="$2"; shift 2 ;;
     --src=*) SRC_DIR="${1#--src=}"; shift ;;
-    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.2, 8.0)." >&2; exit 2; }
+    --php) [ $# -ge 2 ] || { echo "ERROR: --php needs a value (e.g. 8.5, 7.4)." >&2; exit 2; }
       PHP_VER="$2"; shift 2 ;;
     --php=*) PHP_VER="${1#--php=}"; shift ;;
     --all) ALL=1; shift ;;
@@ -115,7 +115,7 @@ done
 
 [ -d "$SRC_DIR" ] || { echo "ERROR: source dir '$SRC_DIR' not found." >&2; exit 1; }
 [ -f docker-compose.yml ] || { echo "ERROR: docker-compose.yml not found. Run from container/." >&2; exit 1; }
-[[ "$PHP_VER" =~ ^[0-9]+\.[0-9]+$ ]] || { echo "ERROR: bad --php value '$PHP_VER' (want e.g. 8.2, 8.0)." >&2; exit 2; }
+[[ "$PHP_VER" =~ ^[0-9]+\.[0-9]+$ ]] || { echo "ERROR: bad --php value '$PHP_VER' (want e.g. 8.5, 7.4)." >&2; exit 2; }
 
 SRC_ABS="$(cd "$SRC_DIR" && pwd -P)"
 REL_LIST="$(mktemp)"

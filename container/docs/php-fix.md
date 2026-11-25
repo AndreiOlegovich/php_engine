@@ -59,7 +59,7 @@ git diff <file>
 
 Then open the page at `http://localhost:8080/<path>` — the `php-apache`
 container serves `src/` live, no rebuild needed. Check
-`docker logs php-apache | grep -i fatal` for runtime errors.
+`docker compose logs php-apache | grep -i fatal` for runtime errors.
 
 ## 5. Deploy
 

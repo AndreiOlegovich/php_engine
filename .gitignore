@@ -50,17 +50,21 @@ id_rsa*
 ftp-creds.env
 hosting-access.env
 
-# Images (deliberate decision: images stay out of the repo, ~30k files / ~3.1 GB
-# across both src trees. Pages referencing them still render, images just 404.
-# Lesson *code* about images is .php and stays tracked.)
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.webp
-*.svg
-*.ico
-*.bmp
-*.avif
-*.tiff
-*.tif
+# Images stay out of the repo: a big site holds gigabytes of them. The local
+# site still shows them, because the files are in container/src. Instead,
+# container/docs/image-files.txt is tracked: the image-list hook records each
+# image's path, size and sha1 there (container/tools/images/image_list.py).
+# To keep a site's images in git, delete these lines before its first commit.
+# Any letter case: git matches case-sensitively, and an imported site often
+# holds camera files such as IMG_0001.JPG.
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[pP][nN][gG]
+*.[gG][iI][fF]
+*.[wW][eE][bB][pP]
+*.[sS][vV][gG]
+*.[iI][cC][oO]
+*.[bB][mM][pP]
+*.[aA][vV][iI][fF]
+*.[tT][iI][fF][fF]
+*.[tT][iI][fF]

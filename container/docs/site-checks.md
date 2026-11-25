@@ -1,7 +1,8 @@
 # Site checks on container/src
 
-The commit gate runs these on every commit that touches the docroot. Each is
-also a plain script: run it by hand on the file you are fixing.
+The commit gate runs these on every commit that touches the docroot, and
+`image-list` on every commit. Each is also a plain script: run it by hand on
+the file you are fixing.
 
 | Hook | What it blocks | Run it by hand | What a failure means |
 |---|---|---|---|
@@ -12,6 +13,7 @@ also a plain script: run it by hand on the file you are fixing.
 | `site-snake-calls` | `->create_head()` where the engine declares `createHead()` | `python3 container/tools/linters/find-snake-calls.py --src container/src` | phpcs checks declarations, not call sites; this call passes lint and fatals at runtime. |
 | `site-sitemap` | a `sitemap.xml` that does not parse, holds two documents, or repeats a `<loc>` | `container/tools/check-sitemap.sh container/src/sitemap.xml` | a second sitemap was concatenated onto the file, or the generator was interrupted. Regenerate with `container/tools/generate-sitemap.sh`. |
 | `site-redirected-pages` | a new page whose URL matches an `.htaccess` redirect source | `container/tools/check-no-redirected-pages.sh` | the page is unreachable from the moment it is committed. Remove the redirect or pick another URL. |
+| `image-list` | a commit while `container/docs/image-files.txt` does not match the image files on disk (git ignores the images, so nothing else shows that one changed) | `python3 container/tools/images/image_list.py --check` (`--write` rewrites the list) | an image was added, replaced or removed. The hook has already written the new list: `git add container/docs/image-files.txt` and commit again. In a worktree without the images it passes and leaves the list alone. |
 
 The sitemap and redirect hooks print a SKIP and pass while `sitemap.xml` or
 `.htaccess` does not exist yet, so a new project starts green.

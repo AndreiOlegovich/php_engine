@@ -13,6 +13,7 @@ default_language_version:
 #   .php -> php -l (syntax) + phpcs PSR-12 on staged files under container/src.
 #   .sh  -> shellcheck via container/tools/linters/lint-sh.sh.
 #   diff -> check-diff-artifacts.sh --staged on every commit.
+#   images -> container/docs/image-files.txt rewritten when an image changes.
 # Manual full run:
 #   pre-commit run --all-files
 repos:
@@ -108,6 +109,38 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
+
+  # --- Image list stays true to the image files on disk ---
+  # .gitignore leaves the images out of git: container/docs/image-files.txt
+  # records each one's path, size and sha1 instead, so git shows which images
+  # the site has and a backup or the hosting copy can be checked against it.
+  # Adding or replacing an image touches no tracked file, so this hook always
+  # runs. It regenerates the list and fails when the file changed (the
+  # formatter pattern): stage the new list and commit again. In a checkout
+  # without the images (a worktree, the OpenCode container) fewer than half
+  # of the listed paths exist on disk; the hook says so and exits 0 instead
+  # of emptying the list.
+  - repo: local
+    hooks:
+      - id: image-list
+        name: image list (container/docs/image-files.txt)
+        entry: python3.12 container/tools/images/image_list.py --hook
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  # --- image_list.py self-test (runs only when the script changes) ---
+  # The list format and order, --write/--check/--hook, the cache and the
+  # no-images skip, all on tmp_path trees: no images needed.
+  - repo: local
+    hooks:
+      - id: image-list-tests
+        name: image list tests (script changes)
+        entry: pytest container/tests/tools/test_image_list.py -q
+        language: python
+        files: ^container/tools/images/image_list\.py$
+        pass_filenames: false
+        additional_dependencies: ["pytest>=8"]
 
   # --- Diff artifacts (EOL flips, encoding damage, mojibake, BOM) ---
   - repo: local

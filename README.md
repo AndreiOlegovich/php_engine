@@ -323,8 +323,7 @@ and generate again.
 With the site running:
 
 ```bash
-container/tests/run_test.sh -y sitemap internal_links img_src
-BOTTOM_MARKER='</html>' container/tests/run_test.sh -y content_loaded
+container/tests/run_test.sh -y sitemap internal_links img_src content_loaded
 ```
 
 | Test | What it reports |
@@ -334,15 +333,21 @@ BOTTOM_MARKER='</html>' container/tests/run_test.sh -y content_loaded
 | `img_src` | `<img>` tags whose file is missing (reads the files, no server needed) |
 | `content_loaded` | pages that stop before their end, usually because of a PHP error |
 
-`content_loaded` looks for `<div id="footer-end"></div>` by default. Put that
-line at the very end of the site's common footer, or name with
-`BOTTOM_MARKER` something every complete page ends with, such as `</html>`.
+`content_loaded` looks for `SITE_BOTTOM_MARKER` of the profile, `</html>`
+by default. When the site's common footer renders a last element of its own,
+name it there, e.g. `SITE_BOTTOM_MARKER='id="footer-end"'` for
+`<div id="footer-end"></div>`: then a page that ends in another template,
+such as an error page with its own `</html>`, fails too. `BOTTOM_MARKER=...`
+in front of the command overrides it for one run.
 
 Each run saves its output in `container/tests/run_test_log/`; `summary.txt`
 says PASS or FAIL per test. The tests `page_html_id` and `page_stylesheets`
 expect the engine's page classes (`SITE_PAGE_CLASSES`, `SITE_PAGE_MARKERS`
 and `SITE_TREE_SHEETS` in the profile): a site without them fails or skips
-them. `redirects` needs `container/tests/redirect_cases.py`, copied from
+them. Pages that have no shell by design (an API endpoint, an app) go into
+`SITE_NO_MARKER_PATHS` as parts of their paths, e.g. `"/api/ /tools/chess/"`;
+`page_html_id` lists every URL it skips that way as a skipped test.
+`redirects` needs `container/tests/redirect_cases.py`, copied from
 `redirect_cases.example.py`. The browser report of the link checker (Allure)
 is described in `container/README.md`.
 

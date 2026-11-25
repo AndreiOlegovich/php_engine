@@ -76,7 +76,7 @@ Docker-backed linters are skipped when `docker` is not on `PATH`.
 |---|---|
 | `test_sitemap.py` | every sitemap `<loc>` answers 200 (one case per URL) |
 | `test_content_loaded.py` | every page renders the bottom marker (`SITE_BOTTOM_MARKER`) |
-| `test_page_html_id.py` | every page renders one shell marker (`SITE_PAGE_MARKERS`) |
+| `test_page_html_id.py` | every page renders one shell marker (`SITE_PAGE_MARKERS`); the paths in `SITE_NO_MARKER_PATHS` are reported as skipped |
 | `test_page_stylesheets.py` | each tree links its own sheet (`SITE_TREE_SHEETS`) |
 | `test_page_wrapped_once.py` | no width wrapper inside another (`SITE_WRAPPER_CLASSES`) |
 | `test_footer_wrapped.py` | the footer table sits inside a wrapper |

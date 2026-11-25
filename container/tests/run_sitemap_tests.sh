@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.3
+# version 0.3.4
 # Unified runner for the pytest_web sitemap link checker.
 #
 # Usage:
@@ -14,7 +14,8 @@
 # each test keeps its own Allure trend):
 #   link             test_sitemap.py (HTTP 200 per URL)
 #                      trend: port SITE_ALLURE_PORT (allure-link)
-#   content          test_content_loaded.py (200 + id="footer-end" per URL)
+#   content          test_content_loaded.py (200 + the bottom marker per URL:
+#                      SITE_BOTTOM_MARKER of site-profile.env, else </html>)
 #                      trend: port SITE_ALLURE_PORT + 1 (allure-content)
 #   css              test_css_coverage.py (asides have CSS rules)
 #                      trend: port SITE_ALLURE_PORT + 2 (allure-css)
@@ -71,7 +72,7 @@
 #   --fail (default)   FAIL_ON_NON_200=true (non-200 URLs fail).
 #   --verbose          print each URL (pytest -v). Default prints only
 #                      `tested N/TOTAL urls` every 100 urls.
-#   --tag TAG          check a different body marker instead of footer-end:
+#   --tag TAG          check a different body marker instead of the bottom one:
 #                      `address` = top menu (<nav class="crumbbar"> of the
 #                      engines or <nav class="address"> of the includes),
 #                      `crumbbar` = engine top menu only, anything else is

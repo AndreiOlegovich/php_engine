@@ -1,13 +1,11 @@
-# version 0.2.1
+# version 0.3.0
 """Content-loaded check: every <loc> in the sitemap must render the marker.
 
-Default marker is the bottom marker `<div id="footer-end"></div>`, rendered
-by every footer path, e.g.:
-  container/src/section/.php/Page.php            create_footer/close_html
-  container/src/section/.php/BasePage.php        close_html
-  container/src/extra/.php/Page.php               create_footer/close_html
-  container/src/extra/.php/Page2.php              close_html
-  container/src/*/.php/php_includes/_footer.php (section, ao, _footer_light)
+The marker is the bottom marker of the site: BOTTOM_MARKER, else
+SITE_BOTTOM_MARKER of container/site-profile.env, else `</html>`. A page that
+stops before it, usually because of a PHP fatal or parse error, fails even
+when the server answered 200. Use something the footer of every page renders
+last, e.g. SITE_BOTTOM_MARKER='id="footer-end"' for `<div id="footer-end">`.
 
 Pass --tag to check something else instead: --tag address looks for the
 top menu, either the engine bar `<nav class="crumbbar"` (Breadcrumbs.php)
@@ -34,9 +32,9 @@ Env:
                          that are listed in the sitemap but are not pages,
                          e.g. "_menu.php,_top_path.php,left_block,right_block".
                          Empty (default) -> exclude nothing.
-  BOTTOM_MARKER          default 'id="footer-end"'. Matches
-                         `<div id="footer-end"></div>` in every footer variant.
-                         Overridden by --tag (see tests/conftest.py).
+  BOTTOM_MARKER          the searched body substring; default
+                         SITE_BOTTOM_MARKER of the site profile, else
+                         '</html>'. Overridden by --tag (see tests/conftest.py).
   FAIL_ON_NON_200        "true" (default) -> non-200 URL cases fail;
                          "false" -> report-only for HTTP status.
   FAIL_ON_MISSING_BOTTOM "true" (default) -> pages without the bottom marker fail;
@@ -54,11 +52,13 @@ from xml.etree import ElementTree
 import allure
 import pytest
 import requests
+import site_profile
 from url_selection import in_selection, selection_label, skip_if_nothing_selected
 
 BASE_URL = os.environ.get("BASE_URL", "http://php-apache").rstrip("/")
 SITEMAP_FILE = os.environ.get("SITEMAP_FILE", "/data/sitemap.xml")
-BOTTOM_MARKER = os.environ.get("BOTTOM_MARKER", 'id="footer-end"')
+#: The bottom marker: BOTTOM_MARKER, else SITE_BOTTOM_MARKER of the profile.
+BOTTOM_MARKER = os.environ.get("BOTTOM_MARKER") or site_profile.get("SITE_BOTTOM_MARKER") or "</html>"
 #: resolved per run in checked(); --tag overrides BOTTOM_MARKER. A tuple:
 #: the page passes when its body holds any of the substrings.
 MARKER = {"value": (BOTTOM_MARKER,)}

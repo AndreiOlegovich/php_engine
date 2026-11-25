@@ -11,10 +11,10 @@
 # compiled language (venv, pip install, building an extension module), and
 # valgrind, strace and hyperfine for debugging and timing. The other
 # languages are in Dockerfile.vm.opencode and Dockerfile.script.opencode.
-# OpenCode for --auto runs on an agent worktree. The official image, plus PHP
-# for php -l and page renders, bash, Python, Perl and the GNU tools for the
-# scripts in container/tools, and a user with your UID, so the files the
-# agent writes stay yours.
+# OpenCode for --auto runs on an agent worktree. The official image, plus
+# PHP 8.5 for php -l and page renders, bash, Python, Perl and the GNU tools
+# for the scripts in container/tools, and a user with your UID, so the files
+# the agent writes stay yours.
 #
 # To leave a language out, put # in front of every package line of it in the
 # RUN below (and of the RUN that installs its tools, if it has one) and, for
@@ -25,8 +25,8 @@
 # Haskell is about 1 GB of the 3.1 GB, Rust 0.6 GB, Go 0.2 GB.
 FROM ghcr.io/anomalyco/opencode:2.1.4
 RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
-    php83 php83-ctype php83-dom php83-iconv php83-mbstring php83-session \
-    php83-simplexml php83-tokenizer php83-xml \
+    php85 php85-ctype php85-dom php85-iconv php85-mbstring php85-session \
+    php85-simplexml php85-tokenizer php85-xml \
 # Assembler: nasm, the GNU as, ld and objdump, gdb.
     nasm binutils gdb \
 # C and C++: gcc, g++, make, cmake. Without this line gcc stays, because
@@ -60,7 +60,7 @@ RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
 # Debugging and measuring any of the languages above: valgrind, strace,
 # hyperfine (timing a command over several runs).
     valgrind strace hyperfine \
- && ln -s /usr/bin/php83 /usr/local/bin/php
+ && ln -s /usr/bin/php85 /usr/local/bin/php
 # Go: the installed toolchain only, never a download of the one a go.mod names.
 ENV GOTOOLCHAIN=local
 # The system Python's libraries for the examples of the pages: numpy 2.4.6

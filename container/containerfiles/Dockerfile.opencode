@@ -1,12 +1,12 @@
 # OpenCode for --auto runs on an agent worktree. The official image, plus
-# PHP for php -l and page renders, bash, Python, Perl and the GNU tools for
+# PHP 8.5 for php -l and page renders, bash, Python, Perl and the GNU tools for
 # the scripts in container/tools, and a user with your UID, so the files the
 # agent writes stay yours.
 FROM ghcr.io/anomalyco/opencode:2.1.4
 RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
-    php83 php83-ctype php83-dom php83-iconv php83-mbstring php83-session \
-    php83-simplexml php83-tokenizer php83-xml \
- && ln -s /usr/bin/php83 /usr/local/bin/php
+    php85 php85-ctype php85-dom php85-iconv php85-mbstring php85-session \
+    php85-simplexml php85-tokenizer php85-xml \
+ && ln -s /usr/bin/php85 /usr/local/bin/php
 # The system Python's libraries for the examples of the pages: numpy 2.4.6
 # and gunicorn 25.2.0, Alpine packages so nothing is compiled or fetched.
 # They are NOT in /opt/lint, which stays the linters' venv; the examples of

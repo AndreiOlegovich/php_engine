@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.4
+# version 0.3.5
 # Run the container tests (container/tests) with the project venv.
 #
 # Usage (from any folder):
@@ -100,7 +100,8 @@ TESTS (name -> file: what it checks; example)
                      PATH_PREFIX=/section ./run_test.sh sitemap
 
   content_loaded     test_content_loaded.py: every sitemap page renders the
-                     bottom marker <div id="footer-end"></div>.
+                     bottom marker (BOTTOM_MARKER, else SITE_BOTTOM_MARKER of
+                     site-profile.env, else </html>).
                      Env: PATH_PREFIX, EXCLUDE_SUBSTR, FAIL_ON_NON_200, FAIL_ON_MISSING_BOTTOM.
                      ./run_test.sh content_loaded
 

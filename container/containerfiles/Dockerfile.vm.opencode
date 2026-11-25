@@ -7,10 +7,10 @@
 # SpotBugs and the JUnit launcher for Java, dotnet format inside the SDK, rebar3 and erlc for Erlang, mix format
 # for Elixir, and shellcheck and shfmt for the shell snippets. The other
 # languages are in Dockerfile.native.opencode and Dockerfile.script.opencode.
-# OpenCode for --auto runs on an agent worktree. The official image, plus PHP
-# for php -l and page renders, bash, Python, Perl and the GNU tools for the
-# scripts in container/tools, and a user with your UID, so the files the
-# agent writes stay yours.
+# OpenCode for --auto runs on an agent worktree. The official image, plus
+# PHP 8.5 for php -l and page renders, bash, Python, Perl and the GNU tools
+# for the scripts in container/tools, and a user with your UID, so the files
+# the agent writes stay yours.
 #
 # To leave a language out, put # in front of its package line in the RUN
 # below and in front of the lines of its block after that RUN (Java and the
@@ -21,8 +21,8 @@
 # Groovy needs Java, Elixir needs Erlang: leave them out together.
 FROM ghcr.io/anomalyco/opencode:2.1.4
 RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
-    php83 php83-ctype php83-dom php83-iconv php83-mbstring php83-session \
-    php83-simplexml php83-tokenizer php83-xml \
+    php85 php85-ctype php85-dom php85-iconv php85-mbstring php85-session \
+    php85-simplexml php85-tokenizer php85-xml \
 # Java: the JDK 21 and Maven. Groovy needs it.
     openjdk21-jdk maven \
 # .NET: the SDK with C# and F#.
@@ -40,7 +40,7 @@ RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
 # Shell: shellcheck 0.11.0 and shfmt 3.13.1, for the bash snippets of the
 # pages and the scripts in container/tools.
     shellcheck~=0.11 shfmt~=3.13 \
- && ln -s /usr/bin/php83 /usr/local/bin/php
+ && ln -s /usr/bin/php85 /usr/local/bin/php
 # Java.
 ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
 # Java checkers and the test runner: checkstyle 14.4.0, google-java-format

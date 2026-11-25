@@ -1,4 +1,4 @@
-# version 0.0.3
+# version 0.0.4
 """Terminal progress for long runs (the suite lives here).
 
 Default: print `tested N/TOTAL urls` every 100 tests (stdout, flushed,
@@ -26,7 +26,7 @@ def pytest_runtest_logreport(report):
 
 
 def pytest_addoption(parser):
-    """Add --tag: body substring to check (default: bottomid marker)."""
+    """Add --tag: body substring to check (default: SITE_BOTTOM_MARKER of the profile)."""
     parser.addoption(
         "--tag",
         action="store",

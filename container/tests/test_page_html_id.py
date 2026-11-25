@@ -1,4 +1,4 @@
-# version 0.5.2
+# version 0.6.0
 """Engine-marker check: every <loc> in the sitemap must render one of the
 page-shell markers.
 
@@ -38,8 +38,8 @@ Env:
                    exactly the prefix or starts with prefix + "/".
                    Empty (default) -> check all URLs.
   EXCLUDE_SUBSTR   comma-separated substrings; a sitemap URL whose path
-                   contains any of them is skipped (in addition to
-                   IGNORED_DIRS below). Empty (default) -> exclude nothing
+                   contains any of them is skipped for this run, on top of
+                   SITE_NO_MARKER_PATHS below. Empty (default) -> nothing
                    extra.
   FAIL_ON_NON_200  "true" (default) -> non-200 URL cases fail;
                    "false" -> report-only mode, URL cases always pass
@@ -52,12 +52,12 @@ Env:
   RETRY_WAIT       base pause in seconds between those attempts; default
                    5, so the pauses are 5 s and then 15 s.
 
-Ignored dirs (always skipped, announced before each run):
-  src/extra/services/  utility/API pages (cookie/post/put/rest/...) with no
-                    page shell by design, so no engine marker is expected.
-  src/extra/chessboard/  interactive app pages, no page shell.
-  src/extra/api/epochtime/  bare-timestamp API endpoint (machine-consumable
-                    number, no HTML shell by design).
+Pages without a shell by design (an API endpoint, an app, a fragment):
+  SITE_NO_MARKER_PATHS in container/site-profile.env lists parts of their URL
+  paths, e.g. SITE_NO_MARKER_PATHS="/api/ /tools/chessboard/". Every sitemap
+  URL whose path contains one of them is reported as a skipped test, with the
+  part and the key that skipped it (pytest -rs lists them), so nothing is
+  dropped silently. The default is empty: every page is checked.
 """
 
 import csv
@@ -133,11 +133,10 @@ def _normalize_prefix(raw):
 PATH_PREFIX = _normalize_prefix(os.environ.get("PATH_PREFIX", ""))
 
 
-#: URL-path substrings that are always skipped by this test, on top of
-#: EXCLUDE_SUBSTR. src/extra/services/ holds utility/API pages (cookie, post,
-#: put, rest, printer, ...) with no page shell by design, so no engine
-#: marker is ever expected there.
-IGNORED_DIRS = ("/extra/services/", "/extra/chessboard/", "/extra/api/epochtime/")
+#: URL-path parts of the pages that have no shell by design (API endpoints,
+#: apps, fragments), from SITE_NO_MARKER_PATHS of the site profile. Their
+#: URLs are reported as skipped tests, never dropped silently.
+NO_MARKER_PATHS = tuple(site_profile.get_list("SITE_NO_MARKER_PATHS"))
 
 
 def _exclude_substrings(raw):
@@ -146,13 +145,25 @@ def _exclude_substrings(raw):
 
 EXCLUDE_SUBSTR = _exclude_substrings(os.environ.get("EXCLUDE_SUBSTR", ""))
 
-#: Full skip list for this run (announced in checked() before fetching).
-SKIP_SUBSTRINGS = tuple(dict.fromkeys((*IGNORED_DIRS, *EXCLUDE_SUBSTR)))
+#: Full skip list for this run: each part with the setting it came from.
+SKIP_SOURCES = {
+    **dict.fromkeys(EXCLUDE_SUBSTR, "EXCLUDE_SUBSTR"),
+    **dict.fromkeys(NO_MARKER_PATHS, "SITE_NO_MARKER_PATHS"),
+}
+SKIP_SUBSTRINGS = tuple(SKIP_SOURCES)
+
+
+def skip_reason(loc):
+    """Why this URL is not checked, or None when it is."""
+    path = urlparse(loc).path or "/"
+    for part, source in SKIP_SOURCES.items():
+        if part in path:
+            return f"{path}: no shell marker expected, the path contains {part!r} ({source})"
+    return None
 
 
 def _is_excluded(loc):
-    path = urlparse(loc).path or "/"
-    return any(s in path for s in SKIP_SUBSTRINGS)
+    return skip_reason(loc) is not None
 
 
 def sitemap_locs(path):
@@ -255,10 +266,10 @@ def which_marker(text):
 @pytest.fixture(scope="session")
 def checked():
     """Fetch every URL once; per-URL tests below just assert on the dict."""
-    # Explicit per-run notice: this dir is ignored by this test.
-    print(f"\n[engine-marker] IGNORING src/extra/services/ ({len(IGNORED_LOCS)} sitemap URL(s) skipped, SKIP_SUBSTRINGS={list(SKIP_SUBSTRINGS)}); checking {len(LOCS)} URL(s).")
+    # The skipped URLs are skipped test cases too (test_page_skipped).
+    print(f"\n[engine-marker] skipping {len(IGNORED_LOCS)} sitemap URL(s) by {SKIP_SOURCES or 'nothing'}; checking {len(LOCS)} URL(s).")
     for loc in IGNORED_LOCS:
-        print(f"[engine-marker] ignored: {urlparse(loc).path or '/'}")
+        print(f"[engine-marker] skipped: {skip_reason(loc)}")
     session = requests.Session()
     # Production sits behind a TLS proxy; .htaccess forces https unless this
     # header is present. Sending it emulates production over plain local http.
@@ -324,7 +335,17 @@ def test_page_engine_marker(checked, loc):
         if res["status"] != 200:
             pytest.skip(f"non-200 (report-only): {res['status']}")
         if res["marker"] is None and FAIL_ON_MISSING_MARKER:
-            pytest.fail(f"{loc} -> {res['final']}: none of {MARKERS} found ({res['body_len']} chars)")
+            pytest.fail(f"{loc} -> {res['final']}: none of {MARKERS} found ({res['body_len']} chars); a page without the shell by design: add a part of its path to SITE_NO_MARKER_PATHS in site-profile.env")
+
+
+if IGNORED_LOCS:
+
+    @allure.epic("Engine check")
+    @allure.feature("Page renders engine marker")
+    @pytest.mark.parametrize("loc", IGNORED_LOCS, ids=[f"skipped {_case_id(u)}" for u in IGNORED_LOCS])
+    def test_page_skipped(loc):
+        """One skipped case per URL the skip list leaves out, with the reason."""
+        pytest.skip(skip_reason(loc))
 
 
 @allure.epic("Engine check")
@@ -349,7 +370,7 @@ def test_summary(checked):
         "sitemap": SITEMAP_FILE,
         "path_prefix": PATH_PREFIX or "(all)",
         "paths_file": selection_label(),
-        "ignored_dirs": list(IGNORED_DIRS),
+        "no_marker_paths": list(NO_MARKER_PATHS) or "(none)",
         "exclude_substr": EXCLUDE_SUBSTR or "(none)",
         "ignored_urls": len(IGNORED_LOCS),
         "total": len(rows),

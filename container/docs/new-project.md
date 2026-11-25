@@ -71,6 +71,8 @@ container/tools/new-project.sh --configure --name my_site
 | `SITE_LANG_DIRS` | the language folders (empty for a one-language site) |
 | `SITE_ENGINE_DIRS` | the folders holding the framework classes |
 | `SITE_PAGE_CLASSES`, `SITE_PAGE_MARKERS` | what builds a page, and its marker in the HTML |
+| `SITE_NO_MARKER_PATHS` | parts of the URL paths of pages without that marker by design (API endpoints, apps); `test_page_html_id.py` reports each one it skips |
+| `SITE_BOTTOM_MARKER` | what every complete page renders last, `</html>` by default; `test_content_loaded.py` fails a page that stops before it |
 | `SITE_FEED_DIR` | the folder of the article feed |
 | `SITE_PHP_VERSION` | the PHP version of the site |
 

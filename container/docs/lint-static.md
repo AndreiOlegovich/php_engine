@@ -12,11 +12,15 @@ wrong types, dead code — plus style violations.
 
 ## Tools (installed as one-off Docker images, nothing on the host)
 
-| Tool | What it finds | Version installed |
+| Tool | What it finds | Version (2026-11) |
 |---|---|---|
-| `phpstan` (default) | bugs: unknown symbols, bad types, dead code | 2.2.14 |
-| `psalm` | bugs, second opinion (missing types, unused code) | 6.18.0 |
+| `phpstan` (default) | bugs: unknown symbols, bad types, dead code | 2.3.7 |
+| `psalm` | bugs, second opinion (missing types, unused code) | 7.18.0 |
 | `phpcs` | style (`--standard`, default `PSR12`) | 4.0.4 |
+
+The first run downloads the latest release of each tool, so a new machine
+may get a newer one than the table; every run prints the version it uses
+(`runtime:` and the lines after it).
 
 How it runs: tools ship as versioned PHARs, cached in
 `~/.cache/php_engine-tools/` (outside the repo, never deployed), executed under

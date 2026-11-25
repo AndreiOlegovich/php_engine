@@ -1,10 +1,11 @@
-# version 0.1.0
+# version 0.2.0
 """Every place that names the site's PHP version names the same one.
 
-The site image, the PHP linter, the static analysers, the line wrapper and
-the deploy lint each carry the version. When one drifts, a page passes the
-checks on one PHP and runs on another: Dockerfile.php once built PHP 8.0
-under an image tag that said 8.2.
+The site image, the PHP linter, the static analysers, the line wrapper,
+the deploy lint and the OpenCode agent images each carry the version. When
+one drifts, a page passes the checks on one PHP and runs on another:
+Dockerfile.php once built PHP 8.0 under an image tag that said 8.2, and the
+agents ran php -l on Alpine's PHP 8.3.
 
 The reference is the default of PHP_VER in Dockerfile.php.
 
@@ -19,6 +20,8 @@ import pytest
 
 CONTAINER = Path(__file__).resolve().parents[1]
 DOCKERFILE = CONTAINER / "containerfiles" / "Dockerfile.php"
+#: The OpenCode agent images install Alpine's phpXY packages.
+AGENT_DOCKERFILES = sorted((CONTAINER / "containerfiles").glob("Dockerfile*.opencode"))
 _VERSION = r"(\d+\.\d+)"
 
 #: (file under container/, pattern whose group is the PHP version, how many it must find)
@@ -56,3 +59,16 @@ def test_names_the_site_php_version(path: str, pattern: str, count: int) -> None
     assert len(found) == count, f"{path}: expected {count} PHP version setting(s), found {len(found)}"
     expected = site_php_version()
     assert set(found) == {expected}, f"{path} names PHP {sorted(set(found))}; Dockerfile.php builds {expected}"
+
+
+def test_there_are_agent_images() -> None:
+    assert len(AGENT_DOCKERFILES) >= 1, "no containerfiles/Dockerfile*.opencode found"
+
+
+@pytest.mark.parametrize("dockerfile", AGENT_DOCKERFILES, ids=lambda path: path.name)
+def test_agent_image_installs_the_site_php_version(dockerfile: Path) -> None:
+    found = set(re.findall(r"\bphp\d+\b", dockerfile.read_text(encoding="utf-8")))
+    major, minor = site_php_version().split(".")
+    expected = f"php{major}{minor}"
+    assert found, f"{dockerfile.name} installs no Alpine phpXY package"
+    assert found == {expected}, f"{dockerfile.name} installs {sorted(found)}; Dockerfile.php builds PHP {major}.{minor} ({expected})"

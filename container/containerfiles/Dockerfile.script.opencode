@@ -6,10 +6,10 @@
 # for Ruby, shellcheck and shfmt for the shell snippets of the pages, and
 # bandit next to the Python gates. The other languages are in
 # Dockerfile.native.opencode and Dockerfile.vm.opencode.
-# OpenCode for --auto runs on an agent worktree. The official image, plus PHP
-# for php -l and page renders, bash, Python, Perl and the GNU tools for the
-# scripts in container/tools, and a user with your UID, so the files the
-# agent writes stay yours.
+# OpenCode for --auto runs on an agent worktree. The official image, plus
+# PHP 8.5 for php -l and page renders, bash, Python, Perl and the GNU tools
+# for the scripts in container/tools, and a user with your UID, so the files
+# the agent writes stay yours.
 #
 # To leave a language out, put # in front of every package line of it in the
 # RUN below (and of the RUN that installs its tools, if it has one): Docker
@@ -19,8 +19,8 @@
 # PHP, Python and Perl stay: the scripts in container/tools need them.
 FROM ghcr.io/anomalyco/opencode:2.1.4
 RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
-    php83 php83-ctype php83-dom php83-iconv php83-mbstring php83-session \
-    php83-simplexml php83-tokenizer php83-xml \
+    php85 php85-ctype php85-dom php85-iconv php85-mbstring php85-session \
+    php85-simplexml php85-tokenizer php85-xml \
 # JavaScript: Node.js and npm. TypeScript needs it.
     nodejs npm \
 # TypeScript: tsc.
@@ -35,7 +35,7 @@ RUN apk add --no-cache bash python3 perl grep sed findutils coreutils \
 # Shell: shellcheck 0.11.0 and shfmt 3.13.1, for the bash snippets of the
 # pages and the scripts in container/tools.
     shellcheck~=0.11 shfmt~=3.13 \
- && ln -s /usr/bin/php83 /usr/local/bin/php
+ && ln -s /usr/bin/php85 /usr/local/bin/php
 # npm packages that the JavaScript examples of a site import go in
 # /opt/node-packages, and /node_modules links there: Node looks for a bare
 # name in every node_modules folder from the file up to /, for require()

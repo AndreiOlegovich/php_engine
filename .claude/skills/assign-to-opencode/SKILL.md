@@ -39,7 +39,8 @@ it there. For a later "is it merged?" load `site-fix-status`.
    otherwise), `-m <provider/model>` only when the user named a model. Exit 3
    means the model left the catalog: run
    `python3 container/tools/ai/check_opencode_models.py --check` and ask the
-   user before you pick a paid model.
+   user before you pick a paid model (the free-limit switch of step 6 is the
+   one exception).
 4. Review when it ends, on the host: `git -C <wt> status --short`,
    `git -C <wt> diff`, read new files; the `site-verify` checks against the
    worktree (`php -l`, the matching tests with the venv of the main checkout and
@@ -55,8 +56,22 @@ it there. For a later "is it merged?" load `site-fix-status`.
 6. A round that failed before doing the work (an `error:` line, a usage limit,
    `interrupted`): read the report, and if needed
    `python3 container/tools/opencode/agent_sessions.py show <session>`, fix the
-   cause, then send one `fix` that says to continue. A free-model limit: ask the
-   user before you switch to a paid model. A network drop (`ECONNRESET`,
+   cause, then send one `fix` that says to continue. The free model hit its
+   limit (`error: provider.free-limit` with an `opencode/<id>-free` model):
+   switch to OpenCode Go at once, without asking. List the live Go ids in the
+   container (`--standalone`, or `opencode models` fails with "plugins did
+   not finish activating"):
+   `container/tools/ai/opencode-docker.sh --opencode-key ~/.config/opencode-agent/opencode.key <wt> shell -c 'opencode models --standalone | grep "^opencode-go/"'`
+   Take the same model as `opencode-go/<id>` without `-free`
+   (`opencode/deepseek-v4.1-flash-free` becomes
+   `opencode-go/deepseek-v4.1-flash`). Not listed: the most similar Go model,
+   first the same family, then the same size class (a flash or mini model for
+   a flash one), never a larger tier such as `-pro` or `-max`. Then send the
+   continue round with the model and the key:
+   `python3 container/tools/ai/delegate.py fix <slug> -m opencode-go/<id> --opencode-key ~/.config/opencode-agent/opencode.key --message "<continue where you stopped>"`
+   `-m` holds for the later rounds too. Tell the user in one line which model
+   you switched to and why. When the free limit was hit earlier that day,
+   start a long task on the Go model at once. A network drop (`ECONNRESET`,
    `getaddrinfo EAI_AGAIN`): send one `fix --message` that says so, names what
    exists, and says to check it and continue. Only `test -r` a key file, never
    read it.

@@ -30,7 +30,7 @@ placeholders (`http://url/`, `http://foo/bar`, `http://hostname/`,
 Selection flags combine as a union (same convention as `lint-php.sh` /
 `lint-js.sh` / `deploy-ftp.sh`): `--files`, positional paths, `--staged`,
 `--committed`, `--all` (default when nothing else is given). Names with
-spaces work (`--files "ao/chessboard copy/MinimalChess.js"`).
+spaces work (`--files "example/old copy/menu.js"`).
 
 Exit code: `0` = clean, `1` = hits found, `2` = usage/setup error — so it
 plugs straight into gates and hooks.

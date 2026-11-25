@@ -160,10 +160,15 @@ Then look for four things:
   Logs (`*.log`), `*.bak`, `*.orig` and `name copy.php` files are already
   ignored.
 - **Images.** `.gitignore` leaves images out of git (`*.jpg`, `*.png`,
-  `*.gif`, `*.svg`, `*.webp`, `*.ico` and more), for sites too big to keep
-  them in a repository. The local site still shows them, because the files
-  are in `container/src`. To keep the images in git, delete those lines from
-  `.gitignore` before the first commit.
+  `*.gif`, `*.svg`, `*.webp`, `*.ico` and more, in any letter case), for
+  sites too big to keep them in a repository. The local site still shows
+  them, because the files are in `container/src`. What git tracks instead is
+  `container/docs/image-files.txt`: one line per image with its sha1, size
+  and path, rewritten by the `image-list` hook on every commit. So git shows
+  which images the site has and when one changed, and a backup or the
+  hosting copy can be checked against the list. To keep the images
+  themselves in git, delete those lines from `.gitignore` before the first
+  commit.
 
 `git status --short --ignored container/src` shows what git will leave out.
 
@@ -296,7 +301,10 @@ git commit -m "Start My Shop"
 
 The hooks run again and the first commit takes 10 to 15 minutes. When a hook
 fails, its name in the output is a row of `container/docs/site-checks.md`:
-fix the file, `git add` it again and repeat the commit.
+fix the file, `git add` it again and repeat the commit. The first commit of a
+site with images always stops once: `image list` writes the site's images
+into `container/docs/image-files.txt`. Run the same `git add` line and commit
+again.
 
 To publish the repository, create an empty one on GitHub (no README, no
 licence), then:
@@ -345,7 +353,7 @@ says PASS or FAIL per test. The tests `page_html_id` and `page_stylesheets`
 expect the engine's page classes (`SITE_PAGE_CLASSES`, `SITE_PAGE_MARKERS`
 and `SITE_TREE_SHEETS` in the profile): a site without them fails or skips
 them. Pages that have no shell by design (an API endpoint, an app) go into
-`SITE_NO_MARKER_PATHS` as parts of their paths, e.g. `"/api/ /tools/chess/"`;
+`SITE_NO_MARKER_PATHS` as parts of their paths, e.g. `"/api/ /widgets/"`;
 `page_html_id` lists every URL it skips that way as a skipped test.
 `redirects` needs `container/tests/redirect_cases.py`, copied from
 `redirect_cases.example.py`. The browser report of the link checker (Allure)

@@ -121,13 +121,6 @@ Fortran, from the venv /opt/fortran-tools, with both commands on PATH:
 Python: `bandit 1.9.4`, a security lint, next to the gates above:
 `bandit -r container/tools`.
 
-`container/tools/ai/docker/smoke_tools.sh` prints the version of every tool
-of an image and fails on a missing one:
-
-```bash
-docker run --rm -i --entrypoint sh IMAGE -s native < smoke_tools.sh
-```
-
 Deliberately missing: no rustup and no nightly Rust, so no sanitizers and no
 unstable features, and no `cargo-audit` or `cargo-deny`: they download the
 RustSec advisory database on first run, and a page check runs with
@@ -163,12 +156,6 @@ would otherwise be visible to every `require()` of a lesson. Only its `bin`
 is linked into /usr/local/bin. The `ruby-racc` package is in the image for
 one reason: without it `gem install rubocop` builds racc from source and
 needs ruby-dev and a compiler.
-
-The same smoke test covers this image:
-
-```bash
-docker run --rm -i --entrypoint sh IMAGE -s script < smoke_tools.sh
-```
 
 Deliberately missing: no test runner or bundler (jest, mocha, webpack, vite):
 they are not linters, and a lesson that names one runs its own `npm install`.
@@ -212,11 +199,7 @@ project.
 The Thrift compiler only generates code: `thrift --gen java file.thrift`.
 
 `shellcheck 0.11.0`, `shfmt 3.13.1` and `bandit 1.9.4` are here as in the
-other images. The same smoke test covers this image:
-
-```bash
-docker run --rm -i --entrypoint sh IMAGE -s vm < smoke_tools.sh
-```
+other images.
 
 Deliberately missing: no PMD and no spotbugs (a large bundle of jars and
 dependencies each, next to the checkstyle that is in the image), no CodeNarc
@@ -241,12 +224,6 @@ The ruby image (`Dockerfile.ruby.opencode`) has Ruby (`ruby`, `irb`, `gem`,
   script.sh` rewrites the file. Its `--version` prints `(devel)`.
 - `bandit 1.9.4` with the Python gates, as in the other images.
 
-The same smoke test covers this image:
-
-```bash
-docker run --rm -i --entrypoint sh IMAGE -s ruby < smoke_tools.sh
-```
-
 Deliberately missing: no `ruby-lsp`; rubocop has `--lsp` for editors, and
 the language server gem is a large dependency that no page runs.
 
@@ -270,12 +247,6 @@ type checks and the examples of the Erlang pages, with:
 
 The compiler checks a file on its own: `erlc +warn_unused_vars
 +warnings_as_errors file.erl`, and `escript script` runs an escript.
-
-The same smoke test covers this image:
-
-```bash
-docker run --rm -i --entrypoint sh IMAGE -s erlang < smoke_tools.sh
-```
 
 Deliberately missing: no `erlfmt` (it is a rebar3 plugin, which is a download
 at run time), and no newer elvis: 5.x and 6.x publish only tags, with no

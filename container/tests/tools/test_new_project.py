@@ -1,4 +1,4 @@
-# version 0.1.0
+# version 0.2.0
 """Tests for tools/new-project.sh and the project name it hands to the tools.
 
 Offline: a small engine checkout in tmp_path, a docker stub and an empty HOME.
@@ -24,6 +24,7 @@ import project_name as pn  # noqa: E402  pylint: disable=wrong-import-position,i
 SETTINGS = '{"permissions": {"deny": ["Read(~/.config/php_engine/**)", "Read(~/.local/share/php_engine/logs/**)"]}}\n'
 JSONC = '{ "resource": "*/php_engine-agent-*", "other": "*php_engine/logs*", "creds": "~/.config/php_engine/*" }\n'
 REVIEWER = 'resource: "*.config/php_engine*"\nresource: "*php_engine/logs*"\n'
+PROFILE_EXAMPLE = 'SITE_LOCAL_URL="http://127.0.0.1:8080"\nSITE_BOTTOM_MARKER="</html>"\nSITE_TAG_MARKERS=""\nSITE_PHP_VERSION="8.5"\n'
 
 
 def git(path: Path, *args: str) -> None:
@@ -46,7 +47,7 @@ def fixture_engine(tmp_path: Path) -> Path:
         shutil.copy(TOOLS / name, tools / name)
     put(tools / "run-tests-venv.sh", "#!/bin/sh\nexit 0\n")
     (tools / "run-tests-venv.sh").chmod(0o755)
-    put(root / "container" / "site-profile.env.example", 'SITE_LOCAL_URL="http://127.0.0.1:8080"\n')
+    put(root / "container" / "site-profile.env.example", PROFILE_EXAMPLE)
     put(root / "container" / "src" / "index.php", "<?php\n")
     put(root / "container" / "src" / ".php" / "keep.php", "<?php\n")
     put(root / ".claude" / "settings.json", SETTINGS)
@@ -168,7 +169,7 @@ def test_the_name_is_asked_in_a_terminal(engine: Path, env: dict[str, str], tmp_
     script = engine / "container" / "tools" / "new-project.sh"
     with subprocess.Popen(["bash", str(script), str(target)], stdin=slave, stdout=slave, stderr=slave, env=env, close_fds=True) as proc:
         os.close(slave)
-        os.write(master, b"Asked Site\n")
+        os.write(master, b'Asked Site\nid="footer-end"\nmenu=<nav class="menu"\n')
         output = b""
         while True:
             try:
@@ -181,7 +182,41 @@ def test_the_name_is_asked_in_a_terminal(engine: Path, env: dict[str, str], tmp_
         assert proc.wait(timeout=30) == 0, output.decode(errors="replace")
     os.close(master)
     assert b"Project name [asked]:" in output
+    assert b"not CSS" in output
     assert env_file(target)["SITE_PROJECT"] == "asked-site"
+    profile = (target / "container" / "site-profile.env").read_text(encoding="utf-8")
+    assert "SITE_BOTTOM_MARKER='id=\"footer-end\"'" in profile
+    assert "SITE_TAG_MARKERS='menu=<nav class=\"menu\"'" in profile
+
+
+def test_markers_from_the_options_replace_the_defaults(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = tmp_path / "projects" / "shop"
+    markers = 'menu=<nav class="menu"|<nav id="top">; footer=id="footer-end"'
+    result = run(engine, env, target, "--name", "shop", "--bottom-marker", '<div id="end">', "--tag-markers", markers)
+    assert result.returncode == 0, result.stderr
+    lines = (target / "container" / "site-profile.env").read_text(encoding="utf-8").splitlines()
+    assert lines[:4] == [
+        lines[0],
+        "SITE_BOTTOM_MARKER='<div id=\"end\">'",
+        f"SITE_TAG_MARKERS='{markers}'",
+        'SITE_PHP_VERSION="8.5"',
+    ]
+    assert sum(line.startswith("SITE_BOTTOM_MARKER=") for line in lines) == 1
+
+
+def test_without_markers_the_defaults_stay(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = tmp_path / "projects" / "shop"
+    assert run(engine, env, target, "--name", "shop").returncode == 0
+    profile = (target / "container" / "site-profile.env").read_text(encoding="utf-8")
+    assert 'SITE_BOTTOM_MARKER="</html>"\nSITE_TAG_MARKERS=""\n' in profile
+
+
+def test_a_marker_with_a_single_quote_is_refused(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = tmp_path / "projects" / "shop"
+    result = run(engine, env, target, "--name", "shop", "--bottom-marker", "<div class='end'>")
+    assert result.returncode == 2
+    assert "single quote" in result.stderr
+    assert not target.exists()
 
 
 def test_configure_names_an_existing_checkout_and_keeps_its_ports(engine: Path, env: dict[str, str]) -> None:

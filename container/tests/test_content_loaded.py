@@ -1,4 +1,4 @@
-# version 0.3.0
+# version 0.4.0
 """Content-loaded check: every <loc> in the sitemap must render the marker.
 
 The marker is the bottom marker of the site: BOTTOM_MARKER, else
@@ -7,11 +7,16 @@ stops before it, usually because of a PHP fatal or parse error, fails even
 when the server answered 200. Use something the footer of every page renders
 last, e.g. SITE_BOTTOM_MARKER='id="footer-end"' for `<div id="footer-end">`.
 
-Pass --tag to check something else instead: --tag address looks for the
-top menu, either the engine bar `<nav class="crumbbar"` (Breadcrumbs.php)
-or the hand-written `<nav class="address">` of the _*_top_path_inc.php
-includes; --tag crumbbar looks for the engine bar only; any other value is
-used literally as the searched body substring. The single assertion per
+Pass --tag to check something else instead. A name of SITE_TAG_MARKERS in
+the profile stands for the HTML that site renders there; the user names
+them, the engine knows none (new-project.sh asks for them). The format is
+name=HTML, "|" between alternatives and ";" between names, in single quotes
+because HTML holds double quotes:
+
+    SITE_TAG_MARKERS='menu=<nav class="menu"|<nav id="top">; footer=id="footer-end"'
+
+--tag menu then passes a page whose body holds either substring. A --tag
+value that is no name there is searched literally. The single assertion per
 URL is marker presence — no other fallbacks.
 
 One pytest case per sitemap URL, so the Allure dashboard goes green/red
@@ -66,12 +71,20 @@ FAIL_ON_NON_200 = os.environ.get("FAIL_ON_NON_200", "true").lower() == "true"
 FAIL_ON_MISSING_MARKER = os.environ.get("FAIL_ON_MISSING_BOTTOM", "true").lower() == "true"
 TIMEOUT = (5, 15)  # (connect, read) seconds
 
-#: --tag shorthands (anything else is used as a literal body substring).
-TAG_MARKERS = {
-    "footer-end": ('id="footer-end"',),
-    "address": ('<nav class="crumbbar"', '<nav class="address">'),
-    "crumbbar": ('<nav class="crumbbar"',),
-}
+
+def tag_markers(raw):
+    """SITE_TAG_MARKERS as {name: (substring, ...)}; a broken entry is left out."""
+    markers = {}
+    for entry in (raw or "").split(";"):
+        name, sep, value = entry.partition("=")
+        alternatives = tuple(part.strip() for part in value.split("|") if part.strip())
+        if sep and name.strip() and alternatives:
+            markers[name.strip()] = alternatives
+    return markers
+
+
+#: --tag names of this site (anything else is used as a literal body substring).
+TAG_MARKERS = tag_markers(site_profile.get("SITE_TAG_MARKERS"))
 
 
 def resolve_marker(tag):

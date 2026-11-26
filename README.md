@@ -55,11 +55,14 @@ files it was made with.
 ~/github/php_engine/container/tools/new-project.sh
 ```
 
-It asks two questions:
+It asks four questions:
 
 ```text
 Project name: My Shop
 Folder [/home/you/github/my-shop]:
+The content test looks for markers: pieces of the page HTML source, not CSS.
+What every complete page renders last, e.g. id="footer-end" [</html>]:
+Named markers for --tag, e.g. menu=<nav class="menu" [none]:
 ```
 
 - **Project name**: any name with a Latin letter or a digit, without quotes,
@@ -68,8 +71,18 @@ Folder [/home/you/github/my-shop]:
   A name that another project already uses is refused.
 - **Folder**: Enter takes the offered folder, next to php_engine. It must
   not exist yet.
+- **Markers**: pieces of the HTML your pages render (open a page and view
+  its source), not CSS rules. The first is what every complete page
+  renders last, so the content test can tell a page that stopped halfway;
+  Enter keeps `</html>`. The second gives names to the parts the content
+  test can look for with `--tag`, such as the top menu:
+  `menu=<nav class="menu"`, with `|` between alternatives and `;` between
+  names; Enter leaves none. Neither may hold a single quote. They go into
+  `container/site-profile.env` as `SITE_BOTTOM_MARKER` and
+  `SITE_TAG_MARKERS`, where you can change them later.
 
-Without the questions:
+Without the questions (the markers keep their defaults unless you add
+`--bottom-marker` and `--tag-markers`):
 
 ```bash
 ~/github/php_engine/container/tools/new-project.sh ~/github/my-shop --name "My Shop"
@@ -346,7 +359,12 @@ by default. When the site's common footer renders a last element of its own,
 name it there, e.g. `SITE_BOTTOM_MARKER='id="footer-end"'` for
 `<div id="footer-end"></div>`: then a page that ends in another template,
 such as an error page with its own `</html>`, fails too. `BOTTOM_MARKER=...`
-in front of the command overrides it for one run.
+in front of the command overrides it for one run. To check another part of
+every page, name it in `SITE_TAG_MARKERS`, e.g.
+`SITE_TAG_MARKERS='menu=<nav class="menu"'`, and run
+`container/tests/run_test.sh -y content_loaded -- --tag menu`; the engine
+knows no names of its own, and a `--tag` value that is no name there is
+searched as it is.
 
 Each run saves its output in `container/tests/run_test_log/`; `summary.txt`
 says PASS or FAIL per test. The tests `page_html_id` and `page_stylesheets`

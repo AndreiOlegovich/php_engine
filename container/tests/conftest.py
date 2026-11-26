@@ -1,4 +1,4 @@
-# version 0.0.4
+# version 0.0.5
 """Terminal progress for long runs (the suite lives here).
 
 Default: print `tested N/TOTAL urls` every 100 tests (stdout, flushed,
@@ -26,12 +26,12 @@ def pytest_runtest_logreport(report):
 
 
 def pytest_addoption(parser):
-    """Add --tag: body substring to check (default: SITE_BOTTOM_MARKER of the profile)."""
+    """Add --tag: a SITE_TAG_MARKERS name, or a body substring (default: SITE_BOTTOM_MARKER)."""
     parser.addoption(
         "--tag",
         action="store",
         default=None,
-        help="literal substring to find in the page body",
+        help="a SITE_TAG_MARKERS name of the site profile, else a literal substring to find in the page body",
     )
     parser.addoption(
         "--base-url",

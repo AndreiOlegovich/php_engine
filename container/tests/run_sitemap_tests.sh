@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.4
+# version 0.3.5
 # Unified runner for the pytest_web sitemap link checker.
 #
 # Usage:
@@ -73,10 +73,9 @@
 #   --verbose          print each URL (pytest -v). Default prints only
 #                      `tested N/TOTAL urls` every 100 urls.
 #   --tag TAG          check a different body marker instead of the bottom one:
-#                      `address` = top menu (<nav class="crumbbar"> of the
-#                      engines or <nav class="address"> of the includes),
-#                      `crumbbar` = engine top menu only, anything else is
-#                      matched literally. Content test only.
+#                      a name of SITE_TAG_MARKERS in site-profile.env (the
+#                      HTML this site renders there, e.g. its top menu),
+#                      anything else is matched literally. Content test only.
 #   --dry-run          print the resolved command without executing it.
 #
 # Examples:

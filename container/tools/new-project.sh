@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# version 0.2.0
+# version 0.3.0
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
 #   container/tools/new-project.sh [TARGET] [--name NAME]
+#                 [--bottom-marker HTML] [--tag-markers SPEC]
 #   container/tools/new-project.sh --configure [TARGET] [--name NAME]
 #   container/tools/new-project.sh --check [TARGET]
 #   container/tools/new-project.sh --help
@@ -12,6 +13,16 @@
 #                 asks, and offers a folder next to this checkout
 #   --name NAME   project name. Without it the script asks in a terminal and
 #                 otherwise takes the last part of TARGET
+#   --bottom-marker HTML
+#                 what every complete page of the site renders last, a piece
+#                 of its HTML source such as id="footer-end" (not CSS); the
+#                 content test fails a page that stops before it. Without it
+#                 the script asks in a terminal; the default is </html>
+#   --tag-markers SPEC
+#                 named pieces of the page HTML for --tag of the content
+#                 test: name=HTML, "|" between alternatives, ";" between
+#                 names, e.g. 'menu=<nav class="menu"'. Asked in a terminal;
+#                 none by default
 #   --configure   give an existing checkout (TARGET, default: this one) its
 #                 project name and free ports; nothing else changes
 #   --check       run the whole gate over TARGET (default: the current
@@ -31,8 +42,9 @@
 # What it empties: container/src, down to an index.php that prints the site
 # name. The engine's own folder container/src/.php stays.
 # What it writes: container/.env, container/site-profile.env from the example
-# with SITE_NAME, the project name in the agent permission files, and
-# git init -b main. Nothing is staged: add the files you mean to commit.
+# with SITE_NAME and the markers, the project name in the agent permission
+# files, and git init -b main. Nothing is staged: add the files you mean to
+# commit.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,6 +62,8 @@ usage() {
 }
 
 NAME=""
+BOTTOM_MARKER=""
+TAG_MARKERS=""
 CHECK=0
 CONFIGURE=0
 TARGET=""
@@ -57,6 +71,10 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --name) [ $# -ge 2 ] || { echo "ERROR: --name needs a value." >&2; exit 2; }; NAME="$2"; shift 2 ;;
     --name=*) NAME="${1#--name=}"; shift ;;
+    --bottom-marker) [ $# -ge 2 ] || { echo "ERROR: --bottom-marker needs a value." >&2; exit 2; }; BOTTOM_MARKER="$2"; shift 2 ;;
+    --bottom-marker=*) BOTTOM_MARKER="${1#--bottom-marker=}"; shift ;;
+    --tag-markers) [ $# -ge 2 ] || { echo "ERROR: --tag-markers needs a value." >&2; exit 2; }; TAG_MARKERS="$2"; shift 2 ;;
+    --tag-markers=*) TAG_MARKERS="${1#--tag-markers=}"; shift ;;
     --check) CHECK=1; shift ;;
     --configure) CONFIGURE=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -234,6 +252,41 @@ write_identity() {
   printf '  credentials:  ~/.config/%s/hosting-access.env\n' "$slug"
 }
 
+# Sets KEY='VALUE' in the profile, in place of the example's line. Single
+# quotes, because a marker is HTML and holds double quotes.
+set_profile_value() {
+  local profile="$1" key="$2" value="$3"
+  PROFILE_KEY="$key" PROFILE_LINE="$key='$value'" awk '
+    index($0, ENVIRON["PROFILE_KEY"] "=") == 1 { if (!done) print ENVIRON["PROFILE_LINE"]; done = 1; next }
+    { print }
+    END { if (!done) print ENVIRON["PROFILE_LINE"] }
+  ' "$profile" > "$profile.tmp"
+  chmod --reference="$profile" "$profile.tmp"
+  mv "$profile.tmp" "$profile"
+}
+
+# The markers the content test looks for are the site's own HTML: the
+# options, else the answers in a terminal, else the example's defaults.
+ask_markers() {
+  if [ -t 0 ] && { [ -z "$BOTTOM_MARKER" ] || [ -z "$TAG_MARKERS" ]; }; then
+    echo "The content test looks for markers: pieces of the page HTML source, not CSS."
+  fi
+  if [ -z "$BOTTOM_MARKER" ] && [ -t 0 ]; then
+    read -r -p 'What every complete page renders last, e.g. id="footer-end" [</html>]: ' BOTTOM_MARKER || true
+  fi
+  if [ -z "$TAG_MARKERS" ] && [ -t 0 ]; then
+    read -r -p 'Named markers for --tag, e.g. menu=<nav class="menu" [none]: ' TAG_MARKERS || true
+  fi
+  case "$BOTTOM_MARKER$TAG_MARKERS" in
+    *"'"*) echo "ERROR: a marker may not hold a single quote." >&2; exit 2 ;;
+  esac
+}
+
+write_markers() {
+  [ -z "$BOTTOM_MARKER" ] || set_profile_value "$1" SITE_BOTTOM_MARKER "$BOTTOM_MARKER"
+  [ -z "$TAG_MARKERS" ] || set_profile_value "$1" SITE_TAG_MARKERS "$TAG_MARKERS"
+}
+
 # The agents' deny rules name the credentials and log folders: they must follow
 # the project, or a new site's secrets would sit outside them.
 rename_protected() {
@@ -267,6 +320,7 @@ bootstrap() {
     || { echo "ERROR: $SOURCE is not a git checkout; the tracked file list is needed." >&2; exit 2; }
   refuse_used_name "$slug" "$TARGET"
   engine_project="$(current_project "$SOURCE")"
+  ask_markers
 
   echo "Copying the tracked files of $SOURCE to $TARGET ..."
   mkdir -p "$TARGET"
@@ -292,6 +346,7 @@ bootstrap() {
   echo "Writing container/site-profile.env and container/.env ..."
   cp "$TARGET/container/site-profile.env.example" "$TARGET/container/site-profile.env"
   printf 'SITE_NAME="%s"\n' "$NAME" >> "$TARGET/container/site-profile.env"
+  write_markers "$TARGET/container/site-profile.env"
   write_identity "$TARGET" "$slug"
   rename_protected "$TARGET" "$engine_project" "$slug"
 
@@ -312,7 +367,7 @@ bootstrap() {
   cat <<NEXT
 
 Next, in $TARGET:
-  1. edit container/site-profile.env (hosts, language folders, page classes);
+  1. edit container/site-profile.env (hosts, language folders, page classes, markers);
   2. put the pages of the site into container/src;
   3. container/tools/new-project.sh --check
   4. git add -- <paths> && git commit -m "<subject>"

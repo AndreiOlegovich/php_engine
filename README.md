@@ -168,7 +168,10 @@ Then look for four things:
   which images the site has and when one changed, and a backup or the
   hosting copy can be checked against the list. To keep the images
   themselves in git, delete those lines from `.gitignore` before the first
-  commit.
+  commit. An image made in a worktree (by an agent, for example) is ignored
+  there too, so merging the branch brings its pages but not the image:
+  `python3 container/tools/ai/copy_worktree_images.py <worktree>` copies the
+  new images into the main checkout (`--dry-run` lists them first).
 
 `git status --short --ignored container/src` shows what git will leave out.
 

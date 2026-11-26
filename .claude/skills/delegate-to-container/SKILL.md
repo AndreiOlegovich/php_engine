@@ -67,6 +67,11 @@ it there. For a later "is it merged?" load `site-fix-status`.
    - Python written by the worker: run `pre-commit run --files <paths>` on the
      worktree before you hand over commit commands, then remove `.mypy_cache`
      and `.ruff_cache` from it.
+   - Images: they are git-ignored, so `git status` and the diff never show
+     the banners or pictures a worker made. List them with
+     `python3 container/tools/ai/copy_worktree_images.py <wt> --dry-run`
+     and check that each image the pages reference exists (step 7 copies
+     them).
    - It does what the user asked, and nothing else.
 5. Problems: write a fix file under `/tmp/opencode/`, one bullet per issue with
    `file:line`, what is wrong and what to do, and send it into the same
@@ -114,9 +119,22 @@ it there. For a later "is it merged?" load `site-fix-status`.
    If the merge refuses because `main` moved, print `git -C <wt> rebase main`
    before the merge line (it needs the work committed first). Do not
    regenerate the sitemap in the worktree: every page would get a new date.
+   Images the dry run of step 4 listed: the merge carries the pages that use
+   them but not the images, and the deploy uploads the images of the main
+   checkout, so the site would answer 404. Print after the merge line:
+   ```
+   python3 container/tools/ai/copy_worktree_images.py <wt> --dry-run
+   python3 container/tools/ai/copy_worktree_images.py <wt>
+   ```
+   Exit 1 means an image of another size already exists in the main
+   checkout: ask the user, then `--overwrite` if the worker's one is wanted.
+   The next commit in the main checkout gets `container/docs/image-files.txt`
+   rewritten by the image-list hook; that file goes into the commit.
    Clean up (`git worktree remove <wt>`, `git branch -d agent/<slug>`) only
-   after the last line prints "on main". Never commit, merge or remove the
-   worktree yourself: the user runs the commands.
+   after the last line prints "on main" and the image copy, if any, ended
+   with 0 differ: removing the worktree deletes the images not copied yet.
+   Never commit, merge or remove the worktree yourself: the user runs the
+   commands.
 
 `delegate.py status` lists every task; `status <slug>` prints the last report
 again. State and logs: `container/reports/delegate/<slug>/`.

@@ -21,7 +21,9 @@ nothing else, so these replace some rules of AGENTS.md here:
   The sitemap is rebuilt on the host after the merge.
 - Image files are not in the container: `container/docs/image-files.txt`
   lists the ones on the host (path, size, sha1), and `test_img_src.py`
-  reads it.
+  reads it. An image you make (a banner, a diagram) is git-ignored, so the
+  merge does not carry it: name each one in your answer, and the host copies
+  them into the main checkout after the merge.
 - Scratch files go to /tmp.
 
 ## Lesson pages with code or questions

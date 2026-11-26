@@ -82,7 +82,7 @@ validate_config(cfg)
 
 ## 3. Requirements
 
-- Python `>= 3.12` (uses `X | None` syntax, `tomllib`-era stdlib only —
+- Python `>= 3.14` (uses `X | None` syntax, `tomllib`-era stdlib only —
   no third-party deps).
 - `docker` on `PATH` (tools run in containers; nothing installs on host).
 - Git checkout (only needed for `--staged` / `--committed`).

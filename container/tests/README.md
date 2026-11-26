@@ -12,7 +12,7 @@ through the uv-managed venv:
 `run-tests-venv.sh` creates `container/.venv` with `uv`, installs the versions
 in `uv.lock` (the test deps and the dev tools ruff, mypy and pylint) and
 recreates the venv when it was built for another Python minor. Only `uv` and
-Python 3.12 are needed on the host.
+Python 3.14 are needed on the host.
 
 ## Static checks (no server needed)
 
@@ -20,7 +20,7 @@ Python 3.12 are needed on the host.
 |---|---|
 | `test_html_code_corruption.py` | no reflow damage under `src/`: broken HTML attributes, dot-broken code lines, `&gt;` inside tags |
 | `test_content_loaded_markers.py` | the `--tag` names of the content test come from `SITE_TAG_MARKERS` only; a broken entry is left out |
-| `test_python_version_consistency.py` | pyproject, lockfile, Docker image, pre-commit and venvs all agree on Python 3.12 |
+| `test_python_version_consistency.py` | pyproject, lockfile, Docker image, pre-commit and venvs all agree on Python 3.14 |
 | `linters/test_check_version_sh.py` | the version-marker gate fails an unbumped staged script or page and passes a bumped one |
 | `linters/test_lint_php_sh.py` | `php -l` reports every broken fixture and skips non-PHP input (needs Docker) |
 | `linters/test_lint_static_sh.py` | the phpcs gate reports every broken fixture and stays wired in pre-commit (needs Docker) |

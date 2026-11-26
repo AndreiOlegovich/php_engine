@@ -116,7 +116,7 @@ def load_aliases() -> dict[str, list[str]]:
     try:
         with open(ALIASES_FILE, encoding="utf-8") as handle:
             raw = json.load(handle)
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return {}
     aliases: dict[str, list[str]] = {}
     for name, others in raw.items():

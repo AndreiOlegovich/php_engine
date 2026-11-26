@@ -150,8 +150,9 @@ Config lives in `pyproject.toml` (ruff select `E,F,W,I,N,UP,B,C4,SIM`,
 line-length 100; lenient mypy baseline; pylint with pytest-fixture
 `redefined-outer-name` disabled).
 
-Pre-commit (installed via `uv tool install pre-commit`; the config sits at
-the repository root, the parent of `container/`, so run it from there):
+Pre-commit (installed via `uv tool install --python 3.14 pre-commit`; the
+config sits at the repository root, the parent of `container/`, so run it
+from there):
 
 ```bash
 cd ..
@@ -257,5 +258,5 @@ Everything runs from `container/`. Scripts are host-side unless noted.
 | Translation | `tools/translate/ru_en_translate.py extract PATH --workdir DIR` | optional Argos/Ollama |
 | Logs | `tools/analyze_logs/analyze_errors.py --log-dir DIR`, `check_bots.py`, `list_404.py`, `find_broken_hrefs.py` | python |
 | Deploy | `tools/deploy/deploy-engine.sh --dry-run`, `tools/deploy/deploy-batches.sh` | creds file |
-| Tests | `tools/run-tests-venv.sh -- tests -q` | uv, Python 3.12 |
+| Tests | `tools/run-tests-venv.sh -- tests -q` | uv, Python 3.14 |
 | Agent tooling | `tools/ai/opencode.sh`, `tools/ai/opencode-docker.sh` | opencode, Docker |

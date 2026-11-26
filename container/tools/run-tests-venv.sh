@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.4
+# version 0.1.5
 # Set up .venv with uv and run the pytest suite with the venv python.
 #
 # No system-python pollution: everything lives in <root>/.venv.
@@ -15,7 +15,7 @@
 #   -- ARGS...     forwarded to pytest (e.g. -- tests/ -q -k remarque).
 #
 # Host defaults (override via env): BASE_URL=http://127.0.0.1:<SITE_HTTP_PORT>
-# (the local PHP server of this project), PYTHON_VERSION=3.12.
+# (the local PHP server of this project), PYTHON_VERSION=3.14.
 #
 # Exit: pytest's exit code (0 = pass).
 set -euo pipefail
@@ -25,7 +25,7 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT"
 
 VENV="$ROOT/.venv"
-PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.14}"
 
 SETUP_ONLY=0
 if [ "${1:-}" = "--setup-only" ]; then SETUP_ONLY=1; shift; fi

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.5
+# version 0.3.6
 # Run the container tests (container/tests) with the project venv.
 #
 # Usage (from any folder):
@@ -18,14 +18,14 @@
 # command that activates it in your shell.
 #
 # Environment: BASE_URL (default: this project's local site), SITEMAP_FILE (default
-# src/sitemap.xml), PYTHON_VERSION (default 3.12).
+# src/sitemap.xml), PYTHON_VERSION (default 3.14).
 # Exit: pytest's exit code, or 1/2 when the script stops before pytest.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 VENV="$ROOT/.venv"
-PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
+PYTHON_VERSION="${PYTHON_VERSION:-3.14}"
 
 show_help() {
   cat <<'HELP'
@@ -62,7 +62,7 @@ OPTIONS
   -h, --help    this text
 
 VENV
-  The venv is container/.venv (Python 3.12). If it is missing or the wrong
+  The venv is container/.venv (Python 3.14). If it is missing or the wrong
   version, the script asks to create it. If it is not active in your shell,
   the script prints "source /.../container/.venv/bin/activate" and asks whether
   it can use the venv for this run. It cannot change your shell: the activate
@@ -74,7 +74,7 @@ ENVIRONMENT (defaults are the same as the old tools/run-tests-venv.sh)
                  https://example.com only for read-only checks)
   SITEMAP_FILE   sitemap for the sitemap tests  default src/sitemap.xml
                  (relative to container/)
-  PYTHON_VERSION  default 3.12
+  PYTHON_VERSION  default 3.14
   Test-specific variables are listed under each test below (see the file's
   docstring for the full list).
 
@@ -169,7 +169,7 @@ TESTS (name -> file: what it checks; example)
                      commit, the walk over main, the feed-only commit (git).
                      ./run_test.sh post_to_feed
 
-  python_version_consistency  test_python_version_consistency.py: Python 3.12
+  python_version_consistency  test_python_version_consistency.py: Python 3.14
                      toolchain guards (pyvenv.cfg, venv recreation) (static).
                      ./run_test.sh python_version_consistency
 

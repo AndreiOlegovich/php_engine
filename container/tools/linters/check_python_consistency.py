@@ -1,5 +1,5 @@
-# version 0.1.0
-"""Check that the repository's Python toolchain is consistently on 3.12.
+# version 0.2.0
+"""Check that the repository's Python toolchain is consistently on 3.14.
 
 Run from the repository root:
 
@@ -31,10 +31,10 @@ import tomllib
 from collections.abc import Sequence
 from pathlib import Path
 
-TARGET = (3, 12)
-TARGET_TEXT = "3.12"
-RUFF_TARGET = "py312"
-DOCKER_IMAGE = "python:3.12-slim"
+TARGET = (3, 14)
+TARGET_TEXT = "3.14"
+RUFF_TARGET = "py314"
+DOCKER_IMAGE = "python:3.14-slim"
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -76,9 +76,18 @@ def _label(path: Path, root: Path = REPO_ROOT) -> str:
         return str(path)
 
 
+def _minor(version: str) -> str:
+    """``3.14.7`` and ``3.14`` both give ``3.14``."""
+    return ".".join(version.split(".")[:2])
+
+
 def _normalize_version(value: str) -> str:
-    """Reduce ``3.12.3`` / ``3.12.3.final.0`` to major.minor.micro."""
-    match = re.match(r"^(\d+\.\d+\.\d+)", value)
+    """Reduce ``3.14.3`` / ``3.14.3.final.0`` to major.minor.micro.
+
+    A venv on a uv-managed Python records only ``3.14``: uv points it at the
+    minor-version link, so a patch upgrade of that Python keeps the venv.
+    """
+    match = re.match(r"^(\d+\.\d+(?:\.\d+)?)", value)
     return match.group(1) if match else value
 
 
@@ -130,7 +139,7 @@ def check_pyproject(path: Path) -> list[str]:
 
 
 def check_lockfile(path: Path) -> list[str]:
-    """Check the lockfile's Python floor and reject pre-3.12 resolution forks."""
+    """Check the lockfile's Python floor and reject pre-3.14 resolution forks."""
     label = _label(path)
     try:
         text = path.read_text(encoding="utf-8")
@@ -145,9 +154,9 @@ def check_lockfile(path: Path) -> list[str]:
     elif match.group(1) != expected:
         errors.append(f"{label}: requires-python is {match.group(1)!r}; expected {expected!r}")
 
-    if "python_full_version < '3.12'" in text:
-        errors.append(f"{label}: still contains a pre-3.12 resolution fork")
-    for old_minor in ("3.10", "3.11"):
+    if "python_full_version < '3.14'" in text:
+        errors.append(f"{label}: still contains a pre-3.14 resolution fork")
+    for old_minor in ("3.10", "3.11", "3.12", "3.13"):
         if f"python_full_version == '{old_minor}.*'" in text:
             errors.append(f"{label}: still contains a Python {old_minor} resolution fork")
 
@@ -155,7 +164,7 @@ def check_lockfile(path: Path) -> list[str]:
 
 
 def check_dockerfile(path: Path) -> list[str]:
-    """Check the first FROM line uses the Python 3.12 slim image."""
+    """Check the first FROM line uses the Python 3.14 slim image."""
     label = _label(path)
     try:
         text = path.read_text(encoding="utf-8")
@@ -182,8 +191,8 @@ def check_precommit_config(path: Path) -> list[str]:
     errors: list[str] = []
     if not re.search(r"^default_language_version:\s*$", text, re.MULTILINE):
         errors.append(f"{label}: default_language_version is missing")
-    if not re.search(r"^\s+python:\s*python3\.12\s*$", text, re.MULTILINE):
-        errors.append(f"{label}: default Python is not python3.12")
+    if not re.search(r"^\s+python:\s*python3\.14\s*$", text, re.MULTILINE):
+        errors.append(f"{label}: default Python is not python3.14")
     if "check-python-consistency" not in text:
         errors.append(f"{label}: check-python-consistency hook is missing")
     if "container/tools/linters/check_python_consistency.py" not in text:
@@ -200,8 +209,8 @@ def check_test_runner(path: Path) -> list[str]:
         return [f"{label}: cannot read test runner: {exc}"]
 
     errors: list[str] = []
-    if 'PYTHON_VERSION="${PYTHON_VERSION:-3.12}"' not in text:
-        errors.append(f"{label}: default PYTHON_VERSION is not 3.12")
+    if 'PYTHON_VERSION="${PYTHON_VERSION:-3.14}"' not in text:
+        errors.append(f"{label}: default PYTHON_VERSION is not 3.14")
     if 'uv venv --python "$PYTHON_VERSION"' not in text:
         errors.append(f'{label}: venv creation does not pass --python "$PYTHON_VERSION"')
     if "venv_python_version" not in text:
@@ -228,7 +237,7 @@ def _read_pyvenv_version(path: Path, label: str) -> tuple[str | None, list[str]]
         return None, [f"{label}: pyvenv.cfg has no version_info"]
 
     version = _normalize_version(raw_version)
-    if not raw_version.startswith(f"{TARGET_TEXT}."):
+    if _minor(version) != TARGET_TEXT:
         return version, [f"{label}: pyvenv.cfg version_info={raw_version}; expected {TARGET_TEXT}.x"]
     return version, []
 
@@ -267,7 +276,7 @@ def _check_venv_lib(path: Path, version: str | None, label: str) -> list[str]:
 
     errors: list[str] = []
     site_dirs = sorted(child.name for child in lib.glob("python*") if child.is_dir())
-    expected_dir = f"python{version.rsplit('.', 1)[0]}" if version and "." in version else f"python{TARGET_TEXT}"
+    expected_dir = f"python{_minor(version)}" if version and "." in version else f"python{TARGET_TEXT}"
     if expected_dir not in site_dirs:
         errors.append(f"{label}: expected {expected_dir}/, found {site_dirs or 'none'}")
     stale_dirs = [name for name in site_dirs if name != expected_dir]
@@ -286,7 +295,8 @@ def check_venv(path: Path) -> list[str]:
     actual_version, python_errors = _check_venv_python(path, label)
     errors.extend(python_errors)
 
-    if version is not None and actual_version is not None and actual_version != version:
+    # A minor-only pyvenv.cfg (uv-managed Python) matches any patch release of it.
+    if version is not None and actual_version is not None and version not in (actual_version, _minor(actual_version)):
         errors.append(f"{label}: pyvenv.cfg says {version} but bin/python reports {actual_version}")
 
     errors.extend(_check_venv_lib(path, version, label))
@@ -304,7 +314,7 @@ def _precommit_env() -> Path | None:
     if uv is not None:
         try:
             result = _run([uv, "tool", "dir"], timeout=15)
-        except (OSError, subprocess.TimeoutExpired):
+        except OSError, subprocess.TimeoutExpired:
             result = None
         if result is not None and result.returncode == 0:
             candidates.append(Path(result.stdout.strip()) / "pre-commit")
@@ -320,7 +330,7 @@ def _precommit_env() -> Path | None:
 
 
 def check_precommit_tool(require: bool = False) -> list[str]:
-    """Check the executable works and, when locatable, its venv is 3.12."""
+    """Check the executable works and, when locatable, its venv is 3.14."""
     executable = shutil.which("pre-commit")
     if executable is None:
         if require:

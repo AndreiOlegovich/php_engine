@@ -1,5 +1,5 @@
 # stdlib-only: no dependencies to install.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 COPY highlight_pycode.py /app/highlight_pycode.py
 RUN python3 -c "import sys; sys.path.insert(0, '/app'); import highlight_pycode; print('pycode-highlight', highlight_pycode.VERSION)"

@@ -176,7 +176,7 @@ def highlight_source(src: str) -> str:
 def _compiles(src: str) -> bool:
     try:
         compile(textwrap.dedent(src), "<snippet>", "exec")
-    except (SyntaxError, ValueError):
+    except SyntaxError, ValueError:
         return False
     return True
 
@@ -184,7 +184,7 @@ def _compiles(src: str) -> bool:
 def _tokenizable(src: str) -> bool:
     try:
         list(tokenize.generate_tokens(io.StringIO(src).readline))
-    except (tokenize.TokenError, IndentationError, SyntaxError):
+    except tokenize.TokenError, IndentationError, SyntaxError:
         return False
     return True
 

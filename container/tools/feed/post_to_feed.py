@@ -142,7 +142,7 @@ def load_feed(path: str) -> tuple[list[dict[str, str]], str | None]:
     try:
         with open(path, encoding="utf-8") as handle:
             data = json.load(handle)
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return [], None
     if not isinstance(data, dict) or not isinstance(data.get("items"), list):
         return [], None

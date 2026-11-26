@@ -47,7 +47,9 @@ it there. For a later "is it merged?" load `site-fix-status`.
    `-p no:cacheprovider`); the AGENTS.md rules (version header, site values from
    the profile, no secrets); redirects checked offline with
    `htaccess_redirects.py match`; `pre-commit run --files <paths>` on Python the
-   worker wrote, then remove `.mypy_cache` and `.ruff_cache` from the worktree.
+   worker wrote, then remove `.mypy_cache` and `.ruff_cache` from the worktree;
+   the images the worker made, which are git-ignored and so never in the
+   diff: `python3 container/tools/ai/copy_worktree_images.py <wt> --dry-run`.
    It does what the user asked, and nothing else.
 5. Problems: write a fix file, one bullet per issue with `file:line`, what is
    wrong and what to do, and send it into the same session in the background:
@@ -78,8 +80,9 @@ it there. For a later "is it merged?" load `site-fix-status`.
 7. Done: as step 7 of `delegate-to-container`: the changed paths, the checks and
    their results, the rounds, what the worker left for the host, then "not on
    main yet" or "on main" checked from the host, and the explicit-path commit
-   and `merge --ff-only` commands for the user to run. Never commit, merge or
-   remove the worktree yourself.
+   and `merge --ff-only` commands for the user to run, followed by the image
+   copy when step 4 listed images. Never commit, merge or remove the worktree
+   yourself.
 
 `delegate.py status` lists every task; `status <slug>` prints the last report
 again. State and logs: `container/reports/delegate/<slug>/`.

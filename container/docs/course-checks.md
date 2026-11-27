@@ -17,7 +17,7 @@ python3 container/tools/course_check/code_blocks.py --help
 python3 container/tools/course_check/quiz_answers.py --help
 ```
 
-Both need Python 3.12, use the standard library only, take files or folders
+Both need Python 3.14, use the standard library only, take files or folders
 (folders are walked for `*.php`), print one line per finding and a summary
 last, and write the full result with `--json FILE`. Exit status: 0 when
 nothing needs attention, 1 when something does, 2 on a usage error.

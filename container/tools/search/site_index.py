@@ -439,7 +439,7 @@ def alias_groups(path: str = ALIASES_FILE) -> list[list[str]]:
     try:
         with open(path, encoding="utf-8") as handle:
             raw = json.load(handle)
-    except (OSError, ValueError):
+    except OSError, ValueError:
         return []
     groups = []
     for name, others in raw.items() if isinstance(raw, dict) else []:

@@ -11,7 +11,7 @@ Pages and redirects (`site-map`, `site-htaccess`).
 1. Shell scripts: bump the `# version X.Y.Z` header on every edit
    (`check-version` fails a change without it); `shellcheck` runs in
    pre-commit.
-2. Python targets 3.12. Gate with `pre-commit run --files <paths>` (ruff,
+2. Python targets 3.14. Gate with `pre-commit run --files <paths>` (ruff,
    ruff format, mypy, pylint with `container/pyproject.toml`).
 3. Dependencies: add to the owning `pyproject.toml`, then
    `uv lock --project <dir>` and `uv sync --project <dir>`. Never `pip install`

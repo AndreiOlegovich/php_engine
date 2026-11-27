@@ -42,8 +42,9 @@ folders belong to the site, and a tool or test reads them from the profile
   test (`container/tools/run-tests-venv.sh -- tests/<file> -q`).
 - Bump the `# version X.Y.Z` header of every changed versioned file; the
   `check-version` hook fails a change without it.
-- Python stays on 3.12. Declare dependencies in the owning `pyproject.toml`
-  and lock with `uv`; never `pip install` into a uv-managed `.venv`.
+- Python stays on 3.14, and `python3` is 3.14 too: the code uses 3.14
+  syntax. Declare dependencies in the owning `pyproject.toml` and lock with
+  `uv`; never `pip install` into a uv-managed `.venv`.
 - Line endings under `container/src` are LF (`site-line-endings` hook). Do not
   mix a line-ending conversion with other edits in one commit.
 - A script that rewrites a file something else reads writes a temp file in the

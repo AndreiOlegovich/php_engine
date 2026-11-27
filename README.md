@@ -30,9 +30,9 @@ You need Linux with bash, and:
 |---|---|---|
 | git, rsync | `git --version`, `rsync --version` | your package manager |
 | Docker Engine with Compose v2 | `docker compose version`, and `docker info` works without `sudo` | Docker's install guide, then add your user to the `docker` group |
-| Python 3.12 as `python3.12` | `python3.12 --version` | your package manager, or `uv python install 3.12` |
+| Python 3.14 as `python3.14` and `python3` | `python3 --version` | `uv python install 3.14 --default` (needs `~/.local/bin` before `/usr/bin` in `PATH`) |
 | uv | `uv --version` | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| pre-commit | `pre-commit --version` | `uv tool install pre-commit` |
+| pre-commit | `pre-commit --version` | `uv tool install --python 3.14 pre-commit` |
 
 Node.js is optional: only the JavaScript and HTML checks use it.
 

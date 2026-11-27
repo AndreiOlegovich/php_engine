@@ -30,7 +30,7 @@ must not need anything from step N+1.
    `container/docs/site-checks.md`.
 4. Regenerate the sitemap only if pages were added or removed, and show the
    `<loc>` count before and after.
-5. Python stays on 3.12: `python3 container/tools/linters/check_python_consistency.py --require-precommit`
+5. Python stays on 3.14: `python3 container/tools/linters/check_python_consistency.py --require-precommit`
    and `tests/test_python_version_consistency.py` pass before you finish.
 6. Commit: `git add -- <explicit paths>`, then
    `git commit -m "<subject>" -m "<body>"`. No AI attribution anywhere.

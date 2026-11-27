@@ -112,7 +112,7 @@ def _read_source(path: str) -> str | None:
         try:
             with open(path, encoding=encoding) as handle:
                 return handle.read()
-        except (OSError, ValueError):
+        except OSError, ValueError:
             continue
     return source
 

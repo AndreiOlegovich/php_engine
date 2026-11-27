@@ -3,7 +3,7 @@ name = "php-engine-container"
 version = "0.1.0"
 description = "Docker setup + pytest link checker for a PHP site"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 # Runtime deps of the pytest suite and the ported tools.
 dependencies = [
   "pytest>=8",
@@ -25,7 +25,7 @@ dev = [
 package = false
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py314"
 line-length = 800
 exclude = [".venv/", "src/", "reports/"]
 
@@ -37,7 +37,7 @@ ignore = []
 quote-style = "double"
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 explicit_package_bases = true
 show_error_codes = true
 ignore_missing_imports = true

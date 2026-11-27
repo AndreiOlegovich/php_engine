@@ -2,10 +2,10 @@
 #
 # Install once per clone:
 #   pre-commit install
-# (pre-commit itself: `uv tool install pre-commit`.)
+# (pre-commit itself: `uv tool install --python 3.14 pre-commit`.)
 # All Python hook environments run on the same interpreter as the project.
 default_language_version:
-  python: python3.12
+  python: python3.14
 #
 # Gates:
 #   .py  -> ruff check, ruff format, mypy, pylint; not the site's own Python
@@ -100,12 +100,12 @@ repos:
         language: system
         pass_filenames: false
 
-  # --- Python toolchain must agree on 3.12 ---
+  # --- Python toolchain must agree on 3.14 ---
   - repo: local
     hooks:
       - id: check-python-consistency
-        name: python 3.12 consistency
-        entry: python3.12 container/tools/linters/check_python_consistency.py --require-precommit
+        name: python 3.14 consistency
+        entry: python3.14 container/tools/linters/check_python_consistency.py --require-precommit
         language: system
         always_run: true
         pass_filenames: false
@@ -124,7 +124,7 @@ repos:
     hooks:
       - id: image-list
         name: image list (container/docs/image-files.txt)
-        entry: python3.12 container/tools/images/image_list.py --hook
+        entry: python3.14 container/tools/images/image_list.py --hook
         language: system
         pass_filenames: false
         always_run: true
@@ -184,7 +184,7 @@ repos:
         pass_filenames: false
       - id: site-snake-calls
         name: snake_case method calls on the engine API (container/src)
-        entry: python3 container/tools/linters/find-snake-calls.py --src container/src
+        entry: python3.14 container/tools/linters/find-snake-calls.py --src container/src
         language: system
         files: ^container/src/
         pass_filenames: false

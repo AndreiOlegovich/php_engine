@@ -1,5 +1,5 @@
-# version 0.1.1
-"""Guards for the Python 3.12 toolchain upgrade.
+# version 0.2.0
+"""Guards for the Python toolchain version, 3.14 since 2026-11.
 
 The 2026-10 pre-commit failure came from a venv whose ``pyvenv.cfg`` still
 said 3.10 while ``bin/python`` and ``lib/python3.12`` were already 3.12.
@@ -21,11 +21,11 @@ sys.path.insert(0, str(LINTERS))
 import check_python_consistency as consistency  # noqa: E402  # pylint: disable=wrong-import-position,import-error
 
 
-def test_checker_runs_on_python_312():
+def test_checker_runs_on_python_314():
     assert not consistency.check_interpreter()
 
 
-def test_repository_configuration_matches_python_312():
+def test_repository_configuration_matches_python_314():
     errors = consistency.check_repository(require_precommit=False)
     assert not errors
 
@@ -47,7 +47,7 @@ def test_checker_detects_old_python_version_pin(tmp_path):
     output = "\n".join(consistency.check_python_version_file(path))
 
     assert "3.10" in output
-    assert "3.12" in output
+    assert "3.14" in output
 
 
 def test_checker_detects_old_pyproject(tmp_path):
@@ -60,21 +60,21 @@ def test_checker_detects_old_pyproject(tmp_path):
     output = "\n".join(consistency.check_pyproject(path))
 
     assert "requires-python" in output
-    assert "py312" in output
+    assert "py314" in output
     assert "mypy python_version" in output
 
 
 def test_checker_detects_old_lockfile(tmp_path):
     path = tmp_path / "uv.lock"
     path.write_text(
-        'version = 1\nrequires-python = ">=3.10"\nresolution-markers = [\n    "python_full_version < \'3.12\'",\n    "python_full_version == \'3.11.*\'",\n]\n',
+        'version = 1\nrequires-python = ">=3.10"\nresolution-markers = [\n    "python_full_version < \'3.14\'",\n    "python_full_version == \'3.11.*\'",\n]\n',
         encoding="utf-8",
     )
 
     output = "\n".join(consistency.check_lockfile(path))
 
     assert "requires-python" in output
-    assert "pre-3.12 resolution fork" in output
+    assert "pre-3.14 resolution fork" in output
     assert "Python 3.11 resolution fork" in output
 
 
@@ -84,7 +84,7 @@ def test_checker_detects_old_dockerfile(tmp_path):
 
     output = "\n".join(consistency.check_dockerfile(path))
 
-    assert "python:3.12-slim" in output
+    assert "python:3.14-slim" in output
 
 
 def test_checker_detects_stale_pyvenv_and_site_packages(tmp_path):
@@ -93,14 +93,14 @@ def test_checker_detects_stale_pyvenv_and_site_packages(tmp_path):
     (venv / "bin" / "python").symlink_to(sys.executable)
     (venv / "pyvenv.cfg").write_text("version_info = 3.10.12\n", encoding="utf-8")
     (venv / "lib" / "python3.10").mkdir(parents=True)
-    (venv / "lib" / "python3.12").mkdir()
+    (venv / "lib" / "python3.14").mkdir()
 
     errors = consistency.check_venv(venv)
     output = "\n".join(errors)
 
     assert "pyvenv.cfg version_info=3.10.12" in output
     assert "pyvenv.cfg says 3.10.12 but bin/python reports" in output
-    assert "stale site-packages dir(s): python3.12" in output
+    assert "stale site-packages dir(s): python3.14" in output
 
 
 def test_checker_accepts_a_consistent_venv(tmp_path):
@@ -109,6 +109,17 @@ def test_checker_accepts_a_consistent_venv(tmp_path):
     (venv / "bin").mkdir(parents=True)
     (venv / "bin" / "python").symlink_to(sys.executable)
     (venv / "pyvenv.cfg").write_text(f"version_info = {version}.final.0\n", encoding="utf-8")
+    (venv / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}").mkdir(parents=True)
+
+    assert not consistency.check_venv(venv)
+
+
+def test_checker_accepts_a_venv_on_a_uv_managed_python(tmp_path):
+    """uv writes only the minor version for a venv on its own Python."""
+    venv = tmp_path / "uv-managed"
+    (venv / "bin").mkdir(parents=True)
+    (venv / "bin" / "python").symlink_to(sys.executable)
+    (venv / "pyvenv.cfg").write_text(f"version_info = {sys.version_info.major}.{sys.version_info.minor}\n", encoding="utf-8")
     (venv / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}").mkdir(parents=True)
 
     assert not consistency.check_venv(venv)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.0
+# version 0.1.1
 """Copy the new images of a worktree into the main checkout.
 
 Images are git-ignored (.gitignore, "Images"), so a commit and a merge carry
@@ -96,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     worktree = args.worktree.resolve()
     try:
         main_dir = args.main.resolve() if args.main else main_checkout(worktree)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         print(f"ERROR: {worktree} is not a git worktree.", file=sys.stderr)
         return 2
     if main_dir == worktree:

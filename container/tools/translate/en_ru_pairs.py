@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.2.0
+# version 0.2.1
 """Pair every English page with its Russian twin (and the other way round).
 
 The pairing comments in the pages are the source of truth.  Every page under
@@ -772,7 +772,7 @@ def write_comments(src_root: Path, targets: dict[str, str | None], dry_run: bool
         path = src_root / rel
         try:
             text = path.read_bytes().decode("utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         new_text = rewrite_comment(text, rel, targets[rel])
         if new_text == text:

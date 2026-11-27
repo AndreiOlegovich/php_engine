@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.3.0
+# version 0.4.0
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -16,13 +16,14 @@
 #   --bottom-marker HTML
 #                 what every complete page of the site renders last, a piece
 #                 of its HTML source such as id="footer-end" (not CSS); the
-#                 content test fails a page that stops before it. Without it
-#                 the script asks in a terminal; the default is </html>
+#                 content test fails a page that stops before it. Default
+#                 </html>. Usually left out: after the site is copied in,
+#                 container/tools/discover_site.py --url suggests it
 #   --tag-markers SPEC
 #                 named pieces of the page HTML for --tag of the content
 #                 test: name=HTML, "|" between alternatives, ";" between
-#                 names, e.g. 'menu=<nav class="menu"'. Asked in a terminal;
-#                 none by default
+#                 names, e.g. 'menu=<nav class="menu"'. None by default;
+#                 discover_site.py suggests them too
 #   --configure   give an existing checkout (TARGET, default: this one) its
 #                 project name and free ports; nothing else changes
 #   --check       run the whole gate over TARGET (default: the current
@@ -265,18 +266,10 @@ set_profile_value() {
   mv "$profile.tmp" "$profile"
 }
 
-# The markers the content test looks for are the site's own HTML: the
-# options, else the answers in a terminal, else the example's defaults.
-ask_markers() {
-  if [ -t 0 ] && { [ -z "$BOTTOM_MARKER" ] || [ -z "$TAG_MARKERS" ]; }; then
-    echo "The content test looks for markers: pieces of the page HTML source, not CSS."
-  fi
-  if [ -z "$BOTTOM_MARKER" ] && [ -t 0 ]; then
-    read -r -p 'What every complete page renders last, e.g. id="footer-end" [</html>]: ' BOTTOM_MARKER || true
-  fi
-  if [ -z "$TAG_MARKERS" ] && [ -t 0 ]; then
-    read -r -p 'Named markers for --tag, e.g. menu=<nav class="menu" [none]: ' TAG_MARKERS || true
-  fi
+# The markers the content test looks for are the site's own HTML, which
+# nobody knows before the site is copied in: only the options set them here,
+# and discover_site.py suggests them later from the rendered pages.
+check_markers() {
   case "$BOTTOM_MARKER$TAG_MARKERS" in
     *"'"*) echo "ERROR: a marker may not hold a single quote." >&2; exit 2 ;;
   esac
@@ -320,7 +313,7 @@ bootstrap() {
     || { echo "ERROR: $SOURCE is not a git checkout; the tracked file list is needed." >&2; exit 2; }
   refuse_used_name "$slug" "$TARGET"
   engine_project="$(current_project "$SOURCE")"
-  ask_markers
+  check_markers
 
   echo "Copying the tracked files of $SOURCE to $TARGET ..."
   mkdir -p "$TARGET"
@@ -366,11 +359,14 @@ bootstrap() {
 
   cat <<NEXT
 
-Next, in $TARGET:
-  1. edit container/site-profile.env (hosts, language folders, page classes, markers);
-  2. put the pages of the site into container/src;
-  3. container/tools/new-project.sh --check
-  4. git add -- <paths> && git commit -m "<subject>"
+Next, in $TARGET (README.md, sections 4 to 10):
+  1. start the empty site: (cd container && docker compose up -d --build php-apache)
+  2. copy the old site in: rsync -a --exclude .git/ /path/to/old-site/ container/src/
+  3. let the pages suggest the profile, then fill container/site-profile.env:
+     python3 container/tools/discover_site.py --url
+  4. container/tools/new-project.sh --check, and fix in the order of README section 8
+  5. the first commit: git add -- <paths> && git commit -m "<subject>"
+  6. generate the sitemap and test the pages (README section 10)
 NEXT
 }
 

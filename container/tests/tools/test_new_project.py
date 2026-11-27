@@ -1,4 +1,4 @@
-# version 0.4.1
+# version 0.4.2
 """Tests for tools/new-project.sh and the project name it hands to the tools.
 
 Offline: a small engine checkout in tmp_path, a docker stub and an empty HOME.
@@ -183,8 +183,8 @@ def test_the_name_is_asked_in_a_terminal(engine: Path, env: dict[str, str], tmp_
     os.close(master)
     assert b"Project name [asked]:" in output
     assert b"marker" not in output.split(b"Next (")[0]  # nobody knows the markers yet: no question
-    assert b"1. container/tools/onboard.sh" in output
-    assert f"  cd {target}\n".encode() in output.replace(b"\r\n", b"\n")  # the root the commands run in
+    assert b"2. container/tools/onboard.sh" in output
+    assert f"1. cd {target}\n".encode() in output.replace(b"\r\n", b"\n")  # the first step goes to the root
     assert env_file(target)["SITE_PROJECT"] == "asked-site"
 
 
@@ -192,7 +192,7 @@ def test_the_next_steps_start_in_the_project_root(engine: Path, env: dict[str, s
     target = tmp_path / "projects" / "my shop"
     result = run(engine, env, target, "--name", "shop")
     assert result.returncode == 0, result.stderr
-    assert f"  cd {str(target).replace(' ', chr(92) + ' ')}\n" in result.stdout
+    assert f"1. cd {str(target).replace(' ', chr(92) + ' ')}\n" in result.stdout
 
 
 def test_markers_from_the_options_replace_the_defaults(engine: Path, env: dict[str, str], tmp_path: Path) -> None:

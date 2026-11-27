@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.6.1
+# version 0.6.2
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -372,22 +372,27 @@ bootstrap() {
 
   cat <<NEXT
 
-Next (README.md, sections 4 to 10). Go to the project:
-  cd $(printf '%q' "$TARGET")
-then run container/tools/onboard.sh once per step; each run does the step
-the project is at and prints the one after it:
-  1. container/tools/onboard.sh                     start the site
-  2. container/tools/onboard.sh /path/to/old-site/  copy the old site in (the
-                                                    folder with its index.php)
-  3. container/tools/onboard.sh                     suggest the profile; copy the
-                                                    lines you agree with into
-                                                    container/site-profile.env
-  4. container/tools/onboard.sh                     the gate; fix in the order of
-                                                    README section 8, run it again
-  5. git add -- <paths> && git commit -m "<subject>"   the first commit (yours)
-  6. container/tools/onboard.sh                     the sitemap
-  7. container/tools/onboard.sh                     the page tests
-container/tools/new-project.sh --next shows where the project is, any time.
+Next steps (README.md, sections 4 to 10). Each onboard.sh run does the step
+the project is at and prints the one after it.
+
+  1. cd $(printf '%q' "$TARGET")
+     go to the project: every command below runs there
+  2. container/tools/onboard.sh
+     start the site
+  3. container/tools/onboard.sh /path/to/old-site/
+     copy the old site in (the folder that holds its index.php)
+  4. container/tools/onboard.sh
+     suggest the profile; copy the lines you agree with into container/site-profile.env
+  5. container/tools/onboard.sh
+     the gate; fix in the order of README section 8, then run it again
+  6. git add -- <paths> && git commit -m "<subject>"
+     the first commit: you choose the paths
+  7. container/tools/onboard.sh
+     the sitemap
+  8. container/tools/onboard.sh
+     the page tests
+
+Any time: container/tools/new-project.sh --next shows where the project is.
 NEXT
 }
 

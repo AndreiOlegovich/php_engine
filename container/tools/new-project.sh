@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.5.0
+# version 0.6.0
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -8,6 +8,7 @@
 #   container/tools/new-project.sh --configure [TARGET] [--name NAME]
 #   container/tools/new-project.sh --check [TARGET]
 #   container/tools/new-project.sh --next [TARGET]
+#   container/tools/new-project.sh --next-id [TARGET]
 #   container/tools/new-project.sh --help
 #
 #   TARGET        a new folder; it must not exist yet. Without it the script
@@ -33,7 +34,10 @@
 #   --next        look at TARGET (default: the current checkout) and print
 #                 the one step it is at, with its command: start the site,
 #                 copy the old site in, fill the profile, the gate and the
-#                 first commit, the sitemap, the page tests
+#                 first commit, the sitemap, the page tests.
+#                 container/tools/onboard.sh runs that step
+#   --next-id     the same step as one word for scripts: docker, start, copy,
+#                 discover, gate, sitemap, tests
 #
 # The project name keeps projects apart. Its lower-case form is SITE_PROJECT
 # in container/.env and names the Compose project, the containers, the site
@@ -73,6 +77,7 @@ TAG_MARKERS=""
 CHECK=0
 CONFIGURE=0
 NEXT_STEP=0
+NEXT_ID=0
 TARGET=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -84,6 +89,7 @@ while [ $# -gt 0 ]; do
     --tag-markers=*) TAG_MARKERS="${1#--tag-markers=}"; shift ;;
     --check) CHECK=1; shift ;;
     --next) NEXT_STEP=1; shift ;;
+    --next-id) NEXT_STEP=1; NEXT_ID=1; shift ;;
     --configure) CONFIGURE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     -*) echo "ERROR: unknown option: $1 (see --help)." >&2; exit 2 ;;
@@ -367,7 +373,8 @@ bootstrap() {
   cat <<NEXT
 
 Next (README.md, sections 4 to 10); every command runs in the project root.
-After any step, container/tools/new-project.sh --next prints the one that follows.
+container/tools/onboard.sh runs each step and prints the one after it;
+container/tools/new-project.sh --next only shows where the project is.
   1. go there: cd $(printf '%q' "$TARGET")
   2. start the empty site: (cd container && docker compose up -d --build php-apache)
   3. copy the old site in: rsync -a --exclude .git/ /path/to/old-site/ container/src/
@@ -481,51 +488,56 @@ next_step() {
   [ -f "$root/container/.env" ] || { echo "ERROR: $root has no container/.env: not a project new-project.sh made." >&2; exit 2; }
   slug="$(env_value "$root/container/.env" SITE_PROJECT)"
   [ "$(pwd -P)" = "$root" ] || go="cd $(printf '%q' "$root") && "
+  # say ID NUMBER WHAT SECTION RUN LINE...: RUN is how onboard.sh runs it.
   say() {
-    local number="$1" what="$2" section="$3"
-    shift 3
+    local id="$1" number="$2" what="$3" section="$4" run_it="$5"
+    shift 5
+    if [ "$NEXT_ID" = 1 ]; then echo "$id"; return 0; fi
     printf 'Project %s, %s\n' "$slug" "$root"
     local joined
     joined="$(printf '%s, ' "${done[@]}")"
     [ "${#done[@]}" -eq 0 ] || printf 'Done: %s.\n' "${joined%, }"
     printf '\nNext, step %s of 7: %s (README section %s)\n' "$number" "$what" "$section"
     printf '  %s\n' "$@"
-    printf '\nAfter it: container/tools/new-project.sh --next\n'
+    printf '\n%s\n' "$run_it"
   }
+  local onboard="${go}container/tools/onboard.sh"
+  local runs="Or let $onboard run it; it prints the step after."
+
   if ! docker info >/dev/null 2>&1; then
-    say 2 "start Docker, then the empty site" 4 "Docker is not running: start it (sudo systemctl start docker), then:" "${go}(cd container && docker compose up -d --build php-apache)"
+    say docker 2 "start Docker, then the empty site" 4 "Then: $onboard" "Docker is not running: start it (sudo systemctl start docker), then:" "${go}(cd container && docker compose up -d --build php-apache)"
     return 0
   fi
   if [ -z "$(docker ps -q --filter "name=^${slug}-apache\$" 2>/dev/null)" ]; then
-    say 2 "start the site" 4 "${go}(cd container && docker compose up -d --build php-apache)"
+    say start 2 "start the site" 4 "$runs" "${go}(cd container && docker compose up -d --build php-apache)"
     return 0
   fi
   done+=("the site runs at $(env_value "$root/container/site-profile.env" SITE_LOCAL_URL)/")
   if src_is_stub "$root"; then
-    say 3 "copy the old site in" 5 "${go}rsync -a --exclude .git/ /path/to/old-site/ container/src/" \
+    say copy 3 "copy the old site in" 5 "Or let it copy: $onboard /path/to/old-site/" "${go}rsync -a --exclude .git/ /path/to/old-site/ container/src/" \
       "(/path/to/old-site/ is the folder that holds its index.php; keep the trailing slashes)"
     return 0
   fi
   done+=("the old site is in container/src")
   if profile_untouched "$root"; then
-    say 4 "let the pages suggest the profile" 6 "${go}python3 container/tools/discover_site.py --url" \
+    say discover 4 "let the pages suggest the profile" 6 "$runs" "${go}python3 container/tools/discover_site.py --url" \
       "then copy the suggested lines you agree with into container/site-profile.env"
     return 0
   fi
   done+=("the profile is filled")
   if ! git -C "$root" rev-parse -q --verify HEAD >/dev/null; then
-    say "5 and 6" "the gate, then the first commit" "7 to 9" "${go}container/tools/new-project.sh --check" \
+    say gate "5 and 6" "the gate, then the first commit" "7 to 9" "Or let $onboard run the gate; the commit stays yours (you choose the paths)." "${go}container/tools/new-project.sh --check" \
       "fix in the order of README section 8 until it prints All checks passed, then:" \
       "git add -- <paths> && git commit -m \"<subject>\""
     return 0
   fi
   done+=("the first commit is made")
   if [ ! -f "$root/container/src/sitemap.xml" ]; then
-    say 7 "generate the sitemap" 10 "${go}(cd container && BASE_URL=$(env_value "$root/container/site-profile.env" SITE_URL) tools/generate-sitemap.sh)"
+    say sitemap 7 "generate the sitemap" 10 "$runs" "${go}(cd container && BASE_URL=$(env_value "$root/container/site-profile.env" SITE_URL) tools/generate-sitemap.sh)"
     return 0
   fi
   done+=("the sitemap exists")
-  say 7 "test the pages" 10 "${go}container/tests/run_test.sh -y sitemap internal_links img_src content_loaded" \
+  say tests 7 "test the pages" 10 "$runs" "${go}container/tests/run_test.sh -y sitemap internal_links img_src content_loaded" \
     "the onboarding ends here: README sections 11 (design files) and 12 (deploy) follow"
 }
 

@@ -91,9 +91,20 @@ In under a minute the script:
 4. runs `git init -b main` and `pre-commit install`; nothing is staged;
 5. creates `container/.venv` with the test tools.
 
-It ends with the steps that follow, sections 4 to 10 below. After any of
-them, `container/tools/new-project.sh --next` (run in the project) looks at
-the project and prints the one step it is at, with its command.
+It ends with the steps that follow, sections 4 to 10 below. You can type
+each command yourself, or let one command walk you through them: in the
+project,
+
+```bash
+container/tools/onboard.sh                      # runs the step the project is at
+container/tools/onboard.sh /path/to/old-site/   # the copy step needs the old site
+```
+
+runs the step the project is at (start the site, copy the old site in,
+suggest the profile, the gate, the sitemap, the page tests) and prints the
+step after it. Two steps stay yours: copying the suggested lines into the
+profile, and the first commit, where you choose the paths.
+`container/tools/new-project.sh --next` only shows where the project is.
 
 It ends like this:
 
@@ -438,6 +449,7 @@ skill follows the same order.
 
 | What | Command |
 |---|---|
+| run the next onboarding step, then show the one after | `container/tools/onboard.sh` |
 | where the new project is, and the next step | `container/tools/new-project.sh --next` |
 | start the site | `(cd container && docker compose up -d php-apache)` |
 | stop everything | `(cd container && docker compose stop)` |

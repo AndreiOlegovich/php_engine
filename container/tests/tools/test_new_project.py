@@ -1,4 +1,4 @@
-# version 0.3.0
+# version 0.3.1
 """Tests for tools/new-project.sh and the project name it hands to the tools.
 
 Offline: a small engine checkout in tmp_path, a docker stub and an empty HOME.
@@ -182,9 +182,17 @@ def test_the_name_is_asked_in_a_terminal(engine: Path, env: dict[str, str], tmp_
         assert proc.wait(timeout=30) == 0, output.decode(errors="replace")
     os.close(master)
     assert b"Project name [asked]:" in output
-    assert b"marker" not in output.split(b"Next, in")[0]  # nobody knows the markers yet: no question
+    assert b"marker" not in output.split(b"Next (")[0]  # nobody knows the markers yet: no question
     assert b"discover_site.py --url" in output
+    assert f"1. go there: cd {target}".encode() in output  # the root the commands run in
     assert env_file(target)["SITE_PROJECT"] == "asked-site"
+
+
+def test_the_next_steps_start_in_the_project_root(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = tmp_path / "projects" / "my shop"
+    result = run(engine, env, target, "--name", "shop")
+    assert result.returncode == 0, result.stderr
+    assert f"1. go there: cd {str(target).replace(' ', chr(92) + ' ')}" in result.stdout
 
 
 def test_markers_from_the_options_replace_the_defaults(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
@@ -256,3 +264,41 @@ def test_metrica_reads_only_the_file_of_its_project(project: str, expected: list
     assert php is not None
     proc = subprocess.run([php, "-r", code, str(module)], capture_output=True, text=True, env={**clean, "HOME": "/h", "SITE_PROJECT": project}, check=True)
     assert json.loads(proc.stdout) == expected
+
+
+def test_next_walks_through_the_steps(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    """--next prints the one step the project is at, in the order of the README."""
+    target = tmp_path / "projects" / "shop"
+    assert run(engine, env, target, "--name", "shop").returncode == 0
+    script = target / "container" / "tools" / "new-project.sh"
+
+    def step(docker: str) -> str:
+        stubs = tmp_path / "stubs"
+        (stubs / "docker").write_text(docker, encoding="utf-8")
+        result = subprocess.run(["bash", str(script), "--next"], capture_output=True, text=True, env=env, cwd=target, stdin=subprocess.DEVNULL, check=False)
+        assert result.returncode == 0, result.stderr
+        return result.stdout
+
+    assert "Docker is not running" in step("#!/bin/sh\nexit 1\n")
+    running = '#!/bin/sh\ncase "$1" in ps) echo abc123 ;; esac\nexit 0\n'
+    assert "step 2 of 7: start the site" in step("#!/bin/sh\nexit 0\n")
+    out = step(running)
+    assert "step 3 of 7: copy the old site in" in out and "Done: the site runs at" in out
+    put(target / "container" / "src" / "index.php", "<?php\n\necho 'the old site';\n")
+    assert "step 4 of 7: let the pages suggest the profile" in step(running)
+    profile = target / "container" / "site-profile.env"
+    profile.write_text(profile.read_text(encoding="utf-8") + 'SITE_URL="https://shop.example"\n', encoding="utf-8")
+    assert "step 5 and 6 of 7: the gate, then the first commit" in step(running)
+    git(target, "add", "container/src/index.php")
+    git(target, "commit", "-q", "-m", "first")
+    out = step(running)
+    assert "step 7 of 7: generate the sitemap" in out and "BASE_URL=https://shop.example" in out
+    put(target / "container" / "src" / "sitemap.xml", "<urlset/>\n")
+    assert "step 7 of 7: test the pages" in step(running)
+
+
+def test_next_from_elsewhere_starts_with_cd(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = tmp_path / "projects" / "shop"
+    assert run(engine, env, target, "--name", "shop").returncode == 0
+    result = subprocess.run(["bash", str(target / "container" / "tools" / "new-project.sh"), "--next"], capture_output=True, text=True, env=env, cwd=tmp_path, check=False)
+    assert f"cd {target} && (cd container && docker compose up" in result.stdout

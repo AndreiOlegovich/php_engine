@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.6.0
+# version 0.6.1
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -372,17 +372,22 @@ bootstrap() {
 
   cat <<NEXT
 
-Next (README.md, sections 4 to 10); every command runs in the project root.
-container/tools/onboard.sh runs each step and prints the one after it;
-container/tools/new-project.sh --next only shows where the project is.
-  1. go there: cd $(printf '%q' "$TARGET")
-  2. start the empty site: (cd container && docker compose up -d --build php-apache)
-  3. copy the old site in: rsync -a --exclude .git/ /path/to/old-site/ container/src/
-  4. let the pages suggest the profile, then fill container/site-profile.env:
-     python3 container/tools/discover_site.py --url
-  5. container/tools/new-project.sh --check, and fix in the order of README section 8
-  6. the first commit: git add -- <paths> && git commit -m "<subject>"
-  7. generate the sitemap and test the pages (README section 10)
+Next (README.md, sections 4 to 10). Go to the project:
+  cd $(printf '%q' "$TARGET")
+then run container/tools/onboard.sh once per step; each run does the step
+the project is at and prints the one after it:
+  1. container/tools/onboard.sh                     start the site
+  2. container/tools/onboard.sh /path/to/old-site/  copy the old site in (the
+                                                    folder with its index.php)
+  3. container/tools/onboard.sh                     suggest the profile; copy the
+                                                    lines you agree with into
+                                                    container/site-profile.env
+  4. container/tools/onboard.sh                     the gate; fix in the order of
+                                                    README section 8, run it again
+  5. git add -- <paths> && git commit -m "<subject>"   the first commit (yours)
+  6. container/tools/onboard.sh                     the sitemap
+  7. container/tools/onboard.sh                     the page tests
+container/tools/new-project.sh --next shows where the project is, any time.
 NEXT
 }
 

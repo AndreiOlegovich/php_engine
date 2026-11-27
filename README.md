@@ -149,10 +149,13 @@ Copy, do not move: the untouched original is what you compare against.
 
 ```bash
 OLD=/path/to/old-site     # the folder that holds the old site's index.php
-rsync -a --exclude .git/ "$OLD"/ container/src/
+rsync -a --exclude .git/ --info=progress2 --no-inc-recursive "$OLD"/ container/src/
 ```
 
 The trailing slashes copy the content of the folder, not the folder itself.
+rsync first counts the files, which can take a minute on a big site, then
+keeps one line up to date: bytes copied, percent, speed, time left, and
+`to-chk=left/total`, the files still to go.
 The site's `index.php` replaces the stub. Reload the browser: a change under
 `container/src` shows at once, without a restart. A site that exists only on
 its hosting account is downloaded first (an FTP client, `rsync` over SSH or

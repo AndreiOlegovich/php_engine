@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.6.2
+# version 0.6.3
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -524,7 +524,7 @@ next_step() {
   fi
   done+=("the site runs at $(env_value "$root/container/site-profile.env" SITE_LOCAL_URL)/")
   if src_is_stub "$root"; then
-    say copy 3 "copy the old site in" 5 "Or let it copy: $onboard /path/to/old-site/" "${go}rsync -a --exclude .git/ /path/to/old-site/ container/src/" \
+    say copy 3 "copy the old site in" 5 "Or let it copy: $onboard /path/to/old-site/" "${go}rsync -a --exclude .git/ --info=progress2 --no-inc-recursive /path/to/old-site/ container/src/" \
       "(/path/to/old-site/ is the folder that holds its index.php; keep the trailing slashes)"
     return 0
   fi

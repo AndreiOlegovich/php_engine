@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# version 0.1.1
+# version 0.2.0
 # Run the onboarding step a new project is at, then print the one after it.
+# It prints the exact command of the step before it runs it. To go through all
+# the steps in one run, with questions where it needs you: auto_onboard.sh.
 #
 # Usage (from anywhere; it works on the project it lives in):
 #   container/tools/onboard.sh                    # run the current step
@@ -28,9 +30,8 @@ case "${1:-}" in
   -h|--help) sed -n '2,/^set -euo pipefail$/p' "$0" | sed 's/^# \{0,1\}//' | grep -v '^set -euo'; exit 0 ;;
 esac
 
-profile_value() {
-  sed -n "s/^$1=[\"']\{0,1\}\([^\"']*\)[\"']\{0,1\}[[:space:]]*\$/\1/p" container/site-profile.env 2>/dev/null | tail -n 1
-}
+# shellcheck disable=SC1091  # the shared steps are checked on their own
+. "$SCRIPT_DIR/onboard-lib.sh"
 
 step="$("$NP" --next-id)"
 echo "=== step: $step"
@@ -40,53 +41,42 @@ case "$step" in
     exit 1
     ;;
   start)
-    (cd container && docker compose up -d --build php-apache)
+    step_start
     ;;
   copy)
-    old="${1:-}"
-    if [ -z "$old" ]; then
+    if [ -z "${1:-}" ]; then
       echo "Give the folder that holds the old site's index.php:"
       echo "  container/tools/onboard.sh /path/to/old-site/"
       exit 2
     fi
-    [ -d "$old" ] || { echo "ERROR: $old is not a folder." >&2; exit 2; }
-    old="$(cd "$old" && pwd)"
-    [ "$old" != "$ROOT/container/src" ] || { echo "ERROR: that is this project's own container/src." >&2; exit 2; }
-    if [ ! -e "$old/index.php" ] && [ ! -e "$old/index.html" ]; then
-      echo "ERROR: $old holds no index.php or index.html. Give the folder of the site itself (often public_html/ inside a hosting copy)." >&2
-      exit 2
-    fi
-    echo "copying $old/ into container/src/ (the original stays as it is)."
-    echo "rsync counts the files first, which takes a while on a big site; then one"
-    echo "line shows the progress: copied, percent, speed, time left (xfr#copied, to-chk=left/total)."
-    rsync -a --exclude .git/ --info=progress2 --no-inc-recursive "$old/" container/src/
-    echo "copied: $(find container/src -type f | wc -l) files in container/src"
+    old="$(old_site_dir "$1")" || exit 2
+    step_copy "$old"
     ;;
   discover)
-    python3 container/tools/discover_site.py --url
+    step_discover
     echo
     echo "Copy the suggested lines you agree with into container/site-profile.env"
     echo "(check each one in a page's source first), then run: container/tools/onboard.sh"
     exit 0
     ;;
   gate)
-    if ! "$NP" --check; then
+    if ! step_gate; then
       echo
       echo "Fix in the order of README section 8, then run: container/tools/onboard.sh"
       exit 1
     fi
     echo
-    echo "Now the first commit, with the paths you mean (README section 9):"
-    echo "  git add -- <paths> && git commit -m \"<subject>\""
+    echo "Now the first commit (README section 9); auto_onboard.sh can run it for you:"
+    echo "  git add -- ${COMMIT_PATHS[*]}"
+    echo "  git commit -m \"Start $(profile_value SITE_NAME)\""
     echo "then run: container/tools/onboard.sh"
     exit 0
     ;;
   sitemap)
-    url="$(profile_value SITE_URL)"
-    (cd container && BASE_URL="$url" tools/generate-sitemap.sh)
+    step_sitemap "$(profile_value SITE_URL)"
     ;;
   tests)
-    container/tests/run_test.sh -y sitemap internal_links img_src content_loaded
+    step_tests
     echo
     echo "The onboarding is done: README sections 11 (design files) and 12 (deploy) follow."
     exit 0

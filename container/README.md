@@ -222,7 +222,8 @@ tools/check-sitemap.sh src/sitemap.xml                        # validate it
 
 Scans `*.php` and skips what `tools/sitemap-excludes.conf` lists (dot- and
 `_`-folders, includes, backups); `lastmod` comes from the file time. The
-previous file is kept as `<output>.bak-<timestamp>`.
+previous file is kept as `backup/<name>.bak-<timestamp>` at the repository
+root (git-ignored, outside the docroot).
 
 ## Docs
 

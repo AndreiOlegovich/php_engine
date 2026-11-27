@@ -32,6 +32,11 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Sitemap backups: generate-sitemap.sh keeps them in backup/ at the repo root,
+# outside the docroot. The second line covers the ones older runs left in src.
+/backup/
+*.bak-[0-9]*
+
 # PHP session data files (runtime junk inside demo tmp/ dirs)
 sess_*
 

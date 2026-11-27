@@ -28,6 +28,7 @@ Python 3.14 are needed on the host.
 | `tools/test_discover_site.py` | `discover_site.py` finds page classes, includes, languages and legacy PHP in the files, and suggests the markers from pages a local server renders, without following a redirect |
 | `tools/test_generate_sitemap_backup.py` | `generate-sitemap.sh` keeps the previous sitemap in `backup/` at the repo root, and git ignores it there and in the docroot |
 | `tools/test_htaccess_redirects.py` | either `.htaccess` redirect form becomes a path regex; CLI exit codes |
+| `tools/test_remove_project.py` | `remove-project.sh` prints its plan without `--yes`, removes a project's Docker objects and folders by exact name with it, keeps the credentials, and refuses the engine, foreign folders and unpushed work |
 | `tools/test_analyze_errors.py`, `tools/test_check_bots.py`, `test_log_paths.py`, `test_download_logs.py` | log analyzers take a file/dir argument and keep the documented rules |
 | `tools/test_ru_en_translate.py` | the translation pipeline preserves markup and placeholders |
 

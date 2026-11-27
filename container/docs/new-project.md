@@ -109,6 +109,13 @@ message, not a stop: read the hook name, fix the file, `git add` it again and
 repeat. The skill `new-site-onboarding` gives the order: line endings, PHP
 syntax, phpcs, shell, Python, sitemap and redirects.
 
+## Start over
+
+`container/tools/remove-project.sh <folder>` prints what a project owns
+(containers, images, volumes, network, log and cache folders, the folder)
+and `--yes` removes it, so `new-project.sh` can use the name again. The
+credentials folder stays unless `--with-credentials`.
+
 ## What the copy does not bring
 
 - the pages, images, `.htaccess` and sitemap of any other site;

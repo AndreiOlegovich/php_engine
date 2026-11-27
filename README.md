@@ -442,6 +442,25 @@ skill follows the same order.
 | the checks of one commit, before committing | `pre-commit run --files <paths>` |
 | everything | `container/tools/new-project.sh --check` |
 
+## Start over
+
+To throw a project away and begin again under the same name, run the
+engine's remover on the project folder. It first prints what it would
+remove; `--yes` removes it:
+
+```bash
+~/github/php_engine/container/tools/remove-project.sh ~/github/my-shop
+~/github/php_engine/container/tools/remove-project.sh ~/github/my-shop --yes
+```
+
+It removes the folder, the project's containers, images (the site and the
+agent images), volumes and network, and its log and cache folders, all found
+by the exact project name. The credentials folder `~/.config/my-shop` stays
+unless you add `--with-credentials`; `new-project.sh` refuses the name while
+it exists. A project with commits no remote has, uncommitted changes or agent
+worktrees is refused without `--force`, and so is any folder that
+`new-project.sh` did not make. Then run `new-project.sh` again (section 3).
+
 ## More to read
 
 - `container/README.md`: the containers, the linters, the link checker and

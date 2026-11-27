@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.0
+# version 0.2.0
 """Look at an imported site and suggest the values of container/site-profile.env.
 
 The profile asks for things only the site can tell: what every page renders
@@ -40,6 +40,10 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 CONTAINER = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import htaccess_hosting  # noqa: E402  # pylint: disable=wrong-import-position
+
 DEFAULT_SRC = CONTAINER / "src"
 DEFAULT_PROFILE = CONTAINER / "site-profile.env"
 
@@ -314,6 +318,14 @@ def print_files(report: FileReport, src: Path) -> None:
             print(f"  {label}: {count}")
     if report.not_utf8:
         print(f"Files that are not UTF-8: {len(report.not_utf8)}, e.g. {', '.join(report.not_utf8[:3])}")
+    found = htaccess_hosting.hints(src)
+    kinds = Counter(item.problem for item in found)
+    print("The hosting the old .htaccess was written for:")
+    for problem, count in kinds.most_common():
+        print(f"  {problem}: {count}")
+    print(f"  looks written for: {htaccess_hosting.looks_like(found)}")
+    print("  The target can be another hosting: SITE_HOSTING names it, and")
+    print("  container/tools/htaccess_hosting.py checks the files against it.")
 
 
 def print_rendered(report: RenderReport, base: str, asked: int, profile: dict[str, str]) -> None:

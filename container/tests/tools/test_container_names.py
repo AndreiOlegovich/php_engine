@@ -1,4 +1,4 @@
-# version 0.1.0
+# version 0.1.1
 """Every container a tool starts carries the project's name.
 
 Docker names a container without --name at random (bold_yonath), so docker ps
@@ -39,7 +39,8 @@ def test_shell_names_start_with_the_project() -> None:
 def tracked(*patterns: str) -> list[Path]:
     """The tracked tool files (tests of the tools excluded: they quote commands)."""
     out = subprocess.run(["git", "-C", str(TOOLS), "ls-files", "-z", "--", *patterns], capture_output=True, check=True).stdout
-    return [TOOLS / name for name in out.decode().split("\0") if name and "/tests/" not in f"/{name}"]
+    # A file deleted but not yet committed is still tracked: only those on disk count.
+    return [TOOLS / name for name in out.decode().split("\0") if name and "/tests/" not in f"/{name}" and (TOOLS / name).is_file()]
 
 
 def test_every_shell_docker_run_has_a_name() -> None:

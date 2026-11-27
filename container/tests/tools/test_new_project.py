@@ -1,4 +1,4 @@
-# version 0.5.0
+# version 0.7.0
 """Tests for tools/new-project.sh and the project name it hands to the tools.
 
 Offline: a small engine checkout in tmp_path, a docker stub and an empty HOME.
@@ -43,7 +43,7 @@ def fixture_engine(tmp_path: Path) -> Path:
     root = tmp_path / "projects" / "php_engine"
     tools = root / "container" / "tools"
     tools.mkdir(parents=True)
-    for name in ("new-project.sh", "project-env.sh", "onboard.sh", "onboard-lib.sh", "auto_onboard.sh"):
+    for name in ("new-project.sh", "project-env.sh", "onboard.sh", "onboard.py", "auto_onboard.sh", "htaccess_hosting.py"):
         shutil.copy(TOOLS / name, tools / name)
     put(tools / "run-tests-venv.sh", "#!/bin/sh\nexit 0\n")
     (tools / "run-tests-venv.sh").chmod(0o755)
@@ -69,7 +69,8 @@ def fixture_env(tmp_path: Path) -> dict[str, str]:
     home = tmp_path / "home"
     home.mkdir()
     clean = {key: value for key, value in os.environ.items() if not key.startswith(("SITE_", "XDG_", "GIT_"))}
-    return {**clean, "HOME": str(home), "PATH": f"{stubs}:/usr/bin:/bin"}
+    # The test's own Python (3.14) first: the onboarding is Python of the repo's version.
+    return {**clean, "HOME": str(home), "PATH": f"{stubs}:{Path(sys.executable).parent}:/usr/bin:/bin"}
 
 
 def run(engine: Path, env: dict[str, str], *args: object) -> subprocess.CompletedProcess[str]:
@@ -281,20 +282,22 @@ def test_next_walks_through_the_steps(engine: Path, env: dict[str, str], tmp_pat
 
     assert "Docker is not running" in step("#!/bin/sh\nexit 1\n")
     running = '#!/bin/sh\ncase "$1" in ps) echo abc123 ;; esac\nexit 0\n'
-    assert "step 2 of 7: start the site" in step("#!/bin/sh\nexit 0\n")
+    assert "step 2 of 8: start the site" in step("#!/bin/sh\nexit 0\n")
     out = step(running)
-    assert "step 3 of 7: copy the old site in" in out and "Done: the site runs at" in out
+    assert "step 3 of 8: copy the old site in" in out and "Done: the site runs at" in out
     put(target / "container" / "src" / "index.php", "<?php\n\necho 'the old site';\n")
-    assert "step 4 of 7: let the pages suggest the profile" in step(running)
+    assert "step 4 of 8: let the pages suggest the profile" in step(running)
     profile = target / "container" / "site-profile.env"
     profile.write_text(profile.read_text(encoding="utf-8") + 'SITE_URL="https://shop.example"\n', encoding="utf-8")
-    assert "step 5 and 6 of 7: the gate, then the first commit" in step(running)
+    assert "step 5 of 8: name the hosting the site goes to" in step(running)
+    profile.write_text(profile.read_text(encoding="utf-8") + 'SITE_HOSTING="beget"\n', encoding="utf-8")
+    assert "step 6 and 7 of 8: the gate, then the first commit" in step(running)
     git(target, "add", "container/src/index.php")
     git(target, "commit", "-q", "-m", "first")
     out = step(running)
-    assert "step 7 of 7: generate the sitemap" in out and "BASE_URL=https://shop.example" in out
+    assert "step 8 of 8: generate the sitemap" in out and "BASE_URL=https://shop.example" in out
     put(target / "container" / "src" / "sitemap.xml", "<urlset/>\n")
-    assert "step 7 of 7: test the pages" in step(running)
+    assert "step 8 of 8: test the pages" in step(running)
 
 
 def test_next_from_elsewhere_starts_with_cd(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
@@ -339,7 +342,7 @@ def test_onboard_starts_the_site_then_shows_the_next_step(engine: Path, env: dic
     result = tool(target, env, "onboard.sh")
     assert result.returncode == 0, result.stdout + result.stderr
     assert "compose up -d --build php-apache" in (tmp_path / "docker.log").read_text(encoding="utf-8")
-    assert "=== step: start" in result.stdout and "Next, step 2 of 7" in result.stdout  # the stub keeps no container running
+    assert "=== step: start" in result.stdout and "Next, step 2 of 8" in result.stdout  # the stub keeps no container running
     assert "$ (cd container && docker compose up -d --build php-apache)" in result.stdout  # the exact command it runs
 
 
@@ -359,7 +362,7 @@ def test_onboard_copies_the_old_site_in(engine: Path, env: dict[str, str], tmp_p
     assert result.returncode == 0, result.stdout + result.stderr
     assert (target / "container" / "src" / "about" / "index.php").is_file()
     assert "old home" in (target / "container" / "src" / "index.php").read_text(encoding="utf-8")
-    assert "step 4 of 7: let the pages suggest the profile" in result.stdout
+    assert "step 4 of 8: let the pages suggest the profile" in result.stdout
     assert f"$ rsync -a --exclude .git/ --info=progress2 --no-inc-recursive {old}/ container/src/" in result.stdout
     assert (old / "index.php").is_file()  # the original stays
 
@@ -398,3 +401,21 @@ def test_auto_onboard_stops_at_the_end_of_input(engine: Path, env: dict[str, str
     result = auto(target, env, "")
     assert result.returncode == 0
     assert "No answer: stopping here" in result.stdout
+
+
+def test_onboard_sets_the_target_hosting(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = made_project(engine, env, tmp_path)
+    env = {**env, "DOCKER_LOG": str(tmp_path / "docker.log")}
+    set_docker(tmp_path, RUNNING)
+    put(target / "container" / "src" / "index.php", "<?php\n\necho 'old home';\n")
+    put(target / "container" / "src" / ".htaccess", "RewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]\n")
+    profile = target / "container" / "site-profile.env"
+    profile.write_text(profile.read_text(encoding="utf-8") + 'SITE_URL="https://shop.example"\n', encoding="utf-8")
+    assert tool(target, env, "new-project.sh", "--next-id").stdout.strip() == "hosting"
+    assert tool(target, env, "onboard.sh", "somewhere").returncode == 2
+    result = tool(target, env, "onboard.sh", "beget")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert 'SITE_HOSTING="beget"' in profile.read_text(encoding="utf-8")
+    assert "$ python3 container/tools/htaccess_hosting.py" in result.stdout
+    assert "redirects to itself, forever" in result.stdout  # %{HTTPS} alone loops behind Beget's proxy
+    assert "step 6 and 7 of 8: the gate" in result.stdout

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.7.0
+# version 0.10.0
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -37,7 +37,7 @@
 #                 first commit, the sitemap, the page tests.
 #                 container/tools/onboard.sh runs that step
 #   --next-id     the same step as one word for scripts: docker, start, copy,
-#                 discover, gate, sitemap, tests
+#                 discover, hosting, gate, sitemap, tests
 #
 # The project name keeps projects apart. Its lower-case form is SITE_PROJECT
 # in container/.env and names the Compose project, the containers, the site
@@ -409,18 +409,49 @@ configure() {
   fi
 }
 
+# Files a copy made executable (modes from a hosting copy or another file
+# system): only scripts keep the bit. The fix is printed with the count.
+SCRIPT_GLOBS=(-name '*.sh' -o -name '*.cgi' -o -name '*.pl' -o -name '*.py')
+executable_files_check() {
+  local count
+  count="$(find container/src -type f -perm -u+x ! \( "${SCRIPT_GLOBS[@]}" \) | wc -l)"
+  [ "$count" -gt 0 ] || return 0
+  echo "$count file(s) in container/src are executable but are no scripts (modes kept from the copy):"
+  find container/src -type f -perm -u+x ! \( "${SCRIPT_GLOBS[@]}" \) | head -n 5 | sed 's/^/  /'
+  echo "Make files 644 and folders 755, and keep the scripts executable:"
+  print_mode_fix | sed 's/^/  /'
+  return 1
+}
+
+print_mode_fix() {
+  cat <<'FIX'
+find container/src -type f -exec chmod 644 {} +
+find container/src -type d -exec chmod 755 {} +
+find container/src -type f \( -name '*.sh' -o -name '*.cgi' -o -name '*.pl' -o -name '*.py' \) -exec chmod 755 {} +
+FIX
+}
+
 check() {
   local root="${TARGET:-$SOURCE}"
   [ -d "$root/container/tools" ] || { echo "ERROR: $root is not a project root." >&2; exit 2; }
   cd "$root"
   local failed=()
   local label
+  # Each check says when it starts and how long it took: on a big site some
+  # read every file and stay quiet for minutes.
   run() {
+    local started took
     label="$1"; shift
-    printf '== %s\n' "$label"
-    if "$@"; then return 0; fi
+    started="$(date +%s)"
+    printf '== %s (started %s)\n' "$label" "$(date +%H:%M:%S)"
+    if "$@"; then
+      took=$(($(date +%s) - started))
+      printf '   ok, %dm%02ds\n' $((took / 60)) $((took % 60))
+      return 0
+    fi
+    took=$(($(date +%s) - started))
     failed+=("$label")
-    printf 'FAILED: %s\n\n' "$label" >&2
+    printf 'FAILED: %s, %dm%02ds\n\n' "$label" $((took / 60)) $((took % 60)) >&2
   }
 
   if [ -f container/src/sitemap.xml ]; then
@@ -428,11 +459,13 @@ check() {
   else
     echo "SKIP: no container/src/sitemap.xml yet."
   fi
+  run "file modes (container/src: only scripts executable)" executable_files_check
   run "line endings (container/src)" container/tools/linters/check-line-endings.sh --search --all --src src
   run "PHP whitespace-only lines (container/src)" container/tools/linters/check-php-blank-lines.sh --search --all --src src
   run "PHP opening header (container/src)" container/tools/linters/check-php-header.sh --search --all --src src
   run "malformed URLs (container/src)" container/tools/linters/find-malformed-urls.sh --all --src src
   run "snake_case method calls (container/src)" python3 container/tools/linters/find-snake-calls.py --src container/src
+  run ".htaccess fits the target hosting (SITE_HOSTING)" python3 container/tools/htaccess_hosting.py
   if docker info >/dev/null 2>&1; then
     run "shell scripts (shellcheck)" container/tools/linters/lint-sh.sh --all
     run "PHP syntax (php -l)" container/tools/linters/lint-php.sh --all
@@ -445,6 +478,8 @@ check() {
     # before anything is staged.
     local files=()
     mapfile -d '' -t files < <(git ls-files -z --cached --others --exclude-standard)
+    echo "   (pre-commit runs every hook over every file and prints a hook's line"
+    echo "   only when that hook ends: on a big site it stays quiet for minutes)"
     run "pre-commit, every file" pre-commit run --files "${files[@]}"
   else
     echo "SKIP: pre-commit is not installed, or this is not a git checkout."
@@ -469,81 +504,14 @@ DOC
   return 1
 }
 
-# The profile as new-project.sh wrote it: the example plus the name and port.
-profile_untouched() {
-  local root="$1"
-  [ -f "$root/container/site-profile.env" ] || return 0
-  diff -q <(grep -vE '^(#|$|SITE_NAME=|SITE_LOCAL_URL=)' "$root/container/site-profile.env" | LC_ALL=C sort) \
-    <(grep -vE '^(#|$|SITE_LOCAL_URL=)' "$root/container/site-profile.env.example" | LC_ALL=C sort) >/dev/null
-}
-
-# container/src holds only the stub index.php (and the engine's .php folder).
-src_is_stub() {
-  local src="$1/container/src" entries
-  entries="$(find "$src" -mindepth 1 -maxdepth 1 ! -name .php -printf '%f\n' 2>/dev/null)"
-  [ "$entries" = index.php ] && grep -q 'Drop the pages of the new site into container/src' "$src/index.php"
-}
-
+# --next and --next-id: onboard.py knows the steps (container/tools/onboard.py).
 next_step() {
-  local root slug go="" done=()
+  local root
   root="$(main_checkout "$(realpath "${TARGET:-$SOURCE}")")"
-  [ -f "$root/container/.env" ] || { echo "ERROR: $root has no container/.env: not a project new-project.sh made." >&2; exit 2; }
-  slug="$(env_value "$root/container/.env" SITE_PROJECT)"
-  [ "$(pwd -P)" = "$root" ] || go="cd $(printf '%q' "$root") && "
-  # say ID NUMBER WHAT SECTION RUN LINE...: RUN is how onboard.sh runs it.
-  say() {
-    local id="$1" number="$2" what="$3" section="$4" run_it="$5"
-    shift 5
-    if [ "$NEXT_ID" = 1 ]; then echo "$id"; return 0; fi
-    printf 'Project %s, %s\n' "$slug" "$root"
-    local joined
-    joined="$(printf '%s, ' "${done[@]}")"
-    [ "${#done[@]}" -eq 0 ] || printf 'Done: %s.\n' "${joined%, }"
-    printf '\nNext, step %s of 7: %s (README section %s)\n' "$number" "$what" "$section"
-    printf '\n  recommended:    %s\n' "${go}container/tools/auto_onboard.sh"
-    printf '                  all the remaining steps; it asks when it needs you\n'
-    printf '  this step only: %s\n' "$run_it"
-    printf '  by hand:\n'
-    printf '    %s\n' "$@"
-  }
-  local onboard="${go}container/tools/onboard.sh"
-  local runs="$onboard"
-
-  if ! docker info >/dev/null 2>&1; then
-    say docker 2 "start Docker, then the empty site" 4 "$onboard" "Docker is not running: start it (sudo systemctl start docker), then:" "${go}(cd container && docker compose up -d --build php-apache)"
-    return 0
+  if [ "$NEXT_ID" = 1 ]; then
+    exec python3 "$SCRIPT_DIR/onboard.py" --root "$root" next --id
   fi
-  if [ -z "$(docker ps -q --filter "name=^${slug}-apache\$" 2>/dev/null)" ]; then
-    say start 2 "start the site" 4 "$runs" "${go}(cd container && docker compose up -d --build php-apache)"
-    return 0
-  fi
-  done+=("the site runs at $(env_value "$root/container/site-profile.env" SITE_LOCAL_URL)/")
-  if src_is_stub "$root"; then
-    say copy 3 "copy the old site in" 5 "$onboard /path/to/old-site/" "${go}rsync -a --exclude .git/ --info=progress2 --no-inc-recursive /path/to/old-site/ container/src/" \
-      "(/path/to/old-site/ is the folder that holds its index.php; keep the trailing slashes)"
-    return 0
-  fi
-  done+=("the old site is in container/src")
-  if profile_untouched "$root"; then
-    say discover 4 "let the pages suggest the profile" 6 "$runs" "${go}python3 container/tools/discover_site.py --url" \
-      "then copy the suggested lines you agree with into container/site-profile.env"
-    return 0
-  fi
-  done+=("the profile is filled")
-  if ! git -C "$root" rev-parse -q --verify HEAD >/dev/null; then
-    say gate "5 and 6" "the gate, then the first commit" "7 to 9" "$onboard" "${go}container/tools/new-project.sh --check" \
-      "fix in the order of README section 8 until it prints All checks passed, then:" \
-      "git add -- <paths> && git commit -m \"<subject>\""
-    return 0
-  fi
-  done+=("the first commit is made")
-  if [ ! -f "$root/container/src/sitemap.xml" ]; then
-    say sitemap 7 "generate the sitemap" 10 "$runs" "${go}(cd container && BASE_URL=$(env_value "$root/container/site-profile.env" SITE_URL) tools/generate-sitemap.sh)"
-    return 0
-  fi
-  done+=("the sitemap exists")
-  say tests 7 "test the pages" 10 "$runs" "${go}container/tests/run_test.sh -y sitemap internal_links img_src content_loaded" \
-    "the onboarding ends here: README sections 11 (design files) and 12 (deploy) follow"
+  exec python3 "$SCRIPT_DIR/onboard.py" --root "$root" next
 }
 
 if [ "$CHECK" -eq 1 ]; then

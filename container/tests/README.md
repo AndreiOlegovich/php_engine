@@ -28,6 +28,8 @@ Python 3.14 are needed on the host.
 | `tools/test_discover_site.py` | `discover_site.py` finds page classes, includes, languages and legacy PHP in the files, and suggests the markers from pages a local server renders, without following a redirect |
 | `tools/test_generate_sitemap_backup.py` | `generate-sitemap.sh` keeps the previous sitemap in `backup/` at the repo root, and git ignores it there and in the docroot |
 | `tools/test_htaccess_redirects.py` | either `.htaccess` redirect form becomes a path regex; CLI exit codes |
+| `tools/test_htaccess_hosting.py` | the `.htaccess` check against `SITE_HOSTING`: the portable forms pass on every Apache-like target, an HTTPS redirect by one signal loops on the other kind of hosting, `php_value` breaks without mod_php, nginx reads none, warnings never fail |
+| `tools/test_onboard.py` | `onboard.py`: each step found from the project (not from earlier runs), the profile lines written in place, only scripts executable, the old site's folder checked, and the walk's questions: suggested lines, the hosting menu, section 8 before the gate, the first commit tried again after the image list |
 | `tools/test_remove_project.py` | `remove-project.sh` prints its plan without `--yes`, removes a project's Docker objects and folders by exact name with it, keeps the credentials, and refuses the engine, foreign folders and unpushed work |
 | `tools/test_analyze_errors.py`, `tools/test_check_bots.py`, `test_log_paths.py`, `test_download_logs.py` | log analyzers take a file/dir argument and keep the documented rules |
 | `tools/test_ru_en_translate.py` | the translation pipeline preserves markup and placeholders |

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.2.5
+# version 0.3.0
 # Static analysis / code style for PHP via one-off Docker images.
 #
 # No host installs, no composer, no vendor/: tools run as versioned PHARs
@@ -30,6 +30,10 @@
 #                   given. Afterwards the list holds the files that still
 #                   fail, or is removed when none do. Fixed files are not
 #                   staged: review with git diff, then git add.
+#
+# Speed: phpcs and phpcbf run on every CPU (PHPCS_PARALLEL=N sets the
+#   number, 1 turns it off). The --fix fallback fixes and checks only the
+#   files still failing, so it costs minutes, not hours, on a large site.
 #                   No list or an empty one: nothing to fix, exit code 0.
 #   --fix-failed=LIST  read (and afterwards update) another list file.
 #
@@ -362,13 +366,19 @@ HINT_CMD="./tools/linters/lint-static.sh"
 FIX_FAILED_FLAG="--fix-failed"
 [ "$FAILED_LIST_CUSTOM" -eq 0 ] || FIX_FAILED_FLAG="--fix-failed=$FAILED_LIST_FILE"
 
-# save_failed_list FILE : FILE holds phpcs output; its FILE: lines become
-# the list (written to a temp file, then renamed). Nothing failing: the
-# list is removed.
+# csv_paths DIR : the files with findings in DIR/report.csv (phpcs
+# --report-csv), app-relative and sorted. The csv keeps every path whole;
+# the full report shortens a long one to "...".
+csv_paths() {
+  awk -F',' 'NR > 1 { gsub(/"/, "", $1); sub(/^\/app\//, "", $1); print $1 }' "$1/report.csv" 2>/dev/null | sort -u || true
+}
+
+# save_failed_list DIR : the files in DIR/report.csv become the list
+# (written to a temp file, then renamed). Nothing failing: the list is
+# removed.
 save_failed_list() {
   local list tmp
-  list="$(grep '^FILE:' "$1" 2>/dev/null \
-    | sed 's/^FILE:[[:space:]]*//; s#^/app/##; s/[[:space:]]*$//' | sort -u || true)"
+  list="$(csv_paths "$1")"
   if [ -n "$list" ]; then
     mkdir -p "$(dirname "$FAILED_LIST_FILE")" || return 0
     tmp="$(mktemp "$FAILED_LIST_FILE.XXXXXX")" || return 0
@@ -641,6 +651,10 @@ FIX_SNIFF_GROUPS=(
 # Safe families: loop-free subset applied before the full pass.
 SAFE_SNIFFS="PSR12.Operators.OperatorSpacing,Generic.PHP.LowerCaseConstant,Squiz.WhiteSpace.SuperfluousWhitespace"
 
+# phpcs and phpcbf check files on this many processes (PHPCS_PARALLEL
+# overrides; 1 turns it off).
+PHPCS_PARALLEL="${PHPCS_PARALLEL:-$(nproc 2>/dev/null || echo 1)}"
+
 # phpcbf_paths [--sniffs S] -- paths... : run phpcbf, ignore its exit code
 # (it exits nonzero whenever it touches anything).
 phpcbf_paths() {
@@ -651,64 +665,60 @@ phpcbf_paths() {
   [ "${1:-}" = "--" ] && shift
   docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
     "${EXTRA_MOUNT[@]}" \
-    "$PHP_IMAGE" php /tools/phpcbf.phar --standard="$EFF_STANDARD" \
+    "$PHP_IMAGE" php /tools/phpcbf.phar --standard="$EFF_STANDARD" --parallel="$PHPCS_PARALLEL" \
     "${sniffs[@]}" "${_extra[@]}" -- "$@" || true
 }
 
-# phpcs_csv paths... : print phpcs --report=csv to stdout.
-phpcs_csv() {
+# phpcs_counts paths... : print "count<TAB>/app/path" for each file with
+# findings (errors and warnings), from one phpcs --report=csv run.
+phpcs_counts() {
   docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
     "${EXTRA_MOUNT[@]}" \
-    "$PHP_IMAGE" php /tools/phpcs.phar --standard="$EFF_STANDARD" \
-    --report=csv -- "$@" 2>/dev/null || true
-}
-
-# csv_file_count csv_text container_path : print error+warning rows for file.
-csv_file_count() {
-  printf '%s\n' "$1" | grep -c "^\"$2\"," || true
-}
-
-# csv_failing_files csv_text : print failing container paths (/app/...), sorted.
-csv_failing_files() {
-  printf '%s\n' "$1" | awk -F',' 'NR>1 {print $1}' | tr -d '"' | sort -u
+    "$PHP_IMAGE" php /tools/phpcs.phar --standard="$EFF_STANDARD" --parallel="$PHPCS_PARALLEL" \
+    --report=csv -- "$@" 2>/dev/null \
+    | awk -F',' 'NR > 1 { gsub(/"/, "", $1); n[$1]++ } END { for (f in n) printf "%d\t%s\n", n[f], f }' \
+    || true
 }
 
 # fix_fallback_groups paths... : per-family passes with monotonic guard.
-# Modifies files in place; always returns 0.
+# Only the failing files are fixed and checked again, and each check is
+# read once into a table, so a group costs two phpcs runs over the failing
+# files. Modifies files in place; always returns 0.
 fix_fallback_groups() {
-  local csv failing group f rel backup before after
-  csv="$(phpcs_csv "$@")"
-  failing="$(csv_failing_files "$csv")"
-  [ -z "$failing" ] && return 0
+  local group f rel backup n
+  local -A count=() before=()
+  local -a failing=()
+  while IFS=$'\t' read -r n f; do
+    [ -n "$f" ] && count["$f"]="$n"
+  done < <(phpcs_counts "$@")
+  mapfile -t failing < <(printf '%s\n' "${!count[@]}" | grep . | sort)
+  [ "${#failing[@]}" -eq 0 ] && return 0
   backup="$(mktemp -d)"
-  while IFS= read -r f; do
-    [ -n "$f" ] || continue
+  for f in "${failing[@]}"; do
     rel="${f#/app/}"
     mkdir -p "$backup/$(dirname "$rel")"
     cp "$APP_ROOT/$rel" "$backup/$rel"
-  done <<<"$failing"
+  done
   for group in "${FIX_SNIFF_GROUPS[@]}"; do
-    [ -z "$failing" ] && break
-    echo "fallback: --sniffs=${group%%,*}... ($(printf '%s\n' "$failing" | grep -c . | tr -d ' ') file(s) still failing)"
-    declare -A before=()
-    while IFS= read -r f; do
-      [ -n "$f" ] || continue
-      before["$f"]="$(csv_file_count "$csv" "$f")"
-    done <<<"$failing"
-    mapfile -t _targets <<<"$failing"
-    phpcbf_paths --sniffs "$group" -- "${_targets[@]}"
-    csv="$(phpcs_csv "$@")"
-    while IFS= read -r f; do
-      [ -n "$f" ] || continue
-      after="$(csv_file_count "$csv" "$f")"
+    [ "${#failing[@]}" -eq 0 ] && break
+    echo "fallback: --sniffs=${group%%,*}... (${#failing[@]} file(s) still failing)"
+    before=()
+    for f in "${failing[@]}"; do before["$f"]="${count[$f]}"; done
+    phpcbf_paths --sniffs "$group" -- "${failing[@]#/app/}"
+    count=()
+    while IFS=$'\t' read -r n f; do
+      [ -n "$f" ] && count["$f"]="$n"
+    done < <(phpcs_counts "${failing[@]#/app/}")
+    for f in "${failing[@]}"; do
       rel="${f#/app/}"
-      if [ "$after" -lt "${before[$f]:-0}" ] || [ "$after" -eq 0 ]; then
-        cp "$APP_ROOT/$rel" "$backup/$rel"  # improved/clean: keep, refresh backup
+      if [ "${count[$f]:-0}" -lt "${before[$f]}" ]; then
+        cp "$APP_ROOT/$rel" "$backup/$rel"  # improved or clean: keep, refresh backup
       else
         cp "$backup/$rel" "$APP_ROOT/$rel"  # no progress: restore pre-group state
+        count["$f"]="${before[$f]}"
       fi
-    done <<<"$failing"
-    failing="$(csv_failing_files "$csv")"
+    done
+    mapfile -t failing < <(for f in "${failing[@]}"; do [ "${count[$f]:-0}" -gt 0 ] && printf '%s\n' "$f"; done)
   done
   rm -rf "$backup"
 }
@@ -908,17 +918,17 @@ for _t in "${TOOLS_LIST[@]}"; do
         # the $FAILED_TO_FIX_LOG/failed_to_fix_<timestamp>.log report
         # (unless opted out).
         echo "re-checking with phpcs (files still failing go to \$FAILED_TO_FIX_LOG/failed_to_fix_<timestamp>.log) ..."
-        PHPCS_RECHECK_TMP="$(mktemp)"
+        PHPCS_REPORT_DIR="$(mktemp -d)"
         docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
-          "${EXTRA_MOUNT[@]}" \
-          "$PHP_IMAGE" php /tools/phpcs.phar --standard="$EFF_STANDARD" \
-          "${_extra[@]}" -- "${PATHS[@]}" 2>&1 | tee "$PHPCS_RECHECK_TMP"
-        rc=${PIPESTATUS[0]}
+          "${EXTRA_MOUNT[@]}" -v "$PHPCS_REPORT_DIR:/report" --user "$(id -u):$(id -g)" \
+          "$PHP_IMAGE" php /tools/phpcs.phar --standard="$EFF_STANDARD" --parallel="$PHPCS_PARALLEL" \
+          --report-full --report-csv=/report/report.csv \
+          "${_extra[@]}" -- "${PATHS[@]}" 2>&1
+        rc=$?
         if [ "$NO_FAILURE_REPORT" -eq 1 ]; then
           echo "failure report skipped (--no-failure-report)."
         else
-          FAILED_LIST="$(grep '^FILE:' "$PHPCS_RECHECK_TMP" 2>/dev/null \
-            | sed 's/^FILE:[[:space:]]*//' | sed 's#^/app/##' | sort -u || true)"
+          FAILED_LIST="$(csv_paths "$PHPCS_REPORT_DIR")"
           if [ -n "$FAILED_LIST" ]; then
             TS="$(date -u +%Y%m%d%H%M%S)"
             case "$FAILED_TO_FIX_LOG" in
@@ -935,18 +945,21 @@ for _t in "${TOOLS_LIST[@]}"; do
           fi
         fi
         if [ "$FIX_FAILED" -eq 1 ]; then
-          save_failed_list "$PHPCS_RECHECK_TMP"
+          save_failed_list "$PHPCS_REPORT_DIR"
           echo "fixed files are not staged: review with git diff, then git add them."
         fi
-        rm -f "$PHPCS_RECHECK_TMP"
+        rm -rf "$PHPCS_REPORT_DIR"
       else
         # phpcs exits 1 with "No files were checked" when the ruleset
         # excludes every selected path (BasePage.php is excluded for byte
         # parity). That is a clean vacuous run, not a finding; keep real
         # phpcs failures fatal.
         PHPCS_OUT="$(mktemp)"
+        PHPCS_REPORT_DIR="$(mktemp -d)"
         docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
-          "$PHP_IMAGE" php /tools/phpcs.phar --standard="$STANDARD" \
+          -v "$PHPCS_REPORT_DIR:/report" --user "$(id -u):$(id -g)" \
+          "$PHP_IMAGE" php /tools/phpcs.phar --standard="$STANDARD" --parallel="$PHPCS_PARALLEL" \
+          --report-full --report-csv=/report/report.csv \
           "${_extra[@]}" -- "${PATHS[@]}" 2>&1 | tee "$PHPCS_OUT"
         _phpcs_rc=${PIPESTATUS[0]}
         if [ "$_phpcs_rc" -ne 0 ] \
@@ -956,8 +969,9 @@ for _t in "${TOOLS_LIST[@]}"; do
           PHPCS_NOTHING=1
         fi
         # The commit check (--staged) keeps the paths of the failing files.
-        [ "$STAGED" -eq 0 ] || save_failed_list "$PHPCS_OUT"
+        [ "$STAGED" -eq 0 ] || save_failed_list "$PHPCS_REPORT_DIR"
         rm -f "$PHPCS_OUT"
+        rm -rf "$PHPCS_REPORT_DIR"
       fi
       ;;
   esac

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.1
+# version 0.1.2
 """Onboard a project that new-project.sh made: README.md, sections 4 to 10.
 
 Three ways through the same steps:
@@ -87,6 +87,20 @@ FIXERS = (
     Fixer("PHP syntax (php -l lists each broken file; fixed by hand)", ["container/tools/linters/lint-php.sh", "--all"], False),
     Fixer("broken URLs (listed, fixed by hand)", ["container/tools/linters/find-malformed-urls.sh", "--all", "--src", "src"], False),
 )
+
+
+def drop_typeahead() -> None:
+    """Throw away input that waits in a terminal: keys pressed, or a terminal's
+    answers to escape codes in a command's output, while the command ran. A
+    question gets only what is typed after it."""
+    if not sys.stdin.isatty():
+        return
+    try:
+        import termios  # pylint: disable=import-outside-toplevel  # POSIX only
+
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    except ImportError, OSError:
+        pass
 
 
 class Stop(Exception):  # noqa: N818  # not an error: the walk ends here
@@ -593,6 +607,8 @@ class Walk:
         self.gate_prepared = False
 
     def ask(self, prompt: str) -> str:
+        """One line from the user; what reached the terminal before the question is dropped."""
+        drop_typeahead()
         try:
             return input(f"\n{prompt}").strip()
         except EOFError:
@@ -653,8 +669,15 @@ class Walk:
             print("\n".join(stat_out[-3:]) if stat_out else "(no change)")
             if not stat_out:
                 continue
-            answer = self.choose("[y] accept these changes (git add)   [u] undo them   [q] stop: ", "yu")
+            answer = self.accept_or_undo(len(stat_out) - 1)
             self.run.run(["git", "add", "--", "container/src"] if answer == "y" else ["git", "checkout", "--", "container/src"])
+
+    def accept_or_undo(self, files: int) -> str:
+        """y or u; undo throws work away, so it is asked twice."""
+        while True:
+            answer = self.choose("[y] accept these changes (git add)   [u] undo them   [q] stop: ", "yu")
+            if answer == "y" or self.choose(f"Undo the changes in {files} files? They cannot be brought back.   [y] undo   [n] no: ", "yn") == "y":
+                return answer
 
     def step(self, name: str) -> bool:
         """Run one step; False when the walk is over."""

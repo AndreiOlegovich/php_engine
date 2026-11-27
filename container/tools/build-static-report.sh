@@ -16,10 +16,10 @@ mkdir -p "$OUTDIR"
 VOL="${SITE_PROJECT}_allure-results"
 docker volume inspect "$VOL" >/dev/null 2>&1 || { echo "ERROR: volume $VOL not found." >&2; exit 1; }
 
-CSV_SRC="$(docker run --rm -v "$VOL:/r" alpine sh -c "grep -l '^sitemap_url,checked_url' /r/* 2>/dev/null | head -n 1")"
+CSV_SRC="$(docker run --rm --name "$(project_container report-find)" -v "$VOL:/r" alpine sh -c "grep -l '^sitemap_url,checked_url' /r/* 2>/dev/null | head -n 1")"
 [ -n "$CSV_SRC" ] || { echo "ERROR: no results yet, run pytest_web first." >&2; exit 1; }
 
-docker run --rm -v "$VOL:/r" -v "$PWD/$OUTDIR:/o" alpine cp "$CSV_SRC" /o/all-urls.csv
+docker run --rm --name "$(project_container report-copy)" -v "$VOL:/r" -v "$PWD/$OUTDIR:/o" alpine cp "$CSV_SRC" /o/all-urls.csv
 # stolen from a root-owned container copy: re-own via copy+move (no sudo needed)
 cp "$OUTDIR/all-urls.csv" "$OUTDIR/.all-urls.tmp" && mv "$OUTDIR/.all-urls.tmp" "$OUTDIR/all-urls.csv"
 

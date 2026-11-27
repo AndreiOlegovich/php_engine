@@ -1,4 +1,4 @@
-# version 1.9.0
+# version 1.9.1
 """Tests for the course check tools: extraction, presets, matchers, docker argv.
 
 No compiler, docker or php is needed for most of them; the tests that really
@@ -879,7 +879,7 @@ def test_docker_session_starts_execs_and_removes(tmp_path: Path) -> None:
     start, execute, remove = (call[0] for call in fake.calls)
     name = start[start.index("--name") + 1]
     assert start[:4] == ["docker", "run", "-d", "--rm"]
-    assert name.startswith("course-check-")
+    assert name.startswith(f"{cc.project_name()}-course-check-")  # docker ps shows the project
     assert execute[:3] == ["docker", "exec", name]
     script = execute[-1]
     assert "cp -R /src/j1/. /tmp/j1/" in script

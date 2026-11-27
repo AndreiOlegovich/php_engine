@@ -1,4 +1,4 @@
-# version 0.0.1
+# version 0.0.2
 """Docker + PHAR plumbing: image pull, PHAR fetch, command execution."""
 
 from __future__ import annotations
@@ -8,8 +8,13 @@ import shutil
 import subprocess
 import sys
 import urllib.request
+from pathlib import Path
 
 from .config import PHPCBF_URL, PHPCS_URL, PHPSTAN_URL, PSALM_URL, Config
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from project_name import container_name  # pylint: disable=wrong-import-position,wrong-import-order,import-error  # noqa: E402
 
 
 def run_command(args: list[str], *, capture: bool = False, check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -62,7 +67,7 @@ def ensure_tools(cfg: Config) -> None:
 
 def print_tool_versions(cfg: Config) -> None:
     """Print each selected tool's version (mirrors lint-static.sh setup)."""
-    base = ["docker", "run", "--rm", "-v", f"{cfg.tool_cache}:/tools:ro", cfg.php_image]
+    base = ["docker", "run", "--rm", "--name", container_name("php-static-version"), "-v", f"{cfg.tool_cache}:/tools:ro", cfg.php_image]
     for tool in cfg.tools:
         if tool == "phpstan":
             run_command([*base, "php", "/tools/phpstan.phar", "--version"])
@@ -88,6 +93,8 @@ def docker_php_run(
         "docker",
         "run",
         "--rm",
+        "--name",
+        container_name("php-static"),
         "-v",
         f"{cfg.app_root}:/app",
         "-w",

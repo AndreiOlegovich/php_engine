@@ -21,6 +21,7 @@ Python 3.14 are needed on the host.
 | `test_html_code_corruption.py` | no reflow damage under `src/`: broken HTML attributes, dot-broken code lines, `&gt;` inside tags |
 | `test_content_loaded_markers.py` | the `--tag` names of the content test come from `SITE_TAG_MARKERS` only; a broken entry is left out |
 | `test_python_version_consistency.py` | pyproject, lockfile, Docker image, pre-commit and venvs all agree on Python 3.14 |
+| `tools/test_container_names.py` | every container a tool starts is named `<project>-<purpose>-...` (`project_container` in shell, `container_name` in Python), and no `docker run` in `container/tools` lacks `--name` |
 | `linters/test_check_version_sh.py` | the version-marker gate fails an unbumped staged script or page and passes a bumped one |
 | `linters/test_lint_php_sh.py` | `php -l` reports every broken fixture and skips non-PHP input (needs Docker) |
 | `linters/test_lint_static_sh.py` | the phpcs gate reports every broken fixture and stays wired in pre-commit (needs Docker) |

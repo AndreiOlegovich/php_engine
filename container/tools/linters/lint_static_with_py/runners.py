@@ -1,4 +1,4 @@
-# version 0.1.0
+# version 0.1.1
 """Tool runners: phpstan, psalm, phpcs/phpcbf (+ phpcs re-check)."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ import tempfile
 import time
 
 from .config import Config
-from .docker import docker_php_run
+from .docker import container_name, docker_php_run
 from .fix_fallback import FixRunners, fix_with_fallback, parse_csv_messages
 from .report import parse_failed_files, save_failed_list, write_failure_report
 from .ruleset import print_ruleset_excludes, stripped_ruleset
@@ -42,6 +42,8 @@ def run_psalm(cfg: Config, paths: list[str]) -> int:
             "docker",
             "run",
             "--rm",
+            "--name",
+            container_name("php-static"),
             "-v",
             f"{cfg.app_root}:/app",
             "-w",
@@ -109,6 +111,8 @@ def run_phpcs_check(
         "docker",
         "run",
         "--rm",
+        "--name",
+        container_name("php-static"),
         "-v",
         f"{cfg.app_root}:/app",
         "-w",

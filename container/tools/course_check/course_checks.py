@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 1.7.0
+# version 1.7.1
 """Shared helpers for code_blocks.py and quiz_answers.py.
 
 One table of language presets, the extraction of the code blocks of a page,
@@ -18,6 +18,7 @@ import os
 import re
 import shlex
 import subprocess
+import sys
 import tempfile
 import uuid
 from collections.abc import Callable, Iterable, Sequence
@@ -25,6 +26,10 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Self
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from project_name import project_name  # pylint: disable=wrong-import-position,import-error  # noqa: E402
 
 VERSION = "1.7.0"
 
@@ -842,7 +847,7 @@ class DockerSession(Session):
         self.root = root
         self.process_runner = process_runner
         self.docker = docker
-        self.name = f"course-check-{os.getpid()}-{uuid.uuid4().hex[:8]}"
+        self.name = f"{project_name()}-course-check-{os.getpid()}-{uuid.uuid4().hex[:8]}"
         argv = docker_start_argv(image, root, self.name, network=network, docker=docker)
         process = process_runner(argv, timeout=120)
         if process.returncode != 0:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.4.0
+# version 0.5.0
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -7,6 +7,7 @@
 #                 [--bottom-marker HTML] [--tag-markers SPEC]
 #   container/tools/new-project.sh --configure [TARGET] [--name NAME]
 #   container/tools/new-project.sh --check [TARGET]
+#   container/tools/new-project.sh --next [TARGET]
 #   container/tools/new-project.sh --help
 #
 #   TARGET        a new folder; it must not exist yet. Without it the script
@@ -29,6 +30,10 @@
 #   --check       run the whole gate over TARGET (default: the current
 #                 checkout) and print what failed and where it is explained;
 #                 exit 1 when anything failed
+#   --next        look at TARGET (default: the current checkout) and print
+#                 the one step it is at, with its command: start the site,
+#                 copy the old site in, fill the profile, the gate and the
+#                 first commit, the sitemap, the page tests
 #
 # The project name keeps projects apart. Its lower-case form is SITE_PROJECT
 # in container/.env and names the Compose project, the containers, the site
@@ -67,6 +72,7 @@ BOTTOM_MARKER=""
 TAG_MARKERS=""
 CHECK=0
 CONFIGURE=0
+NEXT_STEP=0
 TARGET=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -77,13 +83,14 @@ while [ $# -gt 0 ]; do
     --tag-markers) [ $# -ge 2 ] || { echo "ERROR: --tag-markers needs a value." >&2; exit 2; }; TAG_MARKERS="$2"; shift 2 ;;
     --tag-markers=*) TAG_MARKERS="${1#--tag-markers=}"; shift ;;
     --check) CHECK=1; shift ;;
+    --next) NEXT_STEP=1; shift ;;
     --configure) CONFIGURE=1; shift ;;
     -h|--help) usage; exit 0 ;;
     -*) echo "ERROR: unknown option: $1 (see --help)." >&2; exit 2 ;;
     *) [ -z "$TARGET" ] || { echo "ERROR: one TARGET only." >&2; exit 2; }; TARGET="$1"; shift ;;
   esac
 done
-[ $((CHECK + CONFIGURE)) -le 1 ] || { echo "ERROR: --check and --configure exclude each other." >&2; exit 2; }
+[ $((CHECK + CONFIGURE + NEXT_STEP)) -le 1 ] || { echo "ERROR: --check, --configure and --next exclude each other." >&2; exit 2; }
 
 # The name of a checkout, read the way its own tools read it.
 current_project() {
@@ -359,14 +366,16 @@ bootstrap() {
 
   cat <<NEXT
 
-Next, in $TARGET (README.md, sections 4 to 10):
-  1. start the empty site: (cd container && docker compose up -d --build php-apache)
-  2. copy the old site in: rsync -a --exclude .git/ /path/to/old-site/ container/src/
-  3. let the pages suggest the profile, then fill container/site-profile.env:
+Next (README.md, sections 4 to 10); every command runs in the project root.
+After any step, container/tools/new-project.sh --next prints the one that follows.
+  1. go there: cd $(printf '%q' "$TARGET")
+  2. start the empty site: (cd container && docker compose up -d --build php-apache)
+  3. copy the old site in: rsync -a --exclude .git/ /path/to/old-site/ container/src/
+  4. let the pages suggest the profile, then fill container/site-profile.env:
      python3 container/tools/discover_site.py --url
-  4. container/tools/new-project.sh --check, and fix in the order of README section 8
-  5. the first commit: git add -- <paths> && git commit -m "<subject>"
-  6. generate the sitemap and test the pages (README section 10)
+  5. container/tools/new-project.sh --check, and fix in the order of README section 8
+  6. the first commit: git add -- <paths> && git commit -m "<subject>"
+  7. generate the sitemap and test the pages (README section 10)
 NEXT
 }
 
@@ -451,8 +460,79 @@ DOC
   return 1
 }
 
+# The profile as new-project.sh wrote it: the example plus the name and port.
+profile_untouched() {
+  local root="$1"
+  [ -f "$root/container/site-profile.env" ] || return 0
+  diff -q <(grep -vE '^(#|$|SITE_NAME=|SITE_LOCAL_URL=)' "$root/container/site-profile.env" | LC_ALL=C sort) \
+    <(grep -vE '^(#|$|SITE_LOCAL_URL=)' "$root/container/site-profile.env.example" | LC_ALL=C sort) >/dev/null
+}
+
+# container/src holds only the stub index.php (and the engine's .php folder).
+src_is_stub() {
+  local src="$1/container/src" entries
+  entries="$(find "$src" -mindepth 1 -maxdepth 1 ! -name .php -printf '%f\n' 2>/dev/null)"
+  [ "$entries" = index.php ] && grep -q 'Drop the pages of the new site into container/src' "$src/index.php"
+}
+
+next_step() {
+  local root slug go="" done=()
+  root="$(main_checkout "$(realpath "${TARGET:-$SOURCE}")")"
+  [ -f "$root/container/.env" ] || { echo "ERROR: $root has no container/.env: not a project new-project.sh made." >&2; exit 2; }
+  slug="$(env_value "$root/container/.env" SITE_PROJECT)"
+  [ "$(pwd -P)" = "$root" ] || go="cd $(printf '%q' "$root") && "
+  say() {
+    local number="$1" what="$2" section="$3"
+    shift 3
+    printf 'Project %s, %s\n' "$slug" "$root"
+    local joined
+    joined="$(printf '%s, ' "${done[@]}")"
+    [ "${#done[@]}" -eq 0 ] || printf 'Done: %s.\n' "${joined%, }"
+    printf '\nNext, step %s of 7: %s (README section %s)\n' "$number" "$what" "$section"
+    printf '  %s\n' "$@"
+    printf '\nAfter it: container/tools/new-project.sh --next\n'
+  }
+  if ! docker info >/dev/null 2>&1; then
+    say 2 "start Docker, then the empty site" 4 "Docker is not running: start it (sudo systemctl start docker), then:" "${go}(cd container && docker compose up -d --build php-apache)"
+    return 0
+  fi
+  if [ -z "$(docker ps -q --filter "name=^${slug}-apache\$" 2>/dev/null)" ]; then
+    say 2 "start the site" 4 "${go}(cd container && docker compose up -d --build php-apache)"
+    return 0
+  fi
+  done+=("the site runs at $(env_value "$root/container/site-profile.env" SITE_LOCAL_URL)/")
+  if src_is_stub "$root"; then
+    say 3 "copy the old site in" 5 "${go}rsync -a --exclude .git/ /path/to/old-site/ container/src/" \
+      "(/path/to/old-site/ is the folder that holds its index.php; keep the trailing slashes)"
+    return 0
+  fi
+  done+=("the old site is in container/src")
+  if profile_untouched "$root"; then
+    say 4 "let the pages suggest the profile" 6 "${go}python3 container/tools/discover_site.py --url" \
+      "then copy the suggested lines you agree with into container/site-profile.env"
+    return 0
+  fi
+  done+=("the profile is filled")
+  if ! git -C "$root" rev-parse -q --verify HEAD >/dev/null; then
+    say "5 and 6" "the gate, then the first commit" "7 to 9" "${go}container/tools/new-project.sh --check" \
+      "fix in the order of README section 8 until it prints All checks passed, then:" \
+      "git add -- <paths> && git commit -m \"<subject>\""
+    return 0
+  fi
+  done+=("the first commit is made")
+  if [ ! -f "$root/container/src/sitemap.xml" ]; then
+    say 7 "generate the sitemap" 10 "${go}(cd container && BASE_URL=$(env_value "$root/container/site-profile.env" SITE_URL) tools/generate-sitemap.sh)"
+    return 0
+  fi
+  done+=("the sitemap exists")
+  say 7 "test the pages" 10 "${go}container/tests/run_test.sh -y sitemap internal_links img_src content_loaded" \
+    "the onboarding ends here: README sections 11 (design files) and 12 (deploy) follow"
+}
+
 if [ "$CHECK" -eq 1 ]; then
   check
+elif [ "$NEXT_STEP" -eq 1 ]; then
+  next_step
 elif [ "$CONFIGURE" -eq 1 ]; then
   configure
 else

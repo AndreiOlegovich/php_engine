@@ -83,6 +83,10 @@ pages render; copy the lines that are right.
 
 The full list, with the defaults, is `container/site-profile.env.example`.
 
+`container/tools/new-project.sh --next` prints the step a project is at: start
+the site, copy the old site in, fill the profile, the gate and the first
+commit, the sitemap, the page tests.
+
 ## First gate
 
 ```bash

@@ -91,6 +91,10 @@ In under a minute the script:
 4. runs `git init -b main` and `pre-commit install`; nothing is staged;
 5. creates `container/.venv` with the test tools.
 
+It ends with the steps that follow, sections 4 to 10 below. After any of
+them, `container/tools/new-project.sh --next` (run in the project) looks at
+the project and prints the one step it is at, with its command.
+
 It ends like this:
 
 ```text
@@ -434,6 +438,7 @@ skill follows the same order.
 
 | What | Command |
 |---|---|
+| where the new project is, and the next step | `container/tools/new-project.sh --next` |
 | start the site | `(cd container && docker compose up -d php-apache)` |
 | stop everything | `(cd container && docker compose stop)` |
 | PHP errors | `(cd container && docker compose logs --no-log-prefix php-apache 2>&1) \| grep -E 'PHP (Parse\|Fatal) error'` |

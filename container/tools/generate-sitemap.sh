@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.11
+# version 0.0.12
 # Regenerate a sitemap from the .php files under src/, in the same format
 # as src/sitemap.xml:
 #
@@ -16,7 +16,9 @@
 #   BASE_URL=https://www.example.com ./generate-sitemap.sh
 #
 # Default output is src/sitemap.xml (the single sitemap). The previous
-# output is backed up to <output>.bak-<UTC timestamp> first. The new one is
+# output is backed up to <repo>/backup/<name>.bak-<UTC timestamp> first
+# (backup/ is git-ignored, so a backup never lands in the docroot, where a
+# deploy would publish it). The new one is
 # built in <output>.tmp.<pid> and renamed over <output> only once it is
 # complete and valid XML: readers (tests, backoffice, local site, deploy)
 # never see a half-written file, and a failed run keeps the old sitemap.
@@ -63,7 +65,9 @@ BASE_URL="${BASE_URL%/}"  # no trailing slash
 [ -d "$SRC_DIR" ] || { echo "ERROR: source dir '$SRC_DIR' not found." >&2; exit 1; }
 
 if [ -f "$OUT" ]; then
-  BACKUP="$OUT.bak-$(date -u +%Y%m%d%H%M%S)"
+  BACKUP_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/backup"
+  mkdir -p "$BACKUP_DIR"
+  BACKUP="$BACKUP_DIR/$(basename "$OUT").bak-$(date -u +%Y%m%d%H%M%S)"
   cp "$OUT" "$BACKUP"
   echo "backup: $BACKUP" >&2
 fi

@@ -24,6 +24,7 @@ Python 3.14 are needed on the host.
 | `linters/test_check_version_sh.py` | the version-marker gate fails an unbumped staged script or page and passes a bumped one |
 | `linters/test_lint_php_sh.py` | `php -l` reports every broken fixture and skips non-PHP input (needs Docker) |
 | `linters/test_lint_static_sh.py` | the phpcs gate reports every broken fixture and stays wired in pre-commit (needs Docker) |
+| `tools/test_generate_sitemap_backup.py` | `generate-sitemap.sh` keeps the previous sitemap in `backup/` at the repo root, and git ignores it there and in the docroot |
 | `tools/test_htaccess_redirects.py` | either `.htaccess` redirect form becomes a path regex; CLI exit codes |
 | `tools/test_analyze_errors.py`, `tools/test_check_bots.py`, `test_log_paths.py`, `test_download_logs.py` | log analyzers take a file/dir argument and keep the documented rules |
 | `tools/test_ru_en_translate.py` | the translation pipeline preserves markup and placeholders |

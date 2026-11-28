@@ -78,6 +78,7 @@ pages render; copy the lines that are right.
 | `SITE_NO_MARKER_PATHS` | parts of the URL paths of pages without that marker by design (API endpoints, apps); `test_page_html_id.py` reports each one it skips |
 | `SITE_BOTTOM_MARKER` | what every complete page renders last, `</html>` by default; `test_content_loaded.py` fails a page that stops before it |
 | `SITE_TAG_MARKERS` | named pieces of the page HTML, such as the top menu, that `test_content_loaded.py --tag <name>` looks for; none by default |
+| `SITE_HOSTING` | the hosting the site is uploaded to (`beget`, `dreamhost`, `apache-proxy`, `apache-tls`, `litespeed`, `nginx`, `unknown`); `htaccess_hosting.py`, the gate and a commit hook check the `.htaccess` files against it |
 | `SITE_FEED_DIR` | the folder of the article feed |
 | `SITE_PHP_VERSION` | the PHP version of the site |
 
@@ -87,7 +88,8 @@ The full list, with the defaults, is `container/site-profile.env.example`.
 the site, copy the old site in, fill the profile, the gate and the first
 commit, the sitemap, the page tests. `container/tools/onboard.sh` runs that
 step and prints the one after it; `container/tools/auto_onboard.sh` runs them
-all and asks when it needs the user.
+all and asks when it needs the user. Both are wrappers around
+`container/tools/onboard.py`, where the steps are defined.
 
 ## First gate
 

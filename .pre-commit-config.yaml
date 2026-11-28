@@ -202,6 +202,12 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
+      - id: site-htaccess-hosting
+        name: .htaccess fits the target hosting (SITE_HOSTING)
+        entry: python3.14 container/tools/htaccess_hosting.py
+        language: system
+        files: ^container/src/(.*/)?\.htaccess$
+        pass_filenames: false
 
   # --- HTML/PHP reflower damage gate (whole-tree text scan) ---
   - repo: local

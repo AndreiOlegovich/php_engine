@@ -104,6 +104,10 @@ ways through them, all from the project folder:
    copy step takes the folder: `container/tools/onboard.sh /path/to/old-site/`.
 3. **By hand**: sections 4 to 10 give every command.
 
+Both scripts are names for `container/tools/onboard.py` (Python, standard
+library only), where the steps are defined once; `python3
+container/tools/onboard.py --help` lists them.
+
 `container/tools/new-project.sh --next` shows where the project is, any time.
 
 It ends like this:
@@ -233,6 +237,24 @@ reads the files only. Then change at least:
 
 What the other keys decide is in `container/docs/new-project.md`; all keys,
 with their defaults, are in `container/site-profile.env.example`.
+
+**The hosting the site goes to.** Name it in `SITE_HOSTING`: `beget`,
+`dreamhost`, `apache-proxy` (Apache behind a TLS proxy), `apache-tls`,
+`litespeed`, `nginx`, or `unknown` while it is not decided. It is the
+target, and it can differ from the hosting the site was downloaded from;
+an `.htaccess` written for one can break on the other. The discovery says
+what the old files were written for, and
+
+```bash
+python3 container/tools/htaccess_hosting.py
+```
+
+checks them against the target: an HTTPS redirect that loops forever
+(behind a TLS proxy Apache never sees `HTTPS`; without one no
+`X-Forwarded-Proto` arrives), `php_value` where PHP is not mod_php (500 on
+every page), a PHP handler of the old hosting, rules nginx never reads, and
+as warnings redirects that make a plain-HTTP hop and paths of the old
+account. The gate and the commit hook run the same check.
 
 ## 7. Find what is broken
 

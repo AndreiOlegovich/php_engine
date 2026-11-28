@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.0
+# version 0.1.1
 """Find snake_case method calls that miss the camelCase engine APIs.
 
 phpcs only checks method *declarations*; a page calling
@@ -65,8 +65,13 @@ def read_text(path):
 
 
 def engine_methods(src):
-    """camelCase methods declared in engine trees -> {snake: camel}."""
+    """camelCase methods declared in engine trees -> {snake: camel}.
+
+    A snake_case name the engine declares too (an old engine with both
+    is_mobile() and isMobile()) is a method of its own, not a shadow.
+    """
     out = {}
+    declared = set()
     for tree in ENGINE_DIRS or engine_dirs(src):
         d = os.path.join(src, *tree.split("/"))
         for root, _, files in os.walk(d):
@@ -80,9 +85,10 @@ def engine_methods(src):
                     continue
                 for m in METHOD_DEF.finditer(text):
                     name = m.group(1)
+                    declared.add(name)
                     if name != name.lower() and "_" not in name:
                         out.setdefault(to_snake(name), name)
-    return out
+    return {snake: camel for snake, camel in out.items() if snake not in declared}
 
 
 def list_files(src, staged):

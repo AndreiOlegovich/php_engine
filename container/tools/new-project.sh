@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.6.3
+# version 0.7.0
 # Start a new site from this engine checkout, under its own project name.
 #
 # Usage (from anywhere):
@@ -372,27 +372,19 @@ bootstrap() {
 
   cat <<NEXT
 
-Next steps (README.md, sections 4 to 10). Each onboard.sh run does the step
-the project is at and prints the one after it.
+Next steps (README.md, sections 4 to 10):
 
   1. cd $(printf '%q' "$TARGET")
      go to the project: every command below runs there
-  2. container/tools/onboard.sh
-     start the site
-  3. container/tools/onboard.sh /path/to/old-site/
-     copy the old site in (the folder that holds its index.php)
-  4. container/tools/onboard.sh
-     suggest the profile; copy the lines you agree with into container/site-profile.env
-  5. container/tools/onboard.sh
-     the gate; fix in the order of README section 8, then run it again
-  6. git add -- <paths> && git commit -m "<subject>"
-     the first commit: you choose the paths
-  7. container/tools/onboard.sh
-     the sitemap
-  8. container/tools/onboard.sh
-     the page tests
+  2. container/tools/auto_onboard.sh
+     runs all the steps, printing each command, and asks when it needs you:
+     the old site's folder, the profile lines, the public address, the
+     first commit
 
-Any time: container/tools/new-project.sh --next shows where the project is.
+Other ways:
+  container/tools/onboard.sh         one step per run, then it shows the next
+  README.md, sections 4 to 10        every command, to type by hand
+  container/tools/new-project.sh --next   where the project is, any time
 NEXT
 }
 
@@ -508,14 +500,17 @@ next_step() {
     joined="$(printf '%s, ' "${done[@]}")"
     [ "${#done[@]}" -eq 0 ] || printf 'Done: %s.\n' "${joined%, }"
     printf '\nNext, step %s of 7: %s (README section %s)\n' "$number" "$what" "$section"
-    printf '  %s\n' "$@"
-    printf '\n%s\n' "$run_it"
+    printf '\n  recommended:    %s\n' "${go}container/tools/auto_onboard.sh"
+    printf '                  all the remaining steps; it asks when it needs you\n'
+    printf '  this step only: %s\n' "$run_it"
+    printf '  by hand:\n'
+    printf '    %s\n' "$@"
   }
   local onboard="${go}container/tools/onboard.sh"
-  local runs="Or let $onboard run it; it prints the step after."
+  local runs="$onboard"
 
   if ! docker info >/dev/null 2>&1; then
-    say docker 2 "start Docker, then the empty site" 4 "Then: $onboard" "Docker is not running: start it (sudo systemctl start docker), then:" "${go}(cd container && docker compose up -d --build php-apache)"
+    say docker 2 "start Docker, then the empty site" 4 "$onboard" "Docker is not running: start it (sudo systemctl start docker), then:" "${go}(cd container && docker compose up -d --build php-apache)"
     return 0
   fi
   if [ -z "$(docker ps -q --filter "name=^${slug}-apache\$" 2>/dev/null)" ]; then
@@ -524,7 +519,7 @@ next_step() {
   fi
   done+=("the site runs at $(env_value "$root/container/site-profile.env" SITE_LOCAL_URL)/")
   if src_is_stub "$root"; then
-    say copy 3 "copy the old site in" 5 "Or let it copy: $onboard /path/to/old-site/" "${go}rsync -a --exclude .git/ --info=progress2 --no-inc-recursive /path/to/old-site/ container/src/" \
+    say copy 3 "copy the old site in" 5 "$onboard /path/to/old-site/" "${go}rsync -a --exclude .git/ --info=progress2 --no-inc-recursive /path/to/old-site/ container/src/" \
       "(/path/to/old-site/ is the folder that holds its index.php; keep the trailing slashes)"
     return 0
   fi
@@ -536,7 +531,7 @@ next_step() {
   fi
   done+=("the profile is filled")
   if ! git -C "$root" rev-parse -q --verify HEAD >/dev/null; then
-    say gate "5 and 6" "the gate, then the first commit" "7 to 9" "Or let $onboard run the gate; the commit stays yours (you choose the paths)." "${go}container/tools/new-project.sh --check" \
+    say gate "5 and 6" "the gate, then the first commit" "7 to 9" "$onboard" "${go}container/tools/new-project.sh --check" \
       "fix in the order of README section 8 until it prints All checks passed, then:" \
       "git add -- <paths> && git commit -m \"<subject>\""
     return 0

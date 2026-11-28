@@ -91,20 +91,20 @@ In under a minute the script:
 4. runs `git init -b main` and `pre-commit install`; nothing is staged;
 5. creates `container/.venv` with the test tools.
 
-It ends with the steps that follow, sections 4 to 10 below. You can type
-each command yourself, or let one command walk you through them: in the
-project,
+It ends with the steps that follow, sections 4 to 10 below. There are three
+ways through them, all from the project folder:
 
-```bash
-container/tools/onboard.sh                      # runs the step the project is at
-container/tools/onboard.sh /path/to/old-site/   # the copy step needs the old site
-```
+1. **`container/tools/auto_onboard.sh`** (recommended) runs all of them in one
+   go. It prints each command before it runs it, and stops to ask when it
+   needs you: the old site's folder, the profile lines the pages suggest
+   (write them, edit the file yourself, or stop), the site's public address,
+   and whether to make the first commit. Run it again after a stop: it goes
+   on where the project is.
+2. **`container/tools/onboard.sh`** runs one step and prints the next; the
+   copy step takes the folder: `container/tools/onboard.sh /path/to/old-site/`.
+3. **By hand**: sections 4 to 10 give every command.
 
-runs the step the project is at (start the site, copy the old site in,
-suggest the profile, the gate, the sitemap, the page tests) and prints the
-step after it. Two steps stay yours: copying the suggested lines into the
-profile, and the first commit, where you choose the paths.
-`container/tools/new-project.sh --next` only shows where the project is.
+`container/tools/new-project.sh --next` shows where the project is, any time.
 
 It ends like this:
 
@@ -452,6 +452,7 @@ skill follows the same order.
 
 | What | Command |
 |---|---|
+| walk a new project through its onboarding | `container/tools/auto_onboard.sh` |
 | run the next onboarding step, then show the one after | `container/tools/onboard.sh` |
 | where the new project is, and the next step | `container/tools/new-project.sh --next` |
 | start the site | `(cd container && docker compose up -d php-apache)` |

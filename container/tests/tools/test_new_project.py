@@ -1,4 +1,4 @@
-# version 0.4.2
+# version 0.5.0
 """Tests for tools/new-project.sh and the project name it hands to the tools.
 
 Offline: a small engine checkout in tmp_path, a docker stub and an empty HOME.
@@ -43,7 +43,7 @@ def fixture_engine(tmp_path: Path) -> Path:
     root = tmp_path / "projects" / "php_engine"
     tools = root / "container" / "tools"
     tools.mkdir(parents=True)
-    for name in ("new-project.sh", "project-env.sh", "onboard.sh"):
+    for name in ("new-project.sh", "project-env.sh", "onboard.sh", "onboard-lib.sh", "auto_onboard.sh"):
         shutil.copy(TOOLS / name, tools / name)
     put(tools / "run-tests-venv.sh", "#!/bin/sh\nexit 0\n")
     (tools / "run-tests-venv.sh").chmod(0o755)
@@ -183,7 +183,7 @@ def test_the_name_is_asked_in_a_terminal(engine: Path, env: dict[str, str], tmp_
     os.close(master)
     assert b"Project name [asked]:" in output
     assert b"marker" not in output.split(b"Next (")[0]  # nobody knows the markers yet: no question
-    assert b"2. container/tools/onboard.sh" in output
+    assert b"2. container/tools/auto_onboard.sh" in output
     assert f"1. cd {target}\n".encode() in output.replace(b"\r\n", b"\n")  # the first step goes to the root
     assert env_file(target)["SITE_PROJECT"] == "asked-site"
 
@@ -340,6 +340,7 @@ def test_onboard_starts_the_site_then_shows_the_next_step(engine: Path, env: dic
     assert result.returncode == 0, result.stdout + result.stderr
     assert "compose up -d --build php-apache" in (tmp_path / "docker.log").read_text(encoding="utf-8")
     assert "=== step: start" in result.stdout and "Next, step 2 of 7" in result.stdout  # the stub keeps no container running
+    assert "$ (cd container && docker compose up -d --build php-apache)" in result.stdout  # the exact command it runs
 
 
 def test_onboard_copies_the_old_site_in(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
@@ -359,4 +360,41 @@ def test_onboard_copies_the_old_site_in(engine: Path, env: dict[str, str], tmp_p
     assert (target / "container" / "src" / "about" / "index.php").is_file()
     assert "old home" in (target / "container" / "src" / "index.php").read_text(encoding="utf-8")
     assert "step 4 of 7: let the pages suggest the profile" in result.stdout
+    assert f"$ rsync -a --exclude .git/ --info=progress2 --no-inc-recursive {old}/ container/src/" in result.stdout
     assert (old / "index.php").is_file()  # the original stays
+
+
+def auto(target: Path, env: dict[str, str], answers: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["bash", str(target / "container" / "tools" / "auto_onboard.sh")], input=answers, capture_output=True, text=True, env=env, cwd=target, check=False)
+
+
+def test_auto_onboard_waits_for_docker(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = made_project(engine, env, tmp_path)
+    result = auto(target, env, "q\n")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "Docker is not running" in result.stdout and "Stopped." in result.stdout
+
+
+def test_auto_onboard_asks_for_the_old_site_and_copies_it(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = made_project(engine, env, tmp_path)
+    env = {**env, "DOCKER_LOG": str(tmp_path / "docker.log")}
+    set_docker(tmp_path, RUNNING)
+    old = tmp_path / "old-site"
+    put(old / "index.php", "<?php\n\necho 'old home';\n")
+    result = auto(target, env, f"{tmp_path / 'nowhere'}\n{old}\n")
+    out = result.stdout + result.stderr
+    assert "is not a folder" in out  # a wrong answer is asked again
+    assert f"$ rsync -a --exclude .git/ --info=progress2 --no-inc-recursive {old}/ container/src/" in out
+    assert "old home" in (target / "container" / "src" / "index.php").read_text(encoding="utf-8")
+    # the fixture has no discover_site.py: the walk stops there, saying so
+    assert "=== let the pages suggest the profile" in out and "The discovery failed" in out
+    assert result.returncode == 1
+
+
+def test_auto_onboard_stops_at_the_end_of_input(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = made_project(engine, env, tmp_path)
+    env = {**env, "DOCKER_LOG": str(tmp_path / "docker.log")}
+    set_docker(tmp_path, RUNNING)
+    result = auto(target, env, "")
+    assert result.returncode == 0
+    assert "No answer: stopping here" in result.stdout

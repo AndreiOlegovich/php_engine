@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.0
+# version 0.1.1
 # Run the onboarding step a new project is at, then print the one after it.
 #
 # Usage (from anywhere; it works on the project it lives in):
@@ -8,7 +8,8 @@
 #
 # The steps, as new-project.sh --next names them (README sections 4 to 10):
 #   start     start the site:     docker compose up -d --build php-apache
-#   copy      copy the old site:  rsync -a --exclude .git/ OLD/ container/src/
+#   copy      copy the old site:  rsync -a --exclude .git/ --info=progress2 --no-inc-recursive OLD/ container/src/
+#             (one progress line: copied, percent, speed, time left, files left)
 #   discover  suggest the profile: discover_site.py --url; you copy the lines
 #             you agree with into container/site-profile.env
 #   gate      new-project.sh --check; the first commit stays yours, because
@@ -55,8 +56,11 @@ case "$step" in
       echo "ERROR: $old holds no index.php or index.html. Give the folder of the site itself (often public_html/ inside a hosting copy)." >&2
       exit 2
     fi
-    echo "copying $old/ into container/src/ (the original stays as it is) ..."
-    rsync -a --exclude .git/ "$old/" container/src/
+    echo "copying $old/ into container/src/ (the original stays as it is)."
+    echo "rsync counts the files first, which takes a while on a big site; then one"
+    echo "line shows the progress: copied, percent, speed, time left (xfr#copied, to-chk=left/total)."
+    rsync -a --exclude .git/ --info=progress2 --no-inc-recursive "$old/" container/src/
+    echo "copied: $(find container/src -type f | wc -l) files in container/src"
     ;;
   discover)
     python3 container/tools/discover_site.py --url

@@ -1,4 +1,4 @@
-# version 0.1.0
+# version 0.1.1
 """Tests for tools/onboard.py: the steps, found from the project, and the walk.
 
 The project is a tmp_path tree; Docker and the commands are replaced, so each
@@ -199,3 +199,22 @@ def test_the_walk_stops_at_the_end_of_input(project: ob.Project, docker: dict[st
     answers(monkeypatch)
     assert ob.Walk(project).walk() == 0
     assert "No answer: stopping here." in capsys.readouterr().out
+
+
+def test_undo_is_asked_twice_and_no_asks_again(project: ob.Project, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    answers(monkeypatch, "u", "n", "u", "y")
+    assert ob.Walk(project).accept_or_undo(5) == "u"
+    assert capsys.readouterr().out.count("Undo the changes in 5 files?") == 2
+
+
+def test_accept_needs_no_second_answer(project: ob.Project, monkeypatch: pytest.MonkeyPatch) -> None:
+    answers(monkeypatch, "y")
+    assert ob.Walk(project).accept_or_undo(5) == "y"
+
+
+def test_each_question_drops_what_waited_in_the_terminal(project: ob.Project, monkeypatch: pytest.MonkeyPatch) -> None:
+    dropped: list[bool] = []
+    monkeypatch.setattr(ob, "drop_typeahead", lambda: dropped.append(True))
+    answers(monkeypatch, "y")
+    ob.Walk(project).ask("? ")
+    assert dropped == [True]

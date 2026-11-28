@@ -1,4 +1,4 @@
-# version 0.1.1
+# version 0.1.2
 """Tests for tools/onboard.py: the steps, found from the project, and the walk.
 
 The project is a tmp_path tree; Docker and the commands are replaced, so each
@@ -218,3 +218,9 @@ def test_each_question_drops_what_waited_in_the_terminal(project: ob.Project, mo
     answers(monkeypatch, "y")
     ob.Walk(project).ask("? ")
     assert dropped == [True]
+
+
+def test_enter_alone_or_a_word_is_no_answer(project: ob.Project, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    answers(monkeypatch, "", "yes", "u")
+    assert ob.Walk(project).choose("? ", "yu") == "u"
+    assert capsys.readouterr().out.count("Answer one of") == 2

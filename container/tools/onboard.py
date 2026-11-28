@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.2
+# version 0.1.3
 """Onboard a project that new-project.sh made: README.md, sections 4 to 10.
 
 Three ways through the same steps:
@@ -616,14 +616,15 @@ class Walk:
             raise Stop("No answer: stopping here.") from None
 
     def choose(self, prompt: str, allowed: str) -> str:
-        """One letter of allowed (lower case); q stops; anything else asks again."""
+        """One letter of allowed (lower case), alone on its line; q stops.
+        Anything else asks again: an empty line (Enter alone) is no answer."""
         while True:
-            answer = self.ask(prompt).lower()[:1]
+            answer = self.ask(prompt).lower()
             if answer == "q":
                 raise Stop("Stopped.")
-            if answer in allowed:
+            if len(answer) == 1 and answer in allowed:
                 return answer
-            print(f"Answer one of: {', '.join(allowed)}, q")
+            print(f"Answer one of: {', '.join(allowed)}, q (got {answer!r})")
 
     def offer_modes(self) -> None:
         count = len(executable_files(self.project))

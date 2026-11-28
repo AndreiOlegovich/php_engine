@@ -55,34 +55,26 @@ files it was made with.
 ~/github/php_engine/container/tools/new-project.sh
 ```
 
-It asks four questions:
+It asks two questions:
 
 ```text
 Project name: My Shop
 Folder [/home/you/github/my-shop]:
-The content test looks for markers: pieces of the page HTML source, not CSS.
-What every complete page renders last, e.g. id="footer-end" [</html>]:
-Named markers for --tag, e.g. menu=<nav class="menu" [none]:
 ```
 
 - **Project name**: any name with a Latin letter or a digit, without quotes,
   `$`, `\` or a backtick. Its lower-case form, here `my-shop`, names the
   project's Docker images and containers, its credentials and log folders.
   A name that another project already uses is refused.
-- **Folder**: Enter takes the offered folder, next to php_engine. It must
-  not exist yet.
-- **Markers**: pieces of the HTML your pages render (open a page and view
-  its source), not CSS rules. The first is what every complete page
-  renders last, so the content test can tell a page that stopped halfway;
-  Enter keeps `</html>`. The second gives names to the parts the content
-  test can look for with `--tag`, such as the top menu:
-  `menu=<nav class="menu"`, with `|` between alternatives and `;` between
-  names; Enter leaves none. Neither may hold a single quote. They go into
-  `container/site-profile.env` as `SITE_BOTTOM_MARKER` and
-  `SITE_TAG_MARKERS`, where you can change them later.
+- **Folder**: the project root, the folder that will hold `container/`
+  and its `container/src`. Enter takes the offered folder, next to
+  php_engine; any other path works too, e.g. on a bigger disk. It must not
+  exist yet.
 
-Without the questions (the markers keep their defaults unless you add
-`--bottom-marker` and `--tag-markers`):
+The site's markers (what its pages render) are not asked here: nobody knows
+them before the site is copied in. Section 6 finds them.
+
+Without the questions:
 
 ```bash
 ~/github/php_engine/container/tools/new-project.sh ~/github/my-shop --name "My Shop"
@@ -191,8 +183,28 @@ Then look for four things:
 ## 6. Describe the site
 
 `container/site-profile.env` holds the values the tools and tests need to
-know about this site; a key you leave out falls back to a default. Change at
-least:
+know about this site; a key you leave out falls back to a default. Let the
+pages tell you first, with the site running:
+
+```bash
+python3 container/tools/discover_site.py --url
+```
+
+It reads the files (page classes, shared includes, language folders, the
+hosts in links, PHP that PHP 8 refuses, files that are not UTF-8), then
+fetches up to 300 pages of the local site and counts what they render:
+
+- the last element before `</body>`: `SITE_BOTTOM_MARKER`, which
+  `content_loaded` checks on every page;
+- the ids and classes on nearly every page, landmarks such as `<nav>` and
+  `<footer>` first: `SITE_TAG_MARKERS`, the names `--tag` looks for;
+- the empty `<div id="..."></div>` markers of page classes:
+  `SITE_PAGE_MARKERS`.
+
+Markers are pieces of the page HTML, not CSS rules. The tool ends with
+suggested profile lines and writes nothing: check each against a page
+(view its source) and copy the ones that are right. Without `--url` it
+reads the files only. Then change at least:
 
 | Key | What it is |
 |---|---|

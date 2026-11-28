@@ -64,6 +64,10 @@ container/tools/new-project.sh --configure --name my_site
 
 ## Fill the profile
 
+With the site copied in and running, `python3 container/tools/discover_site.py --url`
+suggests the markers, the page classes and the language folders from what the
+pages render; copy the lines that are right.
+
 | Key | What it decides |
 |---|---|
 | `SITE_URL`, `SITE_DEV_URL`, `SITE_LOCAL_URL` | the hosts the site tests use |

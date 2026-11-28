@@ -1,4 +1,4 @@
-# version 0.2.0
+# version 0.3.0
 """Tests for tools/new-project.sh and the project name it hands to the tools.
 
 Offline: a small engine checkout in tmp_path, a docker stub and an empty HOME.
@@ -169,7 +169,7 @@ def test_the_name_is_asked_in_a_terminal(engine: Path, env: dict[str, str], tmp_
     script = engine / "container" / "tools" / "new-project.sh"
     with subprocess.Popen(["bash", str(script), str(target)], stdin=slave, stdout=slave, stderr=slave, env=env, close_fds=True) as proc:
         os.close(slave)
-        os.write(master, b'Asked Site\nid="footer-end"\nmenu=<nav class="menu"\n')
+        os.write(master, b"Asked Site\n")
         output = b""
         while True:
             try:
@@ -182,11 +182,9 @@ def test_the_name_is_asked_in_a_terminal(engine: Path, env: dict[str, str], tmp_
         assert proc.wait(timeout=30) == 0, output.decode(errors="replace")
     os.close(master)
     assert b"Project name [asked]:" in output
-    assert b"not CSS" in output
+    assert b"marker" not in output.split(b"Next, in")[0]  # nobody knows the markers yet: no question
+    assert b"discover_site.py --url" in output
     assert env_file(target)["SITE_PROJECT"] == "asked-site"
-    profile = (target / "container" / "site-profile.env").read_text(encoding="utf-8")
-    assert "SITE_BOTTOM_MARKER='id=\"footer-end\"'" in profile
-    assert "SITE_TAG_MARKERS='menu=<nav class=\"menu\"'" in profile
 
 
 def test_markers_from_the_options_replace_the_defaults(engine: Path, env: dict[str, str], tmp_path: Path) -> None:

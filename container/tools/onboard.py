@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.0
+# version 0.1.1
 """Onboard a project that new-project.sh made: README.md, sections 4 to 10.
 
 Three ways through the same steps:
@@ -405,7 +405,14 @@ def step_hosting(run: Runner, name: str) -> int:
     return 0
 
 
+def heading(title: str) -> None:
+    """A line of its own above each part, so a README quote or a question stands apart."""
+    print(f"\n--- {title} {'-' * max(3, 74 - len(title))}")
+
+
 def print_section_8(project: Project) -> None:
+    """README section 8 between a start and an end line."""
+    heading("README.md, section 8, from here")
     lines = (project.root / "README.md").read_text(encoding="utf-8").splitlines()
     inside = False
     for line in lines:
@@ -415,6 +422,7 @@ def print_section_8(project: Project) -> None:
             break
         if inside:
             print(line)
+    heading("end of README section 8")
 
 
 def step_gate(run: Runner) -> int:
@@ -605,31 +613,36 @@ class Walk:
         count = len(executable_files(self.project))
         if not count:
             return
-        print(f"\n{count} files in container/src are executable but are no scripts: the copy kept the")
+        heading("File modes")
+        print(f"{count} files in container/src are executable but are no scripts: the copy kept the")
         print("modes of the old site. git would record every page and image as a program. The fix:")
         print_mode_fix()
         if self.choose("[y] run these   [s] skip   [q] stop: ", "ys") == "y":
             step_modes(self.run)
 
     def before_gate(self) -> None:
+        heading("Before the gate: README section 8")
         print("An imported site fails most checks at first; README section 8 gives the order")
         print("to fix them. The full gate reads every file and can take half an hour.")
         if self.choose("[y] print README section 8   [n] go on   [q] stop: ", "yn") == "y":
-            print()
             print_section_8(self.project)
         self.offer_modes()
         if sitemaps := old_sitemaps(self.project):
-            print(f"\nThe old site's sitemaps: {' '.join(p.name for p in sitemaps)}")
+            heading("The old sitemaps")
+            print(f"The old site's sitemaps: {' '.join(p.name for p in sitemaps)}")
             print("Step 8 writes a new sitemap.xml; until then an old one with duplicate URLs fails the gate.")
             if self.choose("[y] move them to backup/old-site/ (git-ignored)   [s] keep them   [q] stop: ", "ys") == "y":
                 step_old_sitemaps(self.run)
-        if self.choose("[y] run the fixers of section 8 one by one   [g] straight to the gate   [q] stop: ", "yg") == "g":
+        heading("The fixers of README section 8")
+        print("\n".join(f"  {number}. {fixer.label}" for number, fixer in enumerate(FIXERS, 1)))
+        if self.choose("[y] run them one by one   [g] straight to the gate   [q] stop: ", "yg") == "g":
             return
         if not staged_src(self.project):
             print("\nFirst the files are staged once, so git can show what each fixer changes (nothing is committed):")
             self.run.run(["git", "add", "--", "container/src"])
-        for fixer in FIXERS:
-            print(f"\n--- {fixer.label}\n    {shlex.join(fixer.command)}")
+        for number, fixer in enumerate(FIXERS, 1):
+            heading(f"Fixer {number} of {len(FIXERS)}: {fixer.label}")
+            print(f"    {shlex.join(fixer.command)}")
             if self.choose("[y] run   [s] skip   [q] stop: ", "ys") == "s":
                 continue
             self.run.run(fixer.command)

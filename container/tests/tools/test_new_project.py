@@ -1,4 +1,4 @@
-# version 0.3.1
+# version 0.4.0
 """Tests for tools/new-project.sh and the project name it hands to the tools.
 
 Offline: a small engine checkout in tmp_path, a docker stub and an empty HOME.
@@ -43,7 +43,7 @@ def fixture_engine(tmp_path: Path) -> Path:
     root = tmp_path / "projects" / "php_engine"
     tools = root / "container" / "tools"
     tools.mkdir(parents=True)
-    for name in ("new-project.sh", "project-env.sh"):
+    for name in ("new-project.sh", "project-env.sh", "onboard.sh"):
         shutil.copy(TOOLS / name, tools / name)
     put(tools / "run-tests-venv.sh", "#!/bin/sh\nexit 0\n")
     (tools / "run-tests-venv.sh").chmod(0o755)
@@ -302,3 +302,61 @@ def test_next_from_elsewhere_starts_with_cd(engine: Path, env: dict[str, str], t
     assert run(engine, env, target, "--name", "shop").returncode == 0
     result = subprocess.run(["bash", str(target / "container" / "tools" / "new-project.sh"), "--next"], capture_output=True, text=True, env=env, cwd=tmp_path, check=False)
     assert f"cd {target} && (cd container && docker compose up" in result.stdout
+
+
+def made_project(engine: Path, env: dict[str, str], tmp_path: Path) -> Path:
+    target = tmp_path / "projects" / "shop"
+    assert run(engine, env, target, "--name", "shop").returncode == 0
+    return target
+
+
+def set_docker(tmp_path: Path, script: str) -> None:
+    (tmp_path / "stubs" / "docker").write_text(script, encoding="utf-8")
+
+
+RUNNING = '#!/bin/sh\necho "$*" >> "$DOCKER_LOG"\ncase "$1" in ps) echo abc123 ;; esac\nexit 0\n'
+STOPPED = '#!/bin/sh\necho "$*" >> "$DOCKER_LOG"\nexit 0\n'
+
+
+def tool(target: Path, env: dict[str, str], name: str, *args: object) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["bash", str(target / "container" / "tools" / name), *map(str, args)], capture_output=True, text=True, env=env, cwd=target, stdin=subprocess.DEVNULL, check=False)
+
+
+def test_next_id_names_the_step(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = made_project(engine, env, tmp_path)
+    env = {**env, "DOCKER_LOG": str(tmp_path / "docker.log")}
+    assert tool(target, env, "new-project.sh", "--next-id").stdout.strip() == "docker"
+    set_docker(tmp_path, STOPPED)
+    assert tool(target, env, "new-project.sh", "--next-id").stdout.strip() == "start"
+    set_docker(tmp_path, RUNNING)
+    assert tool(target, env, "new-project.sh", "--next-id").stdout.strip() == "copy"
+
+
+def test_onboard_starts_the_site_then_shows_the_next_step(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = made_project(engine, env, tmp_path)
+    env = {**env, "DOCKER_LOG": str(tmp_path / "docker.log")}
+    set_docker(tmp_path, STOPPED)
+    result = tool(target, env, "onboard.sh")
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "compose up -d --build php-apache" in (tmp_path / "docker.log").read_text(encoding="utf-8")
+    assert "=== step: start" in result.stdout and "Next, step 2 of 7" in result.stdout  # the stub keeps no container running
+
+
+def test_onboard_copies_the_old_site_in(engine: Path, env: dict[str, str], tmp_path: Path) -> None:
+    target = made_project(engine, env, tmp_path)
+    env = {**env, "DOCKER_LOG": str(tmp_path / "docker.log")}
+    set_docker(tmp_path, RUNNING)
+    assert tool(target, env, "onboard.sh").returncode == 2  # which folder is not given
+    empty = tmp_path / "not-a-site"
+    empty.mkdir()
+    result = tool(target, env, "onboard.sh", empty)
+    assert result.returncode == 2 and "public_html" in result.stderr
+    old = tmp_path / "old-site"
+    put(old / "index.php", "<?php\n\necho 'old home';\n")
+    put(old / "about" / "index.php", "<?php\n\necho 'about';\n")
+    result = tool(target, env, "onboard.sh", old)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert (target / "container" / "src" / "about" / "index.php").is_file()
+    assert "old home" in (target / "container" / "src" / "index.php").read_text(encoding="utf-8")
+    assert "step 4 of 7: let the pages suggest the profile" in result.stdout
+    assert (old / "index.php").is_file()  # the original stays

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.3
+# version 0.0.4
 # Lint shell scripts with shellcheck via a one-off Docker image.
 #
 # No host installs: koalaman/shellcheck:stable is pulled once, reused after.
@@ -33,6 +33,8 @@ unset GIT_DIR GIT_WORK_TREE
 _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 TOP="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$TOP" ] || { echo "ERROR: not inside a git repo." >&2; exit 1; }
 
@@ -141,4 +143,4 @@ echo "linting ${#PATHS[@]} shell script(s) with shellcheck ..."
 
 docker image inspect "$SHELLCHECK_IMAGE" >/dev/null 2>&1 \
   || docker pull "$SHELLCHECK_IMAGE" >&2
-docker run --rm -v "$TOP:/mnt:ro" -w /mnt "$SHELLCHECK_IMAGE" -- "${PATHS[@]}"
+docker run --rm --name "$(project_container shellcheck)" -v "$TOP:/mnt:ro" -w /mnt "$SHELLCHECK_IMAGE" -- "${PATHS[@]}"

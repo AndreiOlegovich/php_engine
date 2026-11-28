@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.2.4
+# version 0.2.5
 # Static analysis / code style for PHP via one-off Docker images.
 #
 # No host installs, no composer, no vendor/: tools run as versioned PHARs
@@ -181,6 +181,8 @@ unset GIT_DIR GIT_WORK_TREE
 _START_DIR="$(pwd -P)"  # invocation cwd (scripts cd elsewhere at startup)
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091  # shared resolver is checked separately
+. "$SCRIPT_DIR/../project-env.sh"
 cd "$SCRIPT_DIR"
 cd ../..  # tools live in tools/linters/; project root (compose file, src/) is the runtime cwd
 OWN_ROOT="$(pwd -P)"   # container/ of the checkout this script lives in
@@ -647,7 +649,7 @@ phpcbf_paths() {
   # with: ERROR: option "--sniffs" not known
   if [ "${1:-}" = "--sniffs" ]; then sniffs=("--sniffs=$2"); shift 2; fi
   [ "${1:-}" = "--" ] && shift
-  docker run --rm -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
+  docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
     "${EXTRA_MOUNT[@]}" \
     "$PHP_IMAGE" php /tools/phpcbf.phar --standard="$EFF_STANDARD" \
     "${sniffs[@]}" "${_extra[@]}" -- "$@" || true
@@ -655,7 +657,7 @@ phpcbf_paths() {
 
 # phpcs_csv paths... : print phpcs --report=csv to stdout.
 phpcs_csv() {
-  docker run --rm -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
+  docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
     "${EXTRA_MOUNT[@]}" \
     "$PHP_IMAGE" php /tools/phpcs.phar --standard="$EFF_STANDARD" \
     --report=csv -- "$@" 2>/dev/null || true
@@ -819,13 +821,13 @@ for _t in "${TOOLS_LIST[@]}"; do
 done
 for _t in "${TOOLS_LIST[@]}"; do
   case "$_t" in
-    phpstan) docker run --rm -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/phpstan.phar --version ;;
-    psalm) docker run --rm -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/psalm.phar --version 2>&1 | head -n 1 ;;
+    phpstan) docker run --rm --name "$(project_container php-static-version)" -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/phpstan.phar --version ;;
+    psalm) docker run --rm --name "$(project_container php-static-version)" -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/psalm.phar --version 2>&1 | head -n 1 ;;
     phpcs)
       if [ "$FIX" -eq 1 ]; then
-        docker run --rm -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/phpcbf.phar --version
+        docker run --rm --name "$(project_container php-static-version)" -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/phpcbf.phar --version
       else
-        docker run --rm -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/phpcs.phar --version
+        docker run --rm --name "$(project_container php-static-version)" -v "$TOOL_CACHE:/tools:ro" "$PHP_IMAGE" php /tools/phpcs.phar --version
       fi
       ;;
   esac
@@ -843,7 +845,7 @@ for _t in "${TOOLS_LIST[@]}"; do
       # Progress bar on by default; -v adds tool verbose output.
       _extra=()
       [ "$VERBOSE" -eq 1 ] && _extra=(-v)
-      docker run --rm -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
+      docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
         "$PHP_IMAGE" php /tools/phpstan.phar analyse \
         "${_extra[@]}" --level="$LEVEL" -- "${PATHS[@]}"
       ;;
@@ -860,7 +862,7 @@ for _t in "${TOOLS_LIST[@]}"; do
         "    <directory name=\"/app/$SRC_DIR\" />" \
         '  </projectFiles>' \
         '</psalm>' > "$PSALM_CFG/psalm.xml"
-      docker run --rm -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
+      docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
         -v "$PSALM_CFG:/psalmcfg:ro" \
         "$PHP_IMAGE" php /tools/psalm.phar --no-cache --config=/psalmcfg/psalm.xml \
         "${_extra[@]}" -- "${PATHS[@]}"
@@ -907,7 +909,7 @@ for _t in "${TOOLS_LIST[@]}"; do
         # (unless opted out).
         echo "re-checking with phpcs (files still failing go to \$FAILED_TO_FIX_LOG/failed_to_fix_<timestamp>.log) ..."
         PHPCS_RECHECK_TMP="$(mktemp)"
-        docker run --rm -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
+        docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
           "${EXTRA_MOUNT[@]}" \
           "$PHP_IMAGE" php /tools/phpcs.phar --standard="$EFF_STANDARD" \
           "${_extra[@]}" -- "${PATHS[@]}" 2>&1 | tee "$PHPCS_RECHECK_TMP"
@@ -943,7 +945,7 @@ for _t in "${TOOLS_LIST[@]}"; do
         # parity). That is a clean vacuous run, not a finding; keep real
         # phpcs failures fatal.
         PHPCS_OUT="$(mktemp)"
-        docker run --rm -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
+        docker run --rm --name "$(project_container php-static)" -v "$APP_ROOT:/app" -w /app -v "$TOOL_CACHE:/tools:ro" \
           "$PHP_IMAGE" php /tools/phpcs.phar --standard="$STANDARD" \
           "${_extra[@]}" -- "${PATHS[@]}" 2>&1 | tee "$PHPCS_OUT"
         _phpcs_rc=${PIPESTATUS[0]}

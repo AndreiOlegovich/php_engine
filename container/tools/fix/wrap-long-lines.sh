@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.0.4
+# version 0.0.5
 # Find and safely wrap PHP lines longer than a limit (default: 120 chars).
 #
 # Usage:
@@ -150,7 +150,7 @@ case "\$PWD/\$f" in
     exec docker exec "$SITE_PROJECT-apache" php "\$op" "/var/www/html/\$rel" ;;
   *)
     dir=\$(cd "\$(dirname "\$f")" && pwd); base=\$(basename "\$f")
-    exec docker run --rm -v "\$dir:/w:ro" $PHPCS_IMG php "\$op" "/w/\$base" ;;
+    exec docker run --rm --name "$SITE_PROJECT-php-lint-\$\$" -v "\$dir:/w:ro" $PHPCS_IMG php "\$op" "/w/\$base" ;;
 esac
 EOF
     chmod +x "$PHP_CMD"
@@ -189,7 +189,7 @@ snapshot_phpcs() {
     esac
     printf '/host%s\n' "$abs" >> "$outdir/targets.txt"
   done
-  docker run --rm -v "$TOOL_CACHE:/tools:ro" \
+  docker run --rm --name "$(project_container phpcs-snapshot)" -v "$TOOL_CACHE:/tools:ro" \
     -v /:/host:ro -v "$outdir:/out" \
     -v "$WRAP_RUN_DIR/phpcs.xml:/app/phpcs.xml:ro" \
     "$PHPCS_IMG" sh -c \

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# version 0.1.1
+# version 0.1.2
 """Read the sessions OpenCode keeps in the agent container's Docker volume.
 
 container/tools/ai/opencode-docker.sh mounts the named volume
@@ -42,7 +42,7 @@ from typing import Any
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
-from project_name import project_name  # pylint: disable=wrong-import-position,import-error  # noqa: E402
+from project_name import container_name, project_name  # pylint: disable=wrong-import-position,import-error  # noqa: E402
 
 DEFAULT_VOLUME = f"{project_name()}-agent-data"
 DEFAULT_IMAGE = f"{project_name()}-agent"
@@ -74,6 +74,8 @@ def copy_volume(volume: str, image: str, out_dir: Path) -> Path:
         "docker",
         "run",
         "--rm",
+        "--name",
+        container_name("agent-sessions"),
         "-v",
         f"{volume}:/data:ro",
         "-v",

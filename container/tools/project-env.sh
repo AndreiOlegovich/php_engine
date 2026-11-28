@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.1.1
+# version 0.2.0
 # Source this file. It names this project, so that several copies of the
 # engine can run side by side without sharing a Docker image, container,
 # volume, port, credentials file or log folder.
@@ -10,6 +10,10 @@
 #   SITE_HTTP_PORT    host port of the local site (default 8080)
 #   SITE_ALLURE_PORT  first host port of the Allure viewers (default 5050)
 #   SITE_LOCAL_BASE   http://127.0.0.1:$SITE_HTTP_PORT
+#
+# And defines project_container PURPOSE: the name for a container a tool
+# starts, <project>-<purpose>-<pid>, so docker ps shows whose it is:
+#   docker run --rm --name "$(project_container shellcheck)" ...
 #
 # Each value comes from the environment, then from container/.env of the main
 # checkout, which new-project.sh writes. The name falls back to the folder of
@@ -43,6 +47,13 @@ SITE_ALLURE_PORT="${SITE_ALLURE_PORT:-$(_project_value SITE_ALLURE_PORT)}"
 SITE_ALLURE_PORT="${SITE_ALLURE_PORT:-5050}"
 SITE_LOCAL_BASE="http://127.0.0.1:$SITE_HTTP_PORT"
 export SITE_PROJECT SITE_HTTP_PORT SITE_ALLURE_PORT SITE_LOCAL_BASE
+
+# Every container of this project carries its name; Docker would pick a random
+# one (bold_yonath) otherwise. $BASHPID differs in every $(...), so two calls
+# never give the same name.
+project_container() {
+  printf '%s-%s-%s' "$SITE_PROJECT" "$(project_slug "$1")" "$BASHPID"
+}
 
 unset -f _project_value
 unset _project_dir _project_git

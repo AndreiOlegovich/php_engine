@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# version 0.2.0
+# version 0.2.1
 # Lint PHP files with the project's PHP 8.5 interpreter (php-apache container).
 #
 # Usage:
@@ -274,8 +274,8 @@ else
     echo "pulling $IMG ..."
     docker pull "$IMG" || { echo "ERROR: cannot pull $IMG." >&2; exit 1; }
   }
-  docker run --rm -v "$SRC_ABS":/code:ro "$IMG" php -v 2>/dev/null | head -n 1
-  tr '\n' '\0' < "$REL_LIST" | docker run --rm -i -v "$SRC_ABS":/code:ro "$IMG" bash -c '
+  docker run --rm --name "$(project_container php-version)" -v "$SRC_ABS":/code:ro "$IMG" php -v 2>/dev/null | head -n 1
+  tr '\n' '\0' < "$REL_LIST" | docker run --rm -i --name "$(project_container php-lint)" -v "$SRC_ABS":/code:ro "$IMG" bash -c '
     fail=0; n=0
     while IFS= read -r -d "" f; do
       n=$((n+1))
